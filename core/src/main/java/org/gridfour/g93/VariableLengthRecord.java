@@ -240,7 +240,7 @@ public class VariableLengthRecord {
    * @throws IOException in the event of a IO error.
    */
   public String readPayloadText() throws IOException{
-    if(!isPayloadText()){
+    if(!hasTextPayload()){
       return "";
     }
     byte [] p = readPayload();
@@ -251,7 +251,7 @@ public class VariableLengthRecord {
    * Indicates whether the payload is text or if it contains binary data.
    * @return true if the payload is text; otherwise false.
    */
-  public boolean isPayloadText(){
+  public boolean hasTextPayload(){
     return textPayload;
   }
 

@@ -33,7 +33,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.demo.acccess;
+package org.gridfour.demo.access;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,8 +106,8 @@ public class ReadG93 {
               vlr.getUserId(),
               vlr.getRecordId(),
               vlr.getPayloadSize(),
-              vlr.isPayloadText() ? "Text" : "Binary");
-      if (vlr.isPayloadText()) {
+              vlr.hasTextPayload() ? "Text" : "Binary");
+      if (vlr.hasTextPayload()) {
         String payloadText = vlr.readPayloadText();
         ps.println(payloadText);
         ps.println("");
