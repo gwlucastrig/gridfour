@@ -44,7 +44,6 @@
 package org.gridfour.g93;
 
 import org.gridfour.util.CodecM32;
-import static org.gridfour.g93.G93FileConstants.NULL_DATA_CODE;
 
 /**
  * Applies to predictor-corrector constant-value model to the data. The

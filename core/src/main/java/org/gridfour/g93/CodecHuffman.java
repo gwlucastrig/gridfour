@@ -171,7 +171,6 @@ public class CodecHuffman implements IG93CompressorCodec {
 
   @Override
   public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
-    IPredictorCorrector pcc = this.decodePredictorCorrector(packing[1]);
     int nM32 = (packing[6] & 0xff)
             | ((packing[7] & 0xff) << 8)
             | ((packing[8] & 0xff) << 16)
