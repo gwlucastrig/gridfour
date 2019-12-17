@@ -270,6 +270,7 @@ public class ExtractData {
         }
       }
     }
+    ncfile.close();
 
     long time1 = System.nanoTime();
     double deltaT = (time1 - time0) / 1.0e+9;

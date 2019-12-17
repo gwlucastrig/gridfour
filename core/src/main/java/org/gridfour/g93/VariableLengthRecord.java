@@ -234,6 +234,20 @@ public class VariableLengthRecord {
   }
   
   /**
+   * Reads a text payload from the record.  If the payload is not
+   * text, returns an empty string.
+   * @return a valid, potentially empty, string
+   * @throws IOException in the event of a IO error.
+   */
+  public String readPayloadText() throws IOException{
+    if(!isPayloadText()){
+      return "";
+    }
+    byte [] p = readPayload();
+    return new String(p, "UTF8");
+  }
+  
+  /**
    * Indicates whether the payload is text or if it contains binary data.
    * @return true if the payload is text; otherwise false.
    */

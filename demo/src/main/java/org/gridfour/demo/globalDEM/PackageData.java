@@ -100,6 +100,25 @@ public class PackageData {
   void process(PrintStream ps, TestOptions options)
           throws IOException {
 
+    // The packaging of data in a G93 file can be thought of in terms of
+    // the steps shown below.
+    //
+    //    0.  Obtain descriptive parameters about source data.  In this
+    //        case, the application is packing data from a NetCDF source
+    //        and most of the descriptive parameters follow the pattern
+    //        established in the earlier ExtractData.java demonstration
+    //
+    //    1.  Define the fixed metadata about the file (it's dimensions,
+    //        data type, tile organization, etc.) using a G93FileSpecification
+    //        object.
+    //    
+    //    2.  Open a new G93File object using the settings created in step 1.
+    //        Adjust any run-time parameters (such as the tile-cache size)
+    //        according to the needs of the application.
+    //  
+    //    3.  Extract the data from its source and store in the G93 file.
+    //
+    
     ps.format("%nG93 Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
@@ -251,6 +270,11 @@ public class PackageData {
       g93.summarize(ps, true);
     }
 
+    
+    
+    // If the calling application desires that we do so, verify the
+    // newly created file by re-opening it and comparing its content
+    // to those of the source data.
     if (options.isVerificationEnabled()) {
       int[] readOrigin = new int[rank];
       int[] readShape = new int[rank];
