@@ -61,6 +61,7 @@ public class ReadG93 {
     }
     File file = new File(args[0]);
     System.out.println("Reading file " + file.getPath());
+    boolean oneTestPerTile = (args.length>1);
 
     // Open the file.  The time required to open the file depends, in part,
     // on whether a supplemental index file (.g93) is available.  To test the
@@ -93,6 +94,9 @@ public class ReadG93 {
     ps.format("  Tiles:     %8d%n", nTiles);
     ps.format("Time to read header and index %10.1f ms%n", timeForOpeningFile);
     g93.summarize(ps, true);
+    
+    int nRowsInTile = spec.getRowsInTileCount();
+    int nColsInTile = spec.getColumnsInTileCount();
 
     // Variable length records can contain either binary or text data.
     // The VLR's are read during initial access, though their payload
@@ -122,12 +126,19 @@ public class ReadG93 {
     int nTest = 4;
     double sumSample = 0;
     long nSample = 0;
+    int rowStep = 1;
+    int colStep = 1;
+    if(oneTestPerTile){
+       rowStep = spec.getRowsInTileCount();
+       colStep = spec.getColumnsInTileCount();
+
+    }
     for (int iTest = 0; iTest < nTest; iTest++) {
       time0 = System.nanoTime();
       g93 = new G93File(file, "r");
       g93.setTileCacheSize(G93CacheSize.Large);
-      for (int iRow = 0; iRow < nRows; iRow++) {
-        for (int iCol = 0; iCol < nCols; iCol++) {
+      for (int iRow = 0; iRow < nRows; iRow+=rowStep) {
+        for (int iCol = 0; iCol < nCols; iCol+=colStep) {
           double sample = g93.readValue(iRow, iCol);
           sumSample += sample;
           nSample++;

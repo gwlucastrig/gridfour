@@ -677,9 +677,11 @@ class FileBasedTileStore {
       assert recordSize >= 0 : "negative packing size for tile on file";
       int tileIndexFromFile = braf.leReadInt();
       assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
-      int paddedPayloadSize = recordSize - RECORD_HEADER_SIZE;
-      if (paddedPayloadSize < paddedStandardSize) {
+      int compressionFlag = braf.leReadInt() & 0xff;  // 1 byte and 3 spares
+
+      if (compressionFlag!=0) {
         // it's compressed
+        int paddedPayloadSize = recordSize - RECORD_HEADER_SIZE;
         byte[] packing = new byte[paddedPayloadSize];
         for (int iRank = 0; iRank < spec.rank; iRank++) {
           braf.readFully(packing, 0, 4);

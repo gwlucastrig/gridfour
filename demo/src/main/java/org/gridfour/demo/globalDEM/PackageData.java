@@ -261,7 +261,7 @@ public class PackageData {
       ps.format("Finished processing file in %4.1f seconds%n", timeToProcess);
       ps.format("Entropy for input data %4.1f bits/sample%n", stats.getEntropy());
       long outputSize = outputFile.length();
-      long nCells = nRows * nCols;
+      long nCells = (long)nRows * (long)nCols;
       double bitsPerSymbol = 8.0 * (double) outputSize / (double) nCells;
       ps.format("Storage used (including overhead) %4.2f bits/sample%n",
               bitsPerSymbol);
@@ -279,7 +279,7 @@ public class PackageData {
       int[] readOrigin = new int[rank];
       int[] readShape = new int[rank];
 
-      ps.println("\nTest product for data consistency with source");
+      ps.println("\nTesting product for data consistency with source");
       ps.println("Opening g93 file for reading");
       long time0 = System.currentTimeMillis();
       try (G93File g93 = new G93File(outputFile, "r")) {
@@ -287,6 +287,18 @@ public class PackageData {
         ps.println("Opening complete in " + (time1 - time0) + " ms");
         g93.setTileCacheSize(G93CacheSize.Large);
         for (int iRow = 0; iRow < nRows; iRow++) {
+           if ((iRow % 10000) == 9999) {
+           time1 = System.currentTimeMillis();
+          double deltaT = time1 - time0;
+          double rate = (iRow + 1) / deltaT;  // rows per millis
+          int nRemaining = nRows - iRow;
+          long remainingT = (long) (nRemaining / rate);
+          Date d = new Date(time1 + remainingT);
+          ps.format("Completed %d rows, %4.1f%% of total, est completion at %s%n",
+                  iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
+          ps.flush();
+        }
+
           int row0 = iRow;
           int col0 = 0;
           readOrigin[0] = row0;
