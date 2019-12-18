@@ -52,7 +52,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.tinfour.demo.viewer.TinfourViewerMain</mainClass>
+              <mainClass>org.gridfour.demo.access.ReadG93</mainClass>
               <addClasspath>true</addClasspath>
             </manifest>
           </archive>
@@ -64,7 +64,7 @@
         <configuration>
           <archive>
             <manifest>
-          	<mainClass>org.tinfour.demo.viewer.TinfourViewerMain</mainClass>
+          	<mainClass>org.gridfour.demo.access.ReadG93</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
