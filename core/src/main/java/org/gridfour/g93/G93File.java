@@ -63,7 +63,7 @@ public class G93File implements Closeable, AutoCloseable {
 
   private final File file;
   private final G93FileSpecification spec;
-  private final RasterCodec rasterCodec;
+  private final CodecWrapper rasterCodec;
   private final BufferedRandomAccessFile braf;
   private boolean isClosed;
   private boolean openedForWriting;
@@ -132,7 +132,7 @@ public class G93File implements Closeable, AutoCloseable {
     this.openedForWriting = true;
     this.file = file;
     this.spec = new G93FileSpecification(specification);
-    this.rasterCodec = new RasterCodec();
+    this.rasterCodec = new CodecWrapper();
     braf = new BufferedRandomAccessFile(file, "rw");
 
     timeModified = System.currentTimeMillis();
@@ -246,7 +246,7 @@ public class G93File implements Closeable, AutoCloseable {
               + " feature not implemented");
     }
 
-    rasterCodec = new RasterCodec();
+    rasterCodec = new CodecWrapper();
 
     if (access.contains("w")) {
       braf.seek(FILEPOS_OPEN_FOR_WRITING_TIME);
@@ -363,7 +363,7 @@ public class G93File implements Closeable, AutoCloseable {
       try {
         tileStore.analyzeAndReport(ps);
       } catch (IOException ioex) {
-        // no action required
+         ps.format("IOException encountered during analysis: "+ioex.getMessage());
       }
     }
   }

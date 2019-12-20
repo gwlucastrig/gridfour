@@ -57,7 +57,7 @@ public interface IPredictorCorrector {
    * @param output array to accept the output data values, dimensions to at
    * least nRows*nColumns
    */
-  public void decode(
+  void decode(
           int seed,
           int nRows,
           int nColumns,
@@ -87,7 +87,7 @@ public interface IPredictorCorrector {
    * @return if successful, the number of bytes in the output encoding;
    * otherwise, a value -1 to indicate an encoding failure.
    */
-  public int encode(
+  int encode(
           int nRows,
           int nColumns,
           int[] values,

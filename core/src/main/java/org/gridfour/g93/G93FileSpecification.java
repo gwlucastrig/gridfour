@@ -552,7 +552,6 @@ public class G93FileSpecification {
     cellSizeX = (x1 - x0) / nColsInRaster;
     cellSizeY = (y1 - y0) / nRowsInRaster;
 
-    long diagnostic = braf.getFilePosition();
     int nCompressionSpecifications = braf.leReadInt();
     if (nCompressionSpecifications > 0) {
       this.dataCompressionEnabled = true;
@@ -916,7 +915,7 @@ public class G93FileSpecification {
    * identifier strings, 16 character maximum.
    * @param codec a valid class reference.
    */
-  public void addCompressionCodec(String codecID, Class<?> codec) {
+    public final void addCompressionCodec(String codecID, Class<?> codec) {
     if (rasterCodecMap.size() >= 255) {
       throw new IllegalArgumentException(
               "Maximum number of compression codecs (255) exceeded");

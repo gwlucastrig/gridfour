@@ -48,7 +48,6 @@ package org.gridfour.g93;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -78,25 +77,23 @@ class FileBasedTileStore {
   private static final int MIN_FREE_BLOCK_SIZE = 1024;
 
   private final G93FileSpecification spec;
-  private final RasterCodec rasterCodec;
+  private final CodecWrapper rasterCodec;
   private final BufferedRandomAccessFile braf;
   private final long basePosition;
   private final int[] tilePositions;
   private final int standardTileSizeInBytes;
-  private final int paddedStandardSize;
 
   private FreeNode freeList;
-  private int nFreeNodes;
 
   int nTileReads;
   int nTileWrites;
  
   LinkedHashMap<VariableLengthRecord, VariableLengthRecord>vlrRecordMap 
-          = new LinkedHashMap();
+          = new LinkedHashMap<>();
 
   FileBasedTileStore(
           G93FileSpecification spec,
-          RasterCodec rasterCodec,
+          CodecWrapper rasterCodec,
           BufferedRandomAccessFile braf,
           long filePosTileStore)
   {
@@ -107,7 +104,6 @@ class FileBasedTileStore {
     int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
     tilePositions = new int[nTiles];
     standardTileSizeInBytes = spec.getStandardTileSizeInBytes();
-    paddedStandardSize = multipleOf8(standardTileSizeInBytes);
   }
 
   /**
@@ -161,12 +157,11 @@ class FileBasedTileStore {
     }
 
     if (node == null) {
-      // didn't find a useable block if file space, extend the file
+      // didn't find a useable block of file space, extend the file
       return braf.getFileSize();
     }
 
     // Remove the node from the free list
-    nFreeNodes--;
     if (prior == null) {
       freeList = node.next;
     } else {
@@ -181,7 +176,7 @@ class FileBasedTileStore {
     // is sufficiently smaller than the available space, we should be
     // able to split it.  If we don't have sufficient surplus, we
     // will record the block on disk to be the size of the original
-    // storage, not the size if the packing?
+    // storage, not the size of the packing.
     braf.seek(node.filePos);
     int foundSize = braf.leReadInt();
     assert foundSize < 0 : "alloc found positive block size in file";
@@ -189,7 +184,6 @@ class FileBasedTileStore {
     assert foundSize >= sizeToStore : "alloc found insufficient block size";
     int surplus = foundSize - sizeToStore;
     if (surplus > 0) {
-      nFreeNodes++;
       long surplusPos = node.filePos + sizeToStore;
       FreeNode surplusNode = new FreeNode(surplusPos, surplus);
       braf.seek(surplusPos);
@@ -253,7 +247,6 @@ class FileBasedTileStore {
            prior.blockSize += next.blockSize;
            prior.next = next.next;
            next.next = null;
-           nFreeNodes--;
          } 
          braf.seek(prior.filePos);
          braf.leWriteInt(-prior.blockSize);
@@ -276,7 +269,7 @@ class FileBasedTileStore {
       }
     }
     
-    // if we go here, no mergers were accomplished.  insert a new
+    // if we got here, no mergers were accomplished.  insert a new
     // node into the list
     
     FreeNode node = new FreeNode(releasePos, releaseSize);
@@ -286,7 +279,6 @@ class FileBasedTileStore {
       prior.next = node;
     }
     node.next = next;
-    nFreeNodes++;
   }
   
  
@@ -304,30 +296,36 @@ class FileBasedTileStore {
     nTileWrites++;
     
     long initialFilePos = getTilePosition(tileIndex);
+    assert initialFilePos>=0 : "Invalid file position";
  
     if (spec.isDataCompressionEnabled()) {
+      // whether the compression succeeds or not, it is likely that the
+      // size of the compressed block will change.  So we deallocate the
+      // current file storage immediately.  I chose to do this right away
+      // because it simplifies the code and help ensures a correct implementaiton.
+      // I could have delayed this action until I was absolutely sure, but
+      // the probability of saving some file I/O operations was small
+      // and not worth the extra code complexity.
+      if (initialFilePos > 0) {
+        fileSpaceDealloc(initialFilePos);
+        initialFilePos = 0;
+      }
       byte [] packing= tile.getCompressedPacking(rasterCodec);
       if (packing != null) {
         // The compression was successful.  Usually, it will be much smaller
         // than the native form of the data, though if the data is noisy,
         // it is possible that the post-compression form might even be larger
         // than the source.  we will store the data in compression
-        // form only if it is UNAMBIGOUSLY smaller.  By "unambiguous", we
-        // mean that it's sufficiently smaller than the raw form that the
-        // code that reads a tile from the file can determine whether
-        // the tile is compressed based on the record size.  
-        // a difference of 8 bytes would be sufficient, but we use 16.
+        // form only if it is smaller than the uncompressed version.
         // FUTURE STUDY:
         //        since decompressing data adds overhead on the read side,
         //        performance might be better served by not saving the
         //        compressed format unless it saves some substantial
-        //        portion of the storage space.  25 percent?
+        //        portion of the storage space.  25 percent? 10 percent? 5?
+        //        should this decision be a file-creation specification?
         int packingSize = packing.length;
         int testSize = multipleOf8(RECORD_HEADER_SIZE + packingSize);
-        if (testSize < sizeToStore - 16) {
-          if(initialFilePos>0){
-              fileSpaceDealloc(initialFilePos);
-          }
+        if (testSize < sizeToStore) {
           posToStore = fileSpaceAlloc(testSize);
           setTilePosition(tileIndex, posToStore);
           braf.seek(posToStore);
@@ -404,6 +402,7 @@ class FileBasedTileStore {
 
   void scanFileForTiles() throws IOException {
     freeList = null;  // for diagnostic use
+    FreeNode freeListEnd = null;
     int maxTileIndex = spec.nRowsOfTiles * spec.nColsOfTiles;
     long fileSize = braf.getFileSize();
     long filePos = basePosition;
@@ -414,10 +413,18 @@ class FileBasedTileStore {
         break;
       }
       if (recordSize < 0) {
+        // add the block of file space to the free list.
+        // the free list is ordered by file position, so the new node
+        // goes on the end of the list.
         recordSize = -recordSize;
         FreeNode node = new FreeNode(filePos, recordSize);
-        node.next = freeList;
-        freeList = node;
+        if(freeListEnd==null){
+          freeList = node;
+          freeListEnd = node;
+        }else{
+          freeListEnd.next = node;
+          freeListEnd = node; 
+        }
       } else {
         int tileIndex = braf.leReadInt();
         if (tileIndex < 0) {
@@ -450,33 +457,17 @@ class FileBasedTileStore {
    */
   void writeTilePositionsToIndexFile(
           BufferedRandomAccessFile indexRaf) throws IOException {
-    int nTiles = 0;
-    for (int i = 0; i < tilePositions.length; i++) {
-      if (tilePositions[i] > 0) {
-        nTiles++;
-      }
-    }
+
     indexRaf.writeBoolean(spec.isExtendedFileSizeEnabled);
     indexRaf.writeByte(0); // reserved
     indexRaf.writeByte(0); // reserved
     indexRaf.writeByte(0);// reserved
     indexRaf.leWriteInt(spec.nRowsOfTiles);
     indexRaf.leWriteInt(spec.nColsOfTiles);
-    indexRaf.leWriteInt(nTiles);
-    if (nTiles == tilePositions.length) {
-      for (int i = 0; i < tilePositions.length; i++) {
-        if (tilePositions[i] > 0) {
-          indexRaf.leWriteInt(tilePositions[i]);
-        }
-      }
-    } else {
-      for (int i = 0; i < tilePositions.length; i++) {
-        if (tilePositions[i] > 0) {
-          indexRaf.leWriteInt(i);
-          indexRaf.leWriteInt(tilePositions[i]);
-        }
-      }
+    for (int i = 0; i < tilePositions.length; i++) {
+      indexRaf.leWriteInt(tilePositions[i]);
     }
+
 
     indexRaf.flush();
     int nFreeNodes = 0;
@@ -521,24 +512,14 @@ class FileBasedTileStore {
     idxraf.skipBytes(3);
     int nRowsOfTiles = idxraf.leReadInt();
     int nColsOfTiles = idxraf.leReadInt();
-    int nTiles = idxraf.leReadInt();
-    int nTilesMax = nRowsOfTiles * nColsOfTiles;
-
-    if (nTiles == nTilesMax) {
-      for (int i = 0; i < nTiles; i++) {
+    int nTilesInTable = nRowsOfTiles*nColsOfTiles;
+    if(nTilesInTable!=tilePositions.length){
+      throw new IOException("G93 file and index file do not match");
+    }
+      for (int i = 0; i < nTilesInTable; i++) {
         tilePositions[i] = idxraf.leReadInt();
       }
-    } else {
-      for (int i = 0; i < nTiles; i++) {
-        int index = idxraf.leReadInt();
-        if (index < 0 || index >= tilePositions.length) {
-          Arrays.fill(tilePositions, 0);
-          throw new IOException("Invalid tile reference in index file " + index);
-        }
-        tilePositions[index] = idxraf.leReadInt();
-      }
-    }
-
+    
     if (idxraf.getFilePosition() == idxraf.getFileSize()) {
       return;
     }
@@ -668,6 +649,7 @@ class FileBasedTileStore {
     }
 
     for (int tileIndex = 0; tileIndex < tilePositions.length; tileIndex++) {
+
       long filePos = getTilePosition(tileIndex);
       if (filePos == 0) {
         continue;
@@ -678,6 +660,9 @@ class FileBasedTileStore {
       int tileIndexFromFile = braf.leReadInt();
       assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
       int compressionFlag = braf.leReadInt() & 0xff;  // 1 byte and 3 spares
+      if(recordSize<0){
+        System.out.println("Diagnostic");
+      }
 
       if (compressionFlag!=0) {
         // it's compressed

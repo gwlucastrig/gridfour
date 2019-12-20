@@ -44,13 +44,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Performs coding and decoding of g93 data
  */
-class RasterCodec {
+class CodecWrapper {
 
   int seed;
 
@@ -58,7 +56,7 @@ class RasterCodec {
  
  
  
-  RasterCodec() {
+  CodecWrapper() {
     codecs.add(new CodecHuffman());
     codecs.add(new CodecDeflate());
   }
@@ -66,9 +64,9 @@ class RasterCodec {
   void setCodecs(List<G93SpecificationForCodec>csList) throws IOException {
     codecs.clear();
     for(G93SpecificationForCodec csSpec: csList){
-      Class c = csSpec.getCodec();
+      Class<?> c = csSpec.getCodec();
       try {
-        Constructor constructor = c.getConstructor();
+        Constructor<?> constructor = c.getConstructor();
         Object obj = constructor.newInstance();
         codecs.add((IG93CompressorCodec)obj);
       } catch (NoSuchMethodException ex) {

@@ -37,7 +37,8 @@
 package org.gridfour.g93;
 
 /**
- * Used to represent the codecs that are defined for G93 by default.
+ * Used to represent the coder-decoders (codecs) that are defined for G93.
+ * Others may be added by application code.
  */
 public enum RasterCodecType {
   /**
