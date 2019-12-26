@@ -182,15 +182,14 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
       } else {
         buffer.compact();
         // we have a partial in the buffer... so we need
-        // to advance the rafPosition ahead so that we don't re-read
+        // to advance the virtual position ahead so that we don't re-read
         // what we've already pulled in.
         virtualPosition += remaining;
         nBytes -= remaining;
       }
 
     } else if (writeDataIsInBuffer) {
-      flushWrite();
-      truePosition = -1;  // -1 means unknown
+      flushWrite();  // flushWrite sets truePosition = -1, which means "unknown"
       // flushWrite clears the buffer and sets readDataIsInBuffer=false
     } else {
       // neither readDataIsInBuffer nor writeDataIsInBuffer was set.
@@ -206,10 +205,10 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
 
     if (virtualPosition != truePosition) {
-      //rafChannel.position(virtualPosition);
+      rafChannel.position(virtualPosition);
       truePosition = virtualPosition;
     }
-    rafChannel.position(virtualPosition);
+
     int nBytesRead = rafChannel.read(buffer);
     if (nBytesRead < 0) {
       throw new EOFException();
@@ -670,31 +669,6 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Attempts to skip over n bytes.
-   *
-   * @param n the number of bytes to skip
-   * @return the actual number of bytes skipped.
-   * @throws IOException if an I/O error occurs.
-   */
-  public int skipBytes(int n) throws IOException {
-    if (writeDataIsInBuffer) {
-      flushWrite();
-    }
-    virtualPosition += n;
-    if (readDataIsInBuffer) {
-      int remaining = buffer.remaining();
-      if (n < remaining) {
-        int position = buffer.position();
-        buffer.position(position + n);
-      } else {
-        buffer.clear();
-        readDataIsInBuffer = false;
-      }
-    }
-    return n;
-  }
-
-  /**
    * Reads the specified number of bytes from the source file treating them as
    * ASCII characters and appending them to a string builder. If a zero byte is
    * detected, it is treated as a null terminator and the additional bytes will
@@ -766,8 +740,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   public void seek(long position) throws IOException {
     if (writeDataIsInBuffer) {
       flushWrite();
-    }
-    if (readDataIsInBuffer) {
+    } else if (readDataIsInBuffer) {
       int bufferPosition = buffer.position();
       int bufferRemaining = buffer.remaining();
       long pos0 = virtualPosition - bufferPosition;
@@ -783,6 +756,29 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     readDataIsInBuffer = false;
     buffer.clear();
     virtualPosition = position;
+    truePosition = position;
+    rafChannel.position(position);
+  }
+
+  /**
+   * Attempts to skip over n bytes.
+   *
+   * @param n the number of bytes to skip
+   * @return the actual number of bytes skipped.
+   * @throws IOException if an I/O error occurs.
+   */
+  public int skipBytes(int n) throws IOException {
+    // handle the most straightforward case directly,
+    // otherwise, fall through to seek().
+    if (readDataIsInBuffer && buffer.remaining() > n) {
+      int position = buffer.position();
+      buffer.position(position + n);
+      virtualPosition += n;
+      return n;
+    } else {
+      seek(virtualPosition + n);
+    }
+    return n;
   }
 
   public void writeUnsignedByte(int value) throws IOException {
@@ -946,7 +942,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
     ps.format("Virtual Length:      %12d%n", virtualLength);
     ps.format("Virtual Position:    %12d%n", virtualPosition);
-    ps.format("Tracking Position:   %12d%n", truePosition);
+    ps.format("RAF Channel Position:%12d%n", truePosition);
     ps.format("Actual Position:     %12d%n", position);
     ps.format("Actual Length:       %12d%n", length);
     ps.format("Buffer position:     %12d%n", buffer.position());
