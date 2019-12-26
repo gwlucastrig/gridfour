@@ -244,7 +244,7 @@ public class VariableLengthRecord {
       return "";
     }
     byte [] p = readPayload();
-    return new String(p, "UTF8");
+    return new String(p, "UTF-8");
   }
   
   /**

@@ -53,7 +53,7 @@ class RasterTileCache {
   int nTilesInCache;
   RasterTile firstTile;
   RasterTile lastTile;
-  final FileBasedTileStore tileStore;
+  final G93TileStore tileStore;
   final G93FileSpecification spec;
 
   HashMap<Integer, RasterTile> tileMap = new HashMap<>();
@@ -68,7 +68,7 @@ class RasterTileCache {
   private long nTileFirst;
  
 
-  RasterTileCache(G93FileSpecification spec, FileBasedTileStore tileStore) {
+  RasterTileCache(G93FileSpecification spec, G93TileStore tileStore) {
     tileCacheSize = DEFAULT_TILE_CACHE_SIZE;
     this.tileStore = tileStore;
     this.spec = spec;

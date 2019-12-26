@@ -127,7 +127,7 @@ class RasterTileFloat extends RasterTile {
   }
 
   @Override
-  void readCompressedFormat(CodecWrapper codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException {
+  void readCompressedFormat(CodecMaster codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException {
     byte[] packing = new byte[payloadSize];
     for (int iRank = 0; iRank < rank; iRank++) {
       braf.readFully(packing, 0, 4);

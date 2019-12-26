@@ -184,8 +184,8 @@ public class G93FileSpecification {
           int nColumnsInRaster,
           int nRowsInTile,
           int nColumnsInTile) {
-    rasterCodecMap.put(RasterCodecType.G93_Huffman.toString(), CodecHuffman.class);
-    rasterCodecMap.put(RasterCodecType.G93_Deflate.toString(), CodecDeflate.class);
+    rasterCodecMap.put(CodecType.G93_Huffman.toString(), CodecHuffman.class);
+    rasterCodecMap.put(CodecType.G93_Deflate.toString(), CodecDeflate.class);
 
     uuid = UUID.randomUUID();
     timeCreated = System.currentTimeMillis();

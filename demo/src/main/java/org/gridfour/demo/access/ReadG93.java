@@ -61,7 +61,7 @@ public class ReadG93 {
     }
     File file = new File(args[0]);
     System.out.println("Reading file " + file.getPath());
-    boolean oneTestPerTile = (args.length>1);
+    boolean oneTestPerTile = args.length>1;
 
     // Open the file.  The time required to open the file depends, in part,
     // on whether a supplemental index file (.g93) is available.  To test the

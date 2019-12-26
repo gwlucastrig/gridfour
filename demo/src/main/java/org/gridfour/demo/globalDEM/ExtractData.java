@@ -235,7 +235,7 @@ public class ExtractData {
     for (int iRow = 0; iRow < nRows; iRow++) {
       int imageRow = imageHeight - 1 - iRow / pixelScale;
       double areaOfCellsInRow = coords.getAreaOfEachCellInRow(iRow);
-      if ((iRow % 1000) == 0) {
+      if (iRow % 1000 == 0) {
         System.out.println("Processing row " + iRow);
       }
       int row0 = iRow;

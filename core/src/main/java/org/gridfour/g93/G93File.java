@@ -63,7 +63,7 @@ public class G93File implements Closeable, AutoCloseable {
 
   private final File file;
   private final G93FileSpecification spec;
-  private final CodecWrapper rasterCodec;
+  private final CodecMaster rasterCodec;
   private final BufferedRandomAccessFile braf;
   private boolean isClosed;
   private boolean openedForWriting;
@@ -72,7 +72,7 @@ public class G93File implements Closeable, AutoCloseable {
 
   private long filePosTileStore;
 
-  private final FileBasedTileStore tileStore;
+  private final G93TileStore tileStore;
   private final RasterTileCache tileCache;
 
   private class TileAccessElements {
@@ -118,10 +118,9 @@ public class G93File implements Closeable, AutoCloseable {
     if (specification == null) {
       throw new IOException("Null specificaiton not supported");
     }
-    if (file.exists()) {
-      if (!file.delete()) {
-        throw new IOException("Unable to delete existing file: " + file.getPath());
-      }
+    if (file.exists() && !file.delete()) {
+        throw new IOException(
+                "Unable to delete existing file: " + file.getPath());
     }
     if (specification.isExtendedFileSizeEnabled) {
       throw new IOException(
@@ -132,7 +131,7 @@ public class G93File implements Closeable, AutoCloseable {
     this.openedForWriting = true;
     this.file = file;
     this.spec = new G93FileSpecification(specification);
-    this.rasterCodec = new CodecWrapper();
+    this.rasterCodec = new CodecMaster();
     braf = new BufferedRandomAccessFile(file, "rw");
 
     timeModified = System.currentTimeMillis();
@@ -166,7 +165,7 @@ public class G93File implements Closeable, AutoCloseable {
     braf.leWriteLong(filePosTileStore);
     braf.flush();
 
-    tileStore = new FileBasedTileStore(spec, rasterCodec, braf, filePosTileStore);
+    tileStore = new G93TileStore(spec, rasterCodec, braf, filePosTileStore);
     tileCache = new RasterTileCache(spec, tileStore);
 
     List<G93SpecificationForCodec> csList = spec.getCompressionCodecs();
@@ -246,7 +245,7 @@ public class G93File implements Closeable, AutoCloseable {
               + " feature not implemented");
     }
 
-    rasterCodec = new CodecWrapper();
+    rasterCodec = new CodecMaster();
 
     if (access.contains("w")) {
       braf.seek(FILEPOS_OPEN_FOR_WRITING_TIME);
@@ -255,7 +254,7 @@ public class G93File implements Closeable, AutoCloseable {
       openedForWriting = true;
     }
 
-    tileStore = new FileBasedTileStore(spec, rasterCodec, braf, filePosTileStore);
+    tileStore = new G93TileStore(spec, rasterCodec, braf, filePosTileStore);
     if (!readIndexFile(timeModified)) {
       tileStore.scanFileForTiles();
     }
@@ -627,13 +626,13 @@ public class G93File implements Closeable, AutoCloseable {
   private void writeIndexFile(long closingTime) throws IOException {
     File indexFile = getIndexFile();
     if (indexFile == null) {
-      throw new IOException("Unable to resolve index name for " + file.getPath());
+      throw new IOException(
+              "Unable to resolve index name for " + file.getPath());
     }
 
-    if (indexFile.exists()) {
-      if (!indexFile.delete()) {
-        throw new IOException("Unable to delete old index file " + file.getPath());
-      }
+    if (indexFile.exists() && !indexFile.delete()) {
+        throw new IOException(
+                "Unable to delete old index file " + file.getPath());
     }
 
     BufferedRandomAccessFile idxraf
@@ -906,7 +905,7 @@ public class G93File implements Closeable, AutoCloseable {
               "Attempt to store text VLR with null or empty payload");
     }
     
-    byte [] payload = text.getBytes("UTF8");
+    byte [] payload = text.getBytes("UTF-8");
     storeVariableLengthRecord(
             userID,
             recordID,

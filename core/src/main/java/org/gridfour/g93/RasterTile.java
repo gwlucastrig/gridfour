@@ -95,7 +95,7 @@ abstract class RasterTile {
 
   }
   
-  byte[] getCompressedPacking(CodecWrapper codec) throws IOException {
+  byte[] getCompressedPacking(CodecMaster codec) throws IOException {
     // recall that compression is only defined for integers.
     // compress each element of the tile data and collect
     // the packings.  If successful, concatentate them into
@@ -139,7 +139,7 @@ abstract class RasterTile {
 
   abstract void readStandardFormat(BufferedRandomAccessFile braf) throws IOException;
 
-  abstract void readCompressedFormat(CodecWrapper codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException;
+  abstract void readCompressedFormat(CodecMaster codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException;
 
   
 

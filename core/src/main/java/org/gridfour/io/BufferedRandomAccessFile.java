@@ -43,6 +43,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -80,7 +81,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * the length of the virtual file; may be longer than actual file length if
    * write buffer is not yet written
    */
-  long rafLength;
+  long virtualLength;
   /**
    * the position in the virtual file (not in the actual file)
    */
@@ -98,7 +99,6 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   private BufferedRandomAccessFile() {
     file = null;
   }
-
 
   /**
    * Opens the specified file for read or write access using the specified
@@ -151,7 +151,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
     raf = new RandomAccessFile(file, mode);
     rafChannel = raf.getChannel();
-    rafLength = raf.length();
+    virtualLength = raf.length();
     virtualPosition = 0;
     raf.seek(0);
     truePosition = 0;
@@ -159,7 +159,6 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     writeDataIsInBuffer = false;
   }
 
-  
   private void prepRead(int nBytesToRead) throws IOException {
     int nBytes = nBytesToRead;
 
@@ -167,6 +166,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     // For this to work, it is imperative that when writeDataIsInBuffer
     // is true, readDataInBuffer must be false.   Also, if the file has
     // been closed, both flags must be false.
+    assert !readDataIsInBuffer || !writeDataIsInBuffer : "Read/Write conflict";
     if (readDataIsInBuffer) {
       //sufficient read data is already in the buffer 
       int remaining = buffer.remaining();
@@ -201,14 +201,15 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
 
     // perform a read operation -------------------------------
-    if (virtualPosition >= rafLength) {
+    if (virtualPosition >= virtualLength) {
       throw new EOFException();
     }
 
     if (virtualPosition != truePosition) {
-      rafChannel.position(virtualPosition);
+      //rafChannel.position(virtualPosition);
       truePosition = virtualPosition;
     }
+    rafChannel.position(virtualPosition);
     int nBytesRead = rafChannel.read(buffer);
     if (nBytesRead < 0) {
       throw new EOFException();
@@ -230,6 +231,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   }
 
   private void prepWrite(int nBytesToWrite) throws IOException {
+    assert !readDataIsInBuffer || !writeDataIsInBuffer : "Write/Read conflict";
     if (raf == null) {
       throw new IOException("Writing to a file that was closed");
     }
@@ -247,8 +249,8 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
     writeDataIsInBuffer = true;
     virtualPosition += nBytesToWrite;
-    if (virtualPosition > rafLength) {
-      rafLength = virtualPosition;
+    if (virtualPosition > virtualLength) {
+      virtualLength = virtualPosition;
     }
   }
 
@@ -269,11 +271,13 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
 
   /**
    * Indicates whether the file is closed.
+   *
    * @return true if the file is closed; otherwise, true
    */
-  public boolean isClosed(){
-    return raf==null;
+  public boolean isClosed() {
+    return raf == null;
   }
+
   /**
    * Ensures that any pending output stored in the buffer is written to the
    * underlying random access file.
@@ -289,7 +293,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   }
 
   public long getFileSize() {
-    return rafLength;
+    return virtualLength;
   }
 
   public long getFilePosition() {
@@ -398,7 +402,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
 
     while (true) {
-      if (virtualPosition >= rafLength) {
+      if (virtualPosition >= virtualLength) {
         throw new EOFException();
       }
 
@@ -479,7 +483,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
 
     while (true) {
-      if (virtualPosition >= rafLength) {
+      if (virtualPosition >= virtualLength) {
         throw new EOFException();
       }
 
@@ -618,7 +622,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
 
     while (true) {
-      if (virtualPosition >= rafLength) {
+      if (virtualPosition >= virtualLength) {
         throw new EOFException();
       }
 
@@ -792,6 +796,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
 
   public void writeFully(byte[] array, int arrayOffset, int length)
           throws IOException {
+    assert !readDataIsInBuffer || !writeDataIsInBuffer : "Write/Read conflict";
     int offset = arrayOffset;
 
     if (length == 0) {
@@ -835,8 +840,8 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
       needed -= nCopy;
       offset += nCopy;
       virtualPosition += nCopy;
-      if (virtualPosition > rafLength) {
-        rafLength = virtualPosition;
+      if (virtualPosition > virtualLength) {
+        virtualLength = virtualPosition;
       }
     }
   }
@@ -906,16 +911,48 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Reads a 4-byte integer value in the big-endian order compatible with
-   * the Java DataInputStream class.
+   * Reads a 4-byte integer value in the big-endian order compatible with the
+   * Java DataInputStream class.
+   *
    * @return if successful, a valid integer value
    * @throws IOException in the event of an I/O error
    */
-    public int readInt() throws IOException {
-   this.prepRead(4);
-   buffer.order(ByteOrder.BIG_ENDIAN);
-   int test = buffer.getInt();
-   buffer.order(ByteOrder.LITTLE_ENDIAN);
-   return test;
+  public int readInt() throws IOException {
+    this.prepRead(4);
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    int test = buffer.getInt();
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+    return test;
   }
+
+  /**
+   * Prints current state data for file. Intended for debugging and development.
+   *
+   * @param ps a valid PrintStream for writing the output (may be
+   * System&#46;out).
+   */
+  public void printDiagnostics(PrintStream ps) {
+    long position = 0;
+    long length = 0;
+    if (raf == null) {
+      ps.println("File is closed");
+    } else {
+      try {
+        position = rafChannel.position();
+        length = raf.length();
+      } catch (IOException ioex) {
+        ps.println("I/O Exception accessing file " + ioex.getMessage());
+      }
+    }
+    ps.format("Virtual Length:      %12d%n", virtualLength);
+    ps.format("Virtual Position:    %12d%n", virtualPosition);
+    ps.format("Tracking Position:   %12d%n", truePosition);
+    ps.format("Actual Position:     %12d%n", position);
+    ps.format("Actual Length:       %12d%n", length);
+    ps.format("Buffer position:     %12d%n", buffer.position());
+    ps.format("Buffer remainder     %12d%n", buffer.remaining());
+    ps.format("Write data buffered: %12s%n", writeDataIsInBuffer ? "true" : "false");
+    ps.format("Read data buffered:  %12s%n", readDataIsInBuffer ? "true" : "false");
+  }
+
 }

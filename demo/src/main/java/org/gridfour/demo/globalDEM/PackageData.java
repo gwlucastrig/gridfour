@@ -118,7 +118,6 @@ public class PackageData {
     //  
     //    3.  Extract the data from its source and store in the G93 file.
     //
-    
     ps.format("%nG93 Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
@@ -220,7 +219,7 @@ public class PackageData {
       // Package the data
       long time0 = System.currentTimeMillis();
       for (int iRow = 0; iRow < nRows; iRow++) {
-        if ((iRow % 1000) == 999) {
+        if (iRow % 1000 == 999) {
           long time1 = System.currentTimeMillis();
           double deltaT = time1 - time0;
           double rate = (iRow + 1) / deltaT;  // rows per millis
@@ -261,7 +260,7 @@ public class PackageData {
       ps.format("Finished processing file in %4.1f seconds%n", timeToProcess);
       ps.format("Entropy for input data %4.1f bits/sample%n", stats.getEntropy());
       long outputSize = outputFile.length();
-      long nCells = (long)nRows * (long)nCols;
+      long nCells = (long) nRows * (long) nCols;
       double bitsPerSymbol = 8.0 * (double) outputSize / (double) nCells;
       ps.format("Storage used (including overhead) %4.2f bits/sample%n",
               bitsPerSymbol);
@@ -270,8 +269,6 @@ public class PackageData {
       g93.summarize(ps, true);
     }
 
-    
-    
     // If the calling application desires that we do so, verify the
     // newly created file by re-opening it and comparing its content
     // to those of the source data.
@@ -287,17 +284,17 @@ public class PackageData {
         ps.println("Opening complete in " + (time1 - time0) + " ms");
         g93.setTileCacheSize(G93CacheSize.Large);
         for (int iRow = 0; iRow < nRows; iRow++) {
-           if ((iRow % 10000) == 9999) {
-           time1 = System.currentTimeMillis();
-          double deltaT = time1 - time0;
-          double rate = (iRow + 1) / deltaT;  // rows per millis
-          int nRemaining = nRows - iRow;
-          long remainingT = (long) (nRemaining / rate);
-          Date d = new Date(time1 + remainingT);
-          ps.format("Completed %d rows, %4.1f%% of total, est completion at %s%n",
-                  iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
-          ps.flush();
-        }
+          if (iRow % 10000 == 9999) {
+            time1 = System.currentTimeMillis();
+            double deltaT = time1 - time0;
+            double rate = (iRow + 1) / deltaT;  // rows per millis
+            int nRemaining = nRows - iRow;
+            long remainingT = (long) (nRemaining / rate);
+            Date d = new Date(time1 + remainingT);
+            ps.format("Completed %d rows, %4.1f%% of total, est completion at %s%n",
+                    iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
+            ps.flush();
+          }
 
           int row0 = iRow;
           int col0 = 0;

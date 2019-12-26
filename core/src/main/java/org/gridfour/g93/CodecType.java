@@ -40,7 +40,7 @@ package org.gridfour.g93;
  * Used to represent the coder-decoders (codecs) that are defined for G93.
  * Others may be added by application code.
  */
-public enum RasterCodecType {
+public enum CodecType {
   /**
    * The Huffman encoding is used to compress data.
    */

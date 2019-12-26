@@ -48,7 +48,7 @@ import java.util.List;
 /**
  * Performs coding and decoding of g93 data
  */
-class CodecWrapper {
+class CodecMaster {
 
   int seed;
 
@@ -56,7 +56,7 @@ class CodecWrapper {
  
  
  
-  CodecWrapper() {
+  CodecMaster() {
     codecs.add(new CodecHuffman());
     codecs.add(new CodecDeflate());
   }
