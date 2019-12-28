@@ -1034,11 +1034,10 @@ public class G93File implements Closeable, AutoCloseable {
               int br = tr + gtRowOffset - gr0;
               int bc = tc0 + gtColOffset - gc0;
               int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
-              int tIndex = tr * spec.nColsInTile + tc0;
+              int tIndex = tr * spec.nColsInTile;
               for (int tc = tc0; tc <= tc1; tc++) {
-                block[bIndex] = v[tIndex];
+                block[bIndex] = v[tIndex+tc];
                 bIndex++;
-                tIndex++;
               }
             }
           }
@@ -1049,16 +1048,15 @@ public class G93File implements Closeable, AutoCloseable {
               int br = tr + gtRowOffset - gr0;
               int bc = tc0 + gtColOffset - gc0;
               int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
-              int tIndex = tr * spec.nColsInTile + tc0;
+              int tIndex = tr * spec.nColsInTile;
               for (int tc = tc0; tc <= tc1; tc++) {
-                int s = v[tIndex];
+                int s = v[tIndex+tc];
                 if (s == NULL_DATA_CODE) {
                   block[bIndex] = Float.NaN;
                 } else {
-                  block[bIndex] = v[tIndex] / tile.valueScale + tile.valueOffset;
+                  block[bIndex] = s / tile.valueScale + tile.valueOffset;
                 }
                 bIndex++;
-                tIndex++;
               }
             }
           }
