@@ -64,6 +64,14 @@ import java.nio.channels.FileChannel;
  * to operate over data given in big-endian order. Thus those methods in the
  * current implementation that operate on multi-byte data types (int, long,
  * short, float, double) all begin with the prefix "le" for "little endian".
+ * <p>
+ * <strong>Note:</strong> At the present time, this implementation does not
+ * support operations that seek to positions past the length of the file.
+ * That is, of the length of the file is n, the seek(n) is supported but
+ * seek(n+1) is not. Thus, operations that would create files with "unwritten"
+ * or "unpopulated" blocks of disk space are not supported.  Future development
+ * of this feature will depend on user interest and a clear definition of
+ * the appropriate behavior.
  *
  */
 public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
@@ -804,7 +812,8 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
 
     if (array.length < offset + length) {
-      throw new IllegalArgumentException("Input array is too small");
+      throw new IllegalArgumentException(
+              "Input array is smaller than required by specified parameters");
     }
 
     if (raf == null) {

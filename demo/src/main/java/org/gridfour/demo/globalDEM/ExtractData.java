@@ -46,6 +46,7 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import ucar.ma2.Array;
 import ucar.ma2.InvalidRangeException;
+import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
@@ -107,13 +108,23 @@ public class ExtractData {
     NetcdfFile ncfile = NetcdfFile.open(inputPath);
 
     // Inspect the content of the file ----------------------------
+    // Start with the high-level metadata elements that describe the
+    // entire file
+    ps.println("NetCDF File Type: " + ncfile.getFileTypeDescription());
+    ps.println("");
+    ps.println("Global attributes attached to file---------------------------");
+    List<Attribute> attributes = ncfile.getGlobalAttributes();
+    for (Attribute a : attributes) {
+      ps.println(a.toString());
+    }
+
     // The content of NetCDF files is accessed through the use of the
     // NetCDF class named Variable. Get all Variables defined in the
     // current file and print a summary of their metadata to the text output.
     // The Java NetCDF team implemented good "toString()" methods
     // for the variable class.  So printing their metadata is quite easy.
     ps.println("");
-    ps.println("Variables found in file:");
+    ps.println("Variables found in file--------------------------------------");
     List<Variable> variables = ncfile.getVariables();
     for (Variable v : variables) {
       ps.println("\n" + v.toString());
@@ -133,12 +144,14 @@ public class ExtractData {
     Variable z;     // the variable that carries elevation and bathymetry
     String label;   // will be set to either "ETOPO1" or "GEBCO"
     float[][] palette;
+    int reportingCount;
     if (product.startsWith("ETOP")) {
       label = "ETOPO1";
       lat = ncfile.findVariable("y");
       lon = ncfile.findVariable("x");
       z = ncfile.findVariable("z");
       palette = ExamplePalettes.paletteETOPO1;
+      reportingCount = 1000;
     } else {
       // the product is GEBCO
       label = "GEBCO";
@@ -146,6 +159,7 @@ public class ExtractData {
       lon = ncfile.findVariable("lon");
       z = ncfile.findVariable("elevation");
       palette = ExamplePalettes.paletteGEBCO;
+      reportingCount = 10000;
     }
 
     // using the variables from above, extract coordinate system
@@ -235,7 +249,7 @@ public class ExtractData {
     for (int iRow = 0; iRow < nRows; iRow++) {
       int imageRow = imageHeight - 1 - iRow / pixelScale;
       double areaOfCellsInRow = coords.getAreaOfEachCellInRow(iRow);
-      if (iRow % 1000 == 0) {
+      if (iRow % reportingCount == 0) {
         System.out.println("Processing row " + iRow);
       }
       int row0 = iRow;

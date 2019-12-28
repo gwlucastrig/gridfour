@@ -80,6 +80,8 @@ public class G93File implements Closeable, AutoCloseable {
     int tileIndex;
     int rowInTile;
     int colInTile;
+    int tileRow;
+    int tileCol;
 
     void computeElements(int row, int col) throws IOException {
       if (row < 0 || row >= spec.nRowsInRaster) {
@@ -89,8 +91,8 @@ public class G93File implements Closeable, AutoCloseable {
         throw new IOException("Row out of bounds " + row);
       }
 
-      int tileRow = row / spec.nRowsInTile;
-      int tileCol = col / spec.nColsInTile;
+      tileRow = row / spec.nRowsInTile;
+      tileCol = col / spec.nColsInTile;
       tileIndex = tileRow * spec.nColsOfTiles + tileCol;
       rowInTile = row - tileRow * spec.nRowsInTile;
       colInTile = col - tileCol * spec.nColsInTile;
@@ -119,8 +121,8 @@ public class G93File implements Closeable, AutoCloseable {
       throw new IOException("Null specificaiton not supported");
     }
     if (file.exists() && !file.delete()) {
-        throw new IOException(
-                "Unable to delete existing file: " + file.getPath());
+      throw new IOException(
+              "Unable to delete existing file: " + file.getPath());
     }
     if (specification.isExtendedFileSizeEnabled) {
       throw new IOException(
@@ -179,7 +181,7 @@ public class G93File implements Closeable, AutoCloseable {
                 .append(csClass.getCanonicalName()).append('\n');
       }
       String scratch = sb.toString();
- 
+
       storeVariableLengthRecord(
               "G93_Java_Codecs",
               0,
@@ -306,9 +308,10 @@ public class G93File implements Closeable, AutoCloseable {
   }
 
   /**
-   * Closes the file and releases all associated resources.
-   * If the file is open for writing, any data in the internal buffers
-   * will be written to the file before it is closed.
+   * Closes the file and releases all associated resources. If the file is open
+   * for writing, any data in the internal buffers will be written to the file
+   * before it is closed.
+   *
    * @throws IOException in the event of an I/O error.
    */
   @Override
@@ -362,7 +365,7 @@ public class G93File implements Closeable, AutoCloseable {
       try {
         tileStore.analyzeAndReport(ps);
       } catch (IOException ioex) {
-         ps.format("IOException encountered during analysis: "+ioex.getMessage());
+        ps.format("IOException encountered during analysis: " + ioex.getMessage());
       }
     }
   }
@@ -631,8 +634,8 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     if (indexFile.exists() && !indexFile.delete()) {
-        throw new IOException(
-                "Unable to delete old index file " + file.getPath());
+      throw new IOException(
+              "Unable to delete old index file " + file.getPath());
     }
 
     BufferedRandomAccessFile idxraf
@@ -812,13 +815,13 @@ public class G93File implements Closeable, AutoCloseable {
   /**
    * Adds a variable-length record (VLR) to the file. Variable-length records
    * are used to store application-defined metadata that is outside the scope of
-   * the G93File format specification. 
+   * the G93File format specification.
    * <p>
-   * The structure for VLRs is modeled on the
-   * VLR specification used for the Lidar LAS file specification promulgated by
-   * the American Society for Photogrammetry and Remote Sensing (ASPRS). VLRs
-   * may be used to store data extracted from LAS files when building Digital
-   * Elevation Models (DEMs) from Lidar.
+   * The structure for VLRs is modeled on the VLR specification used for the
+   * Lidar LAS file specification promulgated by the American Society for
+   * Photogrammetry and Remote Sensing (ASPRS). VLRs may be used to store data
+   * extracted from LAS files when building Digital Elevation Models (DEMs) from
+   * Lidar.
    *
    * @param userID an application-defined user ID string, an application-defined
    * ID, up to 16 ASCII characters in length
@@ -832,7 +835,6 @@ public class G93File implements Closeable, AutoCloseable {
    * @param isPayloadText true if the payload is text data; otherwise false.
    * @throws java.io.IOException in the event of an I/O error
    */
-
   public void storeVariableLengthRecord(
           String userID,
           int recordID,
@@ -861,60 +863,56 @@ public class G93File implements Closeable, AutoCloseable {
     braf.leWriteInt(payloadSize);
     braf.writeASCII(description, VariableLengthRecord.DESCRIPTION_SIZE);
     braf.writeBoolean(isPayloadText);
-    byte []spare = new byte[7];
+    byte[] spare = new byte[7];
     braf.writeFully(spare);
     if (payloadSize > 0) {
       braf.writeFully(payload, offset, payloadSize);
     }
 
     VariableLengthRecord vlr = new VariableLengthRecord(
-            braf, 
-            filePos, 
+            braf,
+            filePos,
             userID,
-            recordID, 
-            payloadSize, 
-            description, 
+            recordID,
+            payloadSize,
+            description,
             isPayloadText);
     tileStore.vlrRecordMap.put(vlr, vlr);
   }
 
-  
   /**
    * Adds a variable-length record (VLR) containt a text payload to the file.
-   * Variable-length records are used to store application-defined metadata
-   * that is outside the scope of the G93File format specification. 
+   * Variable-length records are used to store application-defined metadata that
+   * is outside the scope of the G93File format specification.
+   *
    * @param userID an application-defined user ID string, an application-defined
    * ID, up to 16 ASCII characters in length
    * @param recordID an application defined ID, in the range 0 to 65535
    * @param description an application-defined description, up to 32 ASCII
    * characters in length
-   * @param text a valid string giving the payload to be stored in the
-   * file.
+   * @param text a valid string giving the payload to be stored in the file.
    * @throws java.io.IOException in the event of an I/O error
    */
-
   public void storeVariableLengthRecord(
           String userID,
           int recordID,
           String description,
-         String text) throws IOException 
-  {
-   
-    if(text==null || text.isEmpty()){
+          String text) throws IOException {
+
+    if (text == null || text.isEmpty()) {
       throw new IOException(
               "Attempt to store text VLR with null or empty payload");
     }
-    
-    byte [] payload = text.getBytes("UTF-8");
+
+    byte[] payload = text.getBytes("UTF-8");
     storeVariableLengthRecord(
             userID,
             recordID,
             description,
-            payload, 0, payload.length, 
+            payload, 0, payload.length,
             true);
   }
-  
-  
+
   /**
    * Gets a list of variable length records stored in the file
    *
@@ -922,6 +920,164 @@ public class G93File implements Closeable, AutoCloseable {
    */
   public List<VariableLengthRecord> getVariableLengthRecords() {
     return tileStore.getVariableLengthRecords();
+  }
+
+  /**
+   * Reads a block (sub-grid) of values from the G93 file based on the grid row,
+   * column, and block-size specifications. If successful, the return value from
+   * this method is an array giving a sub-grid of values in row-major order. If
+   * the source file has a rank greater than 1, than the sub-grids for each
+   * layer are given one at a time. Thus, the index into the array for a
+   * particular row, column, and layer within the sub-grid would be
+   * <p>
+   * index = row*nColumns + column + layer*nRows*nColumns
+   * <p>
+   * where rows, columns, and layers are all numbered starting at zero.
+   * <p>
+   * Accessing data in a block is often more efficient that accessing data
+   * one grid-value-at-a-time.
+   * 
+   * @param row the grid row index for the starting row of the block
+   * @param column the grid column index for the starting column of the block
+   * @param nRows the number of rows in the block to be retrieved
+   * @param nColumns the number of columns in the block to be retrievd
+   * @return if successful, a valid array of size nRow*nColumns*rank.
+   * @throws IOException in the event of an I/O error.
+   */
+  public float[] readBlock(int row, int column, int nRows, int nColumns)
+          throws IOException {
+    // The indexing used here is a little complicated. To keep it managable,
+    // this code adheres to a variable naming convention defined as follows:
+    //   variables starting with
+    //      t  means tile coordinates;  tr, tc are the row and column
+    //            within a tile.
+    //      b  block (result) coordinates; br, bc are the row and column
+    //            within the result block.
+    //      g  grid (main raster) coordinates; gr, gc  grid row and column
+    //    
+    //   tr will always be in the range 0 <= tr < spec.nRowsInTile
+    //   tc will always be in the range 0 <= tc < spec.nColsInTile.
+    //   tr0 is the first row of interest in the tile.
+    //   tr1 is the last row of interest in the tile.
+    //   similar for gr, gc and br, bc.
+    //       When the variable name is prefixed with a letter, it means that
+    //   it gives the equivalent position in the indicated system.
+    //   for example  gbr0  is the grid (g) coordinate for the first
+    //   row of interest in the result block, etc.  Note that the gtr0, gtr1,
+    //   etc. values change depending on which tile is currently being read
+    //   and it's relationship to the overall grid.
+    //       Special names are used for tileRow0, tileCol0, tileRow1, tileCol0
+    //   the are the row number and column numbers for the tiles.
+    //   For example to find the row of tiles associated with
+    //   a particular grid coordinate:  tileRow0 = gr0/spec.nRowsInTile, etc.
+
+    if (this.isClosed) {
+      throw new IOException("Raster file is closed");
+    }
+    if (nRows < 1 || nColumns < 1) {
+      throw new IOException(
+              "Invalid dimensions: nRows=" + nRows + ", nColumns=" + nColumns);
+    }
+    // bounds checking for resulting grid row and column computations
+    // are performed in the accessElements.computeElements() method
+    // which will throw an exception if bounds are violated.
+    int nValuesInSubBlock = nRows * nColumns;
+    float[] block = new float[nValuesInSubBlock * spec.rank];
+    int gr0 = row;
+    int gc0 = column;
+    int gr1 = row + nRows - 1;
+    int gc1 = column + nColumns - 1;
+    accessElements.computeElements(gr0, gc0);
+    int tileRow0 = accessElements.tileRow;
+    int tileCol0 = accessElements.tileCol;
+    accessElements.computeElements(gr1, gc1);
+    int tileRow1 = accessElements.tileRow;
+    int tileCol1 = accessElements.tileCol;
+
+    for (int tileRow = tileRow0; tileRow <= tileRow1; tileRow++) {
+      // find the tile row limits tr0 and tr1 for this row of tiles.
+      // because the tiles in this row may extend beyond the requested
+      // range of grid rows, we need to enforce limits.
+      int gtRowOffset = tileRow * spec.nRowsInTile;
+      int gtr0 = gtRowOffset;
+      int gtr1 = gtRowOffset + spec.nRowsInTile - 1;
+      // enforce limits
+      if (gtr0 < gr0) {
+        gtr0 = gr0;
+      }
+      if (gtr1 > gr1) {
+        gtr1 = gr1;
+      }
+      int tr0 = gtr0 - gtRowOffset; // must be in range 0 to spec.nRowsInTile.
+      int tr1 = gtr1 - gtRowOffset; //    ""        ""          ""
+      for (int tileCol = tileCol0; tileCol <= tileCol1; tileCol++) {
+
+        int gtColOffset = tileCol * spec.nColsInTile;
+        int gtc0 = gtColOffset;
+        int gtc1 = gtColOffset + spec.nColsInTile - 1;
+        // enforce limits
+        if (gtc0 < gc0) {
+          gtc0 = gc0;
+        }
+        if (gtc1 > gc1) {
+          gtc1 = gc1;
+        }
+        int tc0 = gtc0 - gtColOffset;
+        int tc1 = gtc1 - gtColOffset;
+
+        int tileIndex = tileRow * spec.nColsOfTiles + tileCol;
+        RasterTile tile = tileCache.getTile(tileIndex);
+        if (tile instanceof RasterTileFloat) {
+          for (int iRank = 0; iRank < spec.rank; iRank++) {
+            float[] v = ((RasterTileFloat) tile).valuesArray[iRank];
+            for (int tr = tr0; tr <= tr1; tr++) {
+              int br = tr + gtRowOffset - gr0;
+              int bc = tc0 + gtColOffset - gc0;
+              int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
+              int tIndex = tr * spec.nColsInTile + tc0;
+              for (int tc = tc0; tc <= tc1; tc++) {
+                block[bIndex] = v[tIndex];
+                bIndex++;
+                tIndex++;
+              }
+            }
+          }
+        } else if (tile instanceof RasterTileInt) {
+          for (int iRank = 0; iRank < spec.rank; iRank++) {
+            int[] v = ((RasterTileInt) tile).valuesArray[iRank];
+            for (int tr = tr0; tr <= tr1; tr++) {
+              int br = tr + gtRowOffset - gr0;
+              int bc = tc0 + gtColOffset - gc0;
+              int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
+              int tIndex = tr * spec.nColsInTile + tc0;
+              for (int tc = tc0; tc <= tc1; tc++) {
+                int s = v[tIndex];
+                if (s == NULL_DATA_CODE) {
+                  block[bIndex] = Float.NaN;
+                } else {
+                  block[bIndex] = v[tIndex] / tile.valueScale + tile.valueOffset;
+                }
+                bIndex++;
+                tIndex++;
+              }
+            }
+          }
+        } else {
+          for (int iRank = 0; iRank < spec.rank; iRank++) {
+            for (int tr = tr0; tr <= tr1; tr++) {
+              int br = tr + gtRowOffset - gr0;
+              int bc = tc0 + gtColOffset - gc0;
+              int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
+              for (int tc = tc0; tc <= tc1; tc++) {
+                block[bIndex] = Float.NaN;
+                bIndex++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return block;
   }
 
 }
