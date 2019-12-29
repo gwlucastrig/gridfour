@@ -171,6 +171,14 @@ public class CodecHuffman implements IG93CompressorCodec {
 
   @Override
   public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
+    if (codecStats == null) {
+      PredictorCorrectorType[] pcArray = PredictorCorrectorType.values();
+      codecStats = new CodecStats[pcArray.length];
+      for (int i = 0; i < pcArray.length; i++) {
+        codecStats[i] = new CodecStats(pcArray[i]);
+      }
+    }
+        
     int nM32 = (packing[6] & 0xff)
             | ((packing[7] & 0xff) << 8)
             | ((packing[8] & 0xff) << 16)
@@ -181,13 +189,7 @@ public class CodecHuffman implements IG93CompressorCodec {
     byte[] codeM32s = new byte[nM32];
     decoder.decode(inputStore, nM32, codeM32s);
 
-    if (codecStats == null) {
-      PredictorCorrectorType[] pcArray = PredictorCorrectorType.values();
-      codecStats = new CodecStats[pcArray.length];
-      for (int i = 0; i < pcArray.length; i++) {
-        codecStats[i] = new CodecStats(pcArray[i]);
-      }
-    }
+
 
     CodecStats stats = codecStats[packing[1] & 0xff];
     int nValues = nRows * nColumns;
@@ -201,6 +203,7 @@ public class CodecHuffman implements IG93CompressorCodec {
     ps.println("Codec G93_Huffman");
     if (codecStats == null || nTilesInRaster == 0) {
       ps.format("   Tiles Compressed:  0");
+      return;
     }
 
     ps.format("   Predictor                Times Used        bits/sym   entropy     avg bits in tree/tile%n");

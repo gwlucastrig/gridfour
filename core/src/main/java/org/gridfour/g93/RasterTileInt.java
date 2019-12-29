@@ -133,7 +133,7 @@ class RasterTileInt extends RasterTile {
       int n = (((((d << 8) | c) << 8) | b) << 8) | a;
       braf.readFully(packing, 0, n);
       int[] v = codec.decode(nRows, nCols, packing);
-      if(v==null){
+      if (v == null) {
         // oh snap.
         v = codec.decode(nRows, nCols, packing);
       }
@@ -141,23 +141,22 @@ class RasterTileInt extends RasterTile {
     }
   }
 
-
   @Override
   void setIntValue(int tileRow, int tileColumn, int value) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     values[index] = value;
     writingRequired = true;
   }
 
   @Override
   int getIntValue(int tileRow, int tileColumn) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     return values[index];
   }
 
   @Override
   void setValue(int tileRow, int tileColumn, float value) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     if (Float.isNaN(value)) {
       values[index] = NULL_DATA_CODE;
     } else {
@@ -168,7 +167,7 @@ class RasterTileInt extends RasterTile {
 
   @Override
   float getValue(int tileRow, int tileColumn) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     if (values[index] == NULL_DATA_CODE) {
       return Float.NaN;
     } else {
@@ -220,7 +219,7 @@ class RasterTileInt extends RasterTile {
 
   @Override
   void setValues(int tileRow, int tileColumn, float[] input) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     for (int iRank = 0; iRank < rank; iRank++) {
       if (Float.isNaN(input[iRank])) {
         valuesArray[iRank][index] = NULL_DATA_CODE;
@@ -233,7 +232,7 @@ class RasterTileInt extends RasterTile {
 
   @Override
   void getValues(int tileRow, int tileColumn, float[] output) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     for (int iRank = 0; iRank < rank; iRank++) {
       int v = valuesArray[iRank][index];
       if (v == NULL_DATA_CODE) {

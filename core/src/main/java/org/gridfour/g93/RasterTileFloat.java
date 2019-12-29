@@ -145,11 +145,10 @@ class RasterTileFloat extends RasterTile {
     }
 
   }
- 
 
   @Override
   void setIntValue(int tileRow, int tileColumn, int value) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     if (value == NULL_DATA_CODE) {
       values[index] = Float.NaN;
     } else {
@@ -160,7 +159,7 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   int getIntValue(int tileRow, int tileColumn) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     if (Float.isNaN(values[index])) {
       return NULL_DATA_CODE;
     }
@@ -169,14 +168,14 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   void setValue(int tileRow, int tileColumn, float value) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     values[index] = value;
     writingRequired = true;
   }
 
   @Override
   float getValue(int tileRow, int tileColumn) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     return values[index];
   }
 
@@ -238,7 +237,7 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   void setValues(int tileRow, int tileColumn, float[] input) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     for (int iRank = 0; iRank < rank; iRank++) {
       valuesArray[iRank][index] = input[iRank];
     }
@@ -247,7 +246,7 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   void getValues(int tileRow, int tileColumn, float[] output) {
-    int index = tileRow * nRows + tileColumn;
+    int index = tileRow * nCols + tileColumn;
     for (int iRank = 0; iRank < rank; iRank++) {
       output[iRank] = valuesArray[iRank][index];
     }

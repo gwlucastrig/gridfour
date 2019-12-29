@@ -152,10 +152,15 @@ public class PackageData {
     lat = ncfile.findVariable("lat");
     lon = ncfile.findVariable("lon");
     z = ncfile.findVariable("elevation");
+    int[] tileSize;
     if (lat == null) {
+      // ETOPO1 specification
+      tileSize = options.getTileSize(90, 120);
       lat = ncfile.findVariable("y");
       lon = ncfile.findVariable("x");
       z = ncfile.findVariable("z");
+    } else {
+      tileSize = options.getTileSize(90, 120);
     }
     if (lat == null || lon == null || z == null) {
       throw new IllegalArgumentException(
@@ -175,14 +180,16 @@ public class PackageData {
     int nCols = shape[1];
     ps.format("Rows:      %8d%n", nRows);
     ps.format("Columns:   %8d%n", nCols);
+    int nRowsInTile = tileSize[0];
+    int nColsInTile = tileSize[1];
 
     // Initialize the specification used to initialize the G93 file.
     float zScale = (float) options.getZScale();
     boolean compressionEnabled = options.isCompressionEnabled();
-    int[] tileSize = options.getTileSize(90, 90);
+    
 
     G93FileSpecification spec
-            = new G93FileSpecification(nRows, nCols, tileSize[0], tileSize[1]);
+            = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setDataCompressionEnabled(compressionEnabled);
     DataType zType = z.getDataType();
     if (zType.isIntegral()) {
