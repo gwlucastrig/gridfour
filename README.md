@@ -13,7 +13,7 @@ at analyzing and understanding data stored in raster form.
 Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
 undertaking aims to map 100 percent of the ocean floor by 2030.  To put that in perspective,
 the project organizers estimate that, today, only about 20 percent of the world's oceans are fully
-mapped &#38; [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;.  So there's a lot of work to be done
+mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;.  So there's a lot of work to be done
 in the next decade.
 
 Gridfour will probably _not_ be part of that effort. But the existence of projects like Seabed 2030,
@@ -36,6 +36,12 @@ extend the Gridfour code and add new data compression capabilities.
 Our hope is that by providing this tool, investigators will be able to
 focus on their own research and leave the details of file-management to
 the G93 tools.
+
+### Help Wanted ###
+We are finishing up the initial implementation of G93.  We are looking for
+developers interested in porting it to additional languages
+(such as C#, C++, Rust) and creating Python bindings. We are also looking for
+users with ideas for new features and how to apply the library. 
 
 ## Things to Come  
 The Gridfour Software Project is still in its infancy.  There is a lot

@@ -244,6 +244,8 @@ public class ExtractData {
     // computed area and volume to a running sum.
     double areaSum = 0;
     double volumeSum = 0;
+    double depthSum = 0;
+    long nDepth = 0;
 
     long time0 = System.nanoTime();
     for (int iRow = 0; iRow < nRows; iRow++) {
@@ -281,6 +283,8 @@ public class ExtractData {
           // it's water
           areaSum += areaOfCellsInRow;
           volumeSum -= areaOfCellsInRow * sample / 1000.0;
+          depthSum -=sample;
+          nDepth++;
         }
       }
     }
@@ -293,6 +297,7 @@ public class ExtractData {
     ps.format("Max Value:              %7.3f meters%n", zMax);
     ps.format("Surface area of oceans %20.1f km^2%n", areaSum);
     ps.format("Volume of oceans       %20.1f km^3%n", volumeSum);
+    ps.format("Mean depth of oceans   %20.1f m%n", depthSum/nDepth);
     ps.flush();
 
     int[] argb = new int[imageHeight * imageWidth];
