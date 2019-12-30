@@ -6,7 +6,8 @@ Although there many tools for image processing and gridded data applications for
 Geographic Information Systems, the Gridfour Project believes that there is still
 a need for general-purpose software utilities for the processing of raster data
 products. Potential applications in these areas run the gamut from rendering,
-data compression, contouring, surface analysis, and many others.
+data compression, contouring, surface analysis, and other operations aimed
+at analyzing and understanding data stored in raster form.
 
 ## Our Inspiration
 Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
@@ -30,7 +31,7 @@ Of course, the state of the art has advanced quite a bit since 1993. And althoug
 the Gridfour is based on old ideas, we hope that our G93 library will provide
 a convenient tool for investigators developing new techniques for compressing
 geophysical and scientific data in raster form.  G93 makes it very easy to
-extend the Gridfour codebased and add new data compression capabilities.
+extend the Gridfour code and add new data compression capabilities.
 Our hope is that by providing this tool, investigators will be able to
 focus on their own research and leave the details of file-management to
 the G93 tools.
