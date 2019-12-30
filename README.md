@@ -24,8 +24,8 @@ grid-based (raster) data sets. That need inspired us to create Gridfour.
 The first module created for the Gridfour Software Project is the G93 grid-based data
 compression and file management module.  The algorithms used in G93 have been around 
 for a long time. They were originally developed for a project named Gem93 that was
-completed in 1993.  Gem93 included data compression inspired by the work of
-Kidner and Smith (1991).
+completed in 1993 (we've named G93" in its honor).  Gem93 included data compression
+inspired by the work of Kidner and Smith (1991).
 
 Of course, the state of the art has advanced quite a bit since 1993. And although
 the Gridfour is based on old ideas, we hope that our G93 library will provide
