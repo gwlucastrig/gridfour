@@ -12,7 +12,7 @@ data compression, contouring, surface analysis, and many others.
 Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
 undertaking aims to map 100 percent of the ocean floor by 2030.  To put that in perspective,
 the project organizers estimate that, today, only about 20 percent of the world's oceans are fully
-mapped (Seabed 2030, FAQ)[https://seabed2030.gebco.net/faq/#q4].  So there's a lot of work to be done
+mapped &#38; [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;.  So there's a lot of work to be done
 in the next decade.
 
 Gridfour will probably _not_ be part of that effort. But the existence of projects like Seabed 2030,
@@ -49,3 +49,8 @@ potential of systems like it.  The G93 data compression reduces the size of this
 data set by a factor of about 4. Future work may bring about more improvements.
 
 ![Gridfour rendering of ETOPOO1](doc/images/ETOPO1.jpg "Gridfour rendering of ETOPO1")
+
+
+## References
+Kidner, D.B. and Smith, D.H. (1992). _Compression of digital elevation models by Huffman coding_,
+Computers and Geosciences, 18(8), 1013-1034,
