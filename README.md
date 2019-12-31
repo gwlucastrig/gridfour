@@ -22,7 +22,7 @@ grid-based (raster) data sets. That need inspired us to create Gridfour.
 
 ## An Old Idea Made New
 The first module created for the Gridfour Software Project is the G93 grid-based data
-compression and file management module.  Gridfour's G93 classes help Java applications
+compression and file management module.  Gridfour's G93 API helps Java applications
 manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
 the persistent storage of data between runs. And, finally, it includes custom
