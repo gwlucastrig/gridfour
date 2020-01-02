@@ -555,8 +555,10 @@ public class G93FileSpecification {
     int nCompressionSpecifications = braf.leReadInt();
     if (nCompressionSpecifications > 0) {
       this.dataCompressionEnabled = true;
-      String codecID = braf.readASCII(16);
-      this.addCompressionCodec(codecID, CodecPlaceHolder.class);
+      for (int i = 0; i < 2; i++) {
+        String codecID = braf.readASCII(16);
+        this.addCompressionCodec(codecID, CodecPlaceHolder.class);
+      }
     }
 
     standardTileSizeInBytes

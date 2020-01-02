@@ -41,8 +41,13 @@ package org.gridfour.g93;
 
 /**
  * A simple container for collecting statistics when analyzing compressed data.
+ * <p>
+ * This statistics collector is suited to the standard compressors implemented in
+ * G93, but may not be applicable to other compressors, particularly those
+ * implemented by a third party.  This class is provided as a convenience
+ * for developers who which to implement their own compressors.
  */
-class CodecStats {
+public class CodecStats {
 
   final PredictorCorrectorType pcType;
   long nTilesCounted;
@@ -51,14 +56,31 @@ class CodecStats {
   long nBitsOverheadTotal;
   long[] mCount = new long[256];
 
-  CodecStats(PredictorCorrectorType pcType) {
+  /**
+   * Construct a statistics object for the specified predictor-corrector.
+   * @param pcType a valid predictor-corrector type.
+   */
+  public CodecStats(PredictorCorrectorType pcType) {
     this.pcType = pcType;
   }
 
+  /**
+   * Get a label for the predictor-corrector.
+   * @return a valid string
+   */
   String getLabel() {
     return pcType.name();
   }
 
+  /**
+   * Add metadata about the tile to the counts
+   * @param nBytesForTile the number of byts for the compressed version of the
+   * tile.
+   * @param nSymbolsInTile the number of values in the tile, typically
+   * the number of cells in the grid.
+   * @param nBitsOverhead Any compressor-specific overhead that an
+   * implementation wishes to track.
+   */
   void addToCounts(int nBytesForTile, int nSymbolsInTile, int nBitsOverhead) {
     nTilesCounted++;
     nBytesTotal += nBytesForTile;
@@ -66,6 +88,12 @@ class CodecStats {
     nBitsOverheadTotal += nBitsOverhead;
   }
 
+  /**
+   * Add counts for the M32 symbols derived from the predictor-correctors
+   * for the tile.
+   * @param nM32 the total number of symbols in the encoded data
+   * @param m32 the encoded data
+   */
   void addCountsForM32(int nM32, byte[] m32) {
     for (int i = 0; i < nM32; i++) {
       mCount[m32[i] & 0xff]++;
@@ -74,6 +102,12 @@ class CodecStats {
 
   private static final double log2 = Math.log(2.0);
 
+  /**
+   * Get the entropy for the data. In information theory, the term 
+   * "entropy" is essentially an indicator of the number of bits actually
+   * neeeed to encode data.
+   * @return a positive value
+   */
   double getEntropy() {
     long total = 0;
     for (int i = 0; i < 256; i++) {
@@ -93,6 +127,9 @@ class CodecStats {
     return -s;
   }
 
+  /**
+   * Clear any accumulated counts
+   */
   void clear() {
     nTilesCounted = 0;
     nBytesTotal = 0;
@@ -100,6 +137,10 @@ class CodecStats {
     nBitsOverheadTotal = 0;
   }
 
+  /**
+   * Get the number of bits per symbol in the pre-compression encoding.
+   * @return zero or a positive number
+   */
   double getBitsPerSymbol() {
     if (nSymbolsTotal == 0) {
       return 0;
@@ -107,10 +148,19 @@ class CodecStats {
     return 8.0 * (double) nBytesTotal / (double) nSymbolsTotal;
   }
 
+  /**
+   * Get the number of tiles that have been counted.
+   * @return zero or a positive number
+   */
   long getTileCount() {
     return nTilesCounted;
   }
 
+  /**
+   * Get the average overhead per tile. Not all compressors tabulate
+   * this value.
+   * @return zero or a positive value.
+   */
   double getAverageOverhead() {
     if (nTilesCounted == 0) {
       return 0;
@@ -118,6 +168,10 @@ class CodecStats {
     return (double) nBitsOverheadTotal / (double) nTilesCounted;
   }
 
+  /**
+   * Get the average length of encoded tiles, in bytes.
+   * @return zero or a positive number.
+   */
   double getAverageLength() {
     if (nTilesCounted == 0) {
       return 0;

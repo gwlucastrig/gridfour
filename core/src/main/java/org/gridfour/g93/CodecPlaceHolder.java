@@ -44,6 +44,7 @@ import java.io.PrintStream;
  */
 class CodecPlaceHolder implements IG93CompressorCodec {
 
+
   @Override
   public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
   }
