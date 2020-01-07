@@ -342,10 +342,10 @@ public class PackageData {
    * setting will allow applications to find out what kind of coordinate system
    * is stored in the G93 file using an industry-standard text format.
    *
-   * @param rasterFile a valid G93 file
+   * @param g93 a valid G93 file
    * @throws IOException in the event of an IO error
    */
-  void storeGeoreferencingInformation(G93File rasterFile) throws IOException {
+  void storeGeoreferencingInformation(G93File g93) throws IOException {
     // Note:  At this time, the Well-Known Text (WKT) data for this
     // demo may not be complete. In particular, it does not include the
     // TOWGS84 node (the "to WGS 1984" node which specifies transformations
@@ -362,7 +362,7 @@ public class PackageData {
     }
     b = fbaos.toByteArray();
 
-    rasterFile.storeVariableLengthRecord(
+    g93.storeVariableLengthRecord(
             "G93_Projection",
             2111,
             "WKT Projection Metadata",

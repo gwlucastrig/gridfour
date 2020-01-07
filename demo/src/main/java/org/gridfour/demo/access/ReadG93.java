@@ -83,8 +83,8 @@ public class ReadG93 {
     // metadata, the summarize function is the most efficient way of
     // doing so.
     G93FileSpecification spec = g93.getSpecification();
-    int nRows = spec.getRowCount();
-    int nCols = spec.getColumnCount();
+    int nRows = spec.getRowsInRasterCount();
+    int nCols = spec.getColumnsInRasterCount();
     int nRowsOfTiles = spec.getRowsOfTilesCount();
     int nColsOfTiles = spec.getColumnsOfTilesCount();
     int nTiles = nRowsOfTiles * nColsOfTiles;

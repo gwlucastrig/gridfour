@@ -38,6 +38,7 @@
  */
 package org.gridfour.g93;
 
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -69,7 +70,6 @@ public class G93FileSpecification {
   static final byte SUB_VERSION = 1;
 
   private static final int IDENTIFICATION_SIZE = 64;
-
 
   /**
    * Time of construction for the specification
@@ -125,6 +125,11 @@ public class G93FileSpecification {
   double y1;
   double cellSizeX;
   double cellSizeY;
+
+  // the following will be set only in the case of a geographic
+  // coordinate system
+  boolean geoWrapsLongitude;
+  boolean geoBracketsLongitude;
 
   // the non-extended file size option works by compressing file positions
   // so that they can be stored as a 4-byte unsigned integer.  This limits
@@ -262,6 +267,9 @@ public class G93FileSpecification {
 
     isGeographicCoordinateSystemSet = s.isGeographicCoordinateSystemSet;
     isCartesianCoordinateSystemSet = s.isCartesianCoordinateSystemSet;
+    geoWrapsLongitude = s.geoWrapsLongitude;
+    geoBracketsLongitude = s.geoBracketsLongitude;
+
     x0 = s.x0;
     y0 = s.y0;
     x1 = s.x1;
@@ -401,6 +409,25 @@ public class G93FileSpecification {
     y1 = latRowMax;
     cellSizeX = (x1 - x0) / nColsInRaster;
     cellSizeY = (y1 - y0) / nRowsInRaster;
+    checkGeographicCoverage();
+
+  }
+
+  /**
+   * Checks to see if geoWrapsLongitude should be set.
+   */
+  private void checkGeographicCoverage() {
+    double gxDelta = x1 - x0;
+    if (gxDelta == 360) {
+      this.geoWrapsLongitude = false;
+      this.geoBracketsLongitude = true;
+    } else {
+      // see if one grid cell beyond x1 matches x0
+      // (within numerical precision).
+      geoBracketsLongitude = false;
+      double a360 = Math.abs(Angle.to180(x1 + cellSizeX - x0));
+      geoWrapsLongitude = (a360 < 1.0e-6);
+    }
   }
 
   /**
@@ -418,8 +445,9 @@ public class G93FileSpecification {
    * last row of the raster.
    */
   public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
-    this.isGeographicCoordinateSystemSet = true;
-    this.isCartesianCoordinateSystemSet = false;
+    isGeographicCoordinateSystemSet = true;
+    isCartesianCoordinateSystemSet = false;
+    geoWrapsLongitude = false;
     if (!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) {
       throw new IllegalArgumentException("Invalid floating-point value");
     }
@@ -551,6 +579,9 @@ public class G93FileSpecification {
     y1 = braf.leReadDouble();
     cellSizeX = (x1 - x0) / nColsInRaster;
     cellSizeY = (y1 - y0) / nRowsInRaster;
+    if (isGeographicCoordinateSystemSet) {
+      checkGeographicCoverage();
+    }
 
     int nCompressionSpecifications = braf.leReadInt();
     if (nCompressionSpecifications > 0) {
@@ -655,8 +686,8 @@ public class G93FileSpecification {
    *
    * @return a positive number
    */
-  public int getRowCount() {
-    return this.nRowsInRaster;
+  public int getRowsInRasterCount() {
+    return nRowsInRaster;
   }
 
   /**
@@ -664,24 +695,28 @@ public class G93FileSpecification {
    *
    * @return a positive number
    */
-  public int getColumnCount() {
-    return this.nColsInRaster;
+  public int getColumnsInRasterCount() {
+    return nColsInRaster;
   }
 
   public int getRowsOfTilesCount() {
-    return this.nRowsOfTiles;
+    return nRowsOfTiles;
   }
 
   public int getColumnsOfTilesCount() {
-    return this.nColsOfTiles;
+    return nColsOfTiles;
   }
 
   public int getRowsInTileCount() {
-    return this.nRowsInTile;
+    return nRowsInTile;
   }
 
   public int getColumnsInTileCount() {
-    return this.nColsInTile;
+    return nColsInTile;
+  }
+  
+  public int getRank(){
+    return rank;
   }
 
   /**
@@ -693,7 +728,7 @@ public class G93FileSpecification {
    * @return true if extended file sizes are enabled; otherwise false.
    */
   public boolean isExtendedFileSizeEnabled() {
-    return this.isExtendedFileSizeEnabled;
+    return isExtendedFileSizeEnabled;
   }
 
   /**
@@ -839,12 +874,81 @@ public class G93FileSpecification {
   }
 
   /**
+   * Indicates whether a geographic coordinate system has been set for mapping
+   * input coordinates to raster coordinates and vice versa.
+   *
+   * @return true if a geographic coordinate system was specified; otherwise
+   * false.
+   */
+  public boolean isGeographicCoordinateSystemSpecified() {
+    return isGeographicCoordinateSystemSet;
+  }
+
+  /**
+   * Indicates whether a geographic coordinate system covers the full range of
+   * longitude but crosses a 360 degree boundary between grid points. For
+   * example, a grid with a geographic coordinate system ranging from -180 to
+   * +180 by increments of 1 would include 361 columns. A grid with a geographic
+   * coordinate system ranging from -179.5 to +179.5 by increments of 1 would
+   * include 360 columns. The first case does not cross a longitude boundary.
+   * The second case crosses a longitude boundary in the middle of a grid cell.
+   * <p>
+   * In the first case, we say that the coordinate system "brackets" the
+   * longitude range. The first and last grid point in each row are actually at
+   * the same coordinates (and should have the same values if properly
+   * populated). In the second case, we say that the coordinate system "crosses"
+   * the longitude boundary. But, in both cases, the coordinate system does
+   * offer a full 360-degrees of coverage.
+   * <p>
+   * This setting is useful for data queries and interpolation operations
+   * applied over a geographic coordinate system that covers the entire range of
+   * longitudes. In the "bracket" case, mapping a longitude to a column can be
+   * accomplished using simple arithmetic. But in the second case, more
+   * complicated logic may be required to select columns for interpolation.
+   *
+   * @return true if the coordinate system covers the full range of longitude;
+   * otherwise, false.
+   */
+  public boolean doGeographicCoordinatesWrapLongitude() {
+    return geoWrapsLongitude;
+  }
+
+  /**
+   * Indicates whether a geographic coordinate system covers the full range of
+   * longitude with redundant grid points at the beginning and end of each row.
+   * See the explanation for doGeographicCoordinatesWrapLongitude() for more
+   * detail.
+   *
+   *
+   * @return true if the coordinate system covers the full range of longitude
+   * with redundant grid points and the beginning and end of each row;
+   * otherwise, false.
+   */
+  public boolean doGeographicCoordinatesBracketLongitude() {
+    return geoBracketsLongitude;
+  }
+
+  /**
+   * Indicates whether a Cartesian coordinate system has been set for mapping
+   * input coordinates to raster (grid) coordinates and vice versa.
+   *
+   * @return true if a geographic coordinate system was specified; otherwise
+   * false.
+   */
+  public boolean isCartesianCoordinateSystemSpecified() {
+    return isCartesianCoordinateSystemSet;
+  }
+
+  /**
    * Sets the geometry type associated with the row and column positions in the
    * raster. If the geometry type is Point, the value at a row and column is
    * intended to represent the value at a particular point on the surface
    * described by the raster. If the geometry type is Area, the value at a row
    * and column is intended to represent the value for an entire cell centered
-   * at the coordinates associated with the row and column.
+   * at the coordinates associated with the row and column. In either case, G93
+   * treats real-valued coordinates (Cartesian or geographic) as giving the
+   * position at which the data value for a grid point exactly matches the value
+   * at the surface that is represented by the data.
    *
    * @param geometryType a valid instance of the enumeration.
    */
@@ -917,7 +1021,7 @@ public class G93FileSpecification {
    * identifier strings, 16 character maximum.
    * @param codec a valid class reference.
    */
-    public final void addCompressionCodec(String codecID, Class<?> codec) {
+  public final void addCompressionCodec(String codecID, Class<?> codec) {
     if (rasterCodecMap.size() >= 255) {
       throw new IllegalArgumentException(
               "Maximum number of compression codecs (255) exceeded");
@@ -980,6 +1084,16 @@ public class G93FileSpecification {
     return list;
   }
 
+  /**
+   * Gets an enumeration indicating the data type for the elements in the G93
+   * file.
+   *
+   * @return a valid enumeration.
+   */
+  public G93DataType getDataType() {
+    return dataType;
+  }
+
   public void summarize(PrintStream ps) {
     ps.format("Identification:    %s%n",
             identification == null || identification.isEmpty()
@@ -1002,5 +1116,14 @@ public class G93FileSpecification {
     ps.format("Value offset factor: %11.6f%n", valueOffset);
     ps.format("Data compression:       %s%n",
             isDataCompressionEnabled() ? "enabled" : "disabled");
+  }
+
+  /**
+   * Gets the bounds for the coordinate system associated with the grid.
+   *
+   * @return a valid instance of Rectangle2D giving the bounds
+   */
+  public Rectangle2D getBounds() {
+    return new Rectangle2D.Double(x0, y0, x1-x0, y1-y0);
   }
 }
