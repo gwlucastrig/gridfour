@@ -73,5 +73,11 @@ for more details &#41;. Future work may bring about more improvements.
 
 
 ## References
+General Bathymetric Chart of the Oceans [GEBCO], 2019. _GEBCO Gridded Bathymetry Data_.
+Accessed December 2019 from [https://www.gebco.net/data_and_products/gridded_bathymetry_data/](https://www.gebco.net/data_and_products/gridded_bathymetry_data/)
+
 Kidner, D.B. and Smith, D.H. (1992). _Compression of digital elevation models by Huffman coding_,
-Computers and Geosciences, 18(8), 1013-1034,
+Computers and Geosciences, 18(8), 1013-1034.
+
+National Oceanographic and Atmospheric Administration [NOAA], 2019.
+_ETOPO1 Global Relief Model_. Accessed December 2019 from [https://www.ngdc.noaa.gov/mgg/global/](https://www.ngdc.noaa.gov/mgg/global/)
