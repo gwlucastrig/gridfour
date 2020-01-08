@@ -16,9 +16,10 @@ the project organizers estimate that, today, only about 20 percent of the world'
 mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;.  So there's a lot of work to be done
 in the next decade.
 
-Gridfour will probably _not_ be part of that effort. But the existence of projects like Seabed 2030,
-and many others, points to a need for software libraries that can assist in the processing of
-grid-based (raster) data sets. That need inspired us to create Gridfour.
+On thing is certain, the existence of projects like Seabed 2030 will result in massive collections
+of grid-based (raster) data sets.  There is a need for software libraries that can assist in
+the processing of that data. In particular, we see a need for more efficient techniques for storage
+and data compression for grid data.  That need inspired us to create Gridfour.
 
 ## An Old Idea Made New
 The first module created for the Gridfour Software Project is the G93 grid-based data
@@ -39,7 +40,9 @@ Of course, the state of the art has advanced quite a bit since 1993. And althoug
 the Gridfour is based on old ideas, we hope that our G93 library will provide
 a convenient tool for investigators developing new techniques for compressing
 geophysical and scientific data in raster form.  G93 makes it very easy to
-extend the Gridfour code and add new data compression capabilities.
+extend the Gridfour code and add new data compression capabilities &#40; to see
+just how easy it is, visit our wiki page on
+[Custom Data Compressors](https://github.com/gwlucastrig/gridfour/wiki/How-to-Register-a-Custom-Data-Compressor) &#41;.
 Our hope is that by providing this tool, investigators will be able to
 focus on their own research and leave the details of file-management to
 the G93 tools.
@@ -58,12 +61,15 @@ and physical modeling logic to our collection.
 
 In the meantime, you are welcome to visit our companion Tinfour Software Project at https://github.com/gwlucastrig/Tinfour
 
-Finally, we end with a picture of a global digital elevation module data set named ETOPO1.
-ETOP01 was one of the data sets used for the G93 pilot project and a good example of the
+Finally, we end with a picture that was created using G93 and a set of elevation
+and bathymetry data taken from the GEBCO_2019 global data set.  The picture
+shows a view of the Island of Hokkaido, Japan. 
+GEBCO_2019 was one of the data sets used for the G93 pilot project and a good example of the
 potential of systems like it.  The G93 data compression reduces the size of this
-data set by a factor of about 4. Future work may bring about more improvements.
+data set down to about 17.2 percent of its original size &#40;see [G93 Performance](https://github.com/gwlucastrig/gridfour/wiki/G93-Performance)
+for more details &#41;. Future work may bring about more improvements.
 
-![Gridfour rendering of ETOPOO1](doc/images/ETOPO1.jpg "Gridfour rendering of ETOPO1")
+![Gridfour rendering of Hokkaido, Japan](doc/images/hokkaido_800_720_75_scaled.jpg "Gridfour/GEBCO_2019 rendering of Hokkaido, Japan")
 
 
 ## References
