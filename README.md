@@ -17,7 +17,8 @@ mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;. 
 in the next decade.
 
 On thing is certain, the existence of projects like Seabed 2030 will result in massive collections
-of grid-based (raster) data sets.  There is a need for software libraries that can assist in
+of grid-based (raster) data sets.  Seabed 2030 itself will include about 7.9 billion grid points [&lsqb;1&lrsqb;](note1).
+There is a need for software libraries that can assist in
 the processing of that data. In particular, we see a need for more efficient techniques for storage
 and data compression for grid data.  That need inspired us to create Gridfour.
 
@@ -33,7 +34,7 @@ raster data.
 The algorithms used in G93 have been around for a long time. 
 They were originally developed for a project named Gem93 that was
 completed in 1993 (we've named our file format "G93" in its honor).  Gem93 included 
-a number of tools for working with raster data, amoung them a data compression technique
+a number of tools for working with raster data, among them a data compression technique
 inspired by the work of Kidner and Smith (1992).
 
 Of course, the state of the art has advanced quite a bit since 1993. And although
@@ -81,3 +82,7 @@ Computers and Geosciences, 18(8), 1013-1034.
 
 National Oceanographic and Atmospheric Administration [NOAA], 2019.
 _ETOPO1 Global Relief Model_. Accessed December 2019 from [https://www.ngdc.noaa.gov/mgg/global/](https://www.ngdc.noaa.gov/mgg/global/)
+
+## Notes
+<a name="note1">&lsqb;1&lrsqb;</a>Point count estimated using survey-resolution table given in 
+[Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q5). 
