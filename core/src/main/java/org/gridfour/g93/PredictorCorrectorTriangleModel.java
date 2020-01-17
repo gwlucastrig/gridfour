@@ -46,7 +46,8 @@ import org.gridfour.util.CodecM32;
  * <p>
  * The method used for this class is based on the published work:
  * <cite>Kidner, D.B. and Smith, D. H. (1992). "Compression of digital elevation
- * models by Huffman coding", Computers &amp; Geosciences, 18(8), 1013-1024</cite>
+ * models by Huffman coding", Computers &amp; Geosciences, 18(8),
+ * 1013-1024</cite>
  */
 public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
 
@@ -67,8 +68,9 @@ public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
           int length,
           int[] output) {
     CodecM32 mCode = new CodecM32(encoding, offset, length);
+    output[0] = seed;
     int prior = seed;
-    for (int i = 0; i < nColumns; i++) {
+    for (int i = 1; i < nColumns; i++) {
       prior += mCode.decode();
       output[i] = prior;
     }
@@ -106,7 +108,7 @@ public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
     // so use the constant-predictor model approach
     encodedSeed = values[0];
     long prior = values[0];
-    for (int i = 0; i < nColumns; i++) {
+    for (int i = 1; i < nColumns; i++) {
       long test = values[i];
       long delta = test - prior;
       if (isDeltaOutOfBounds(delta)) {

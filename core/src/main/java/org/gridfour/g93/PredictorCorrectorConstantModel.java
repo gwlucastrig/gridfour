@@ -75,8 +75,19 @@ public class PredictorCorrectorConstantModel implements IPredictorCorrector {
     CodecM32 mCodec = new CodecM32(output, 0, output.length);
     encodedSeed = values[0];
     long prior = encodedSeed;
-    for (int iRow = 0; iRow < nRows; iRow++) {
+    for (int i = 1; i < nColumns; i++) {
+      long test = values[i];
+      long delta = test - prior;
+      if (isDeltaOutOfBounds(delta)) {
+        return -1;
+      }
+      mCodec.encode((int) delta);
+      prior = test;
+    }
+
+    for (int iRow = 1; iRow < nRows; iRow++) {
       int index = iRow * nColumns;
+      prior = values[index - nColumns];
       for (int i = 0; i < nColumns; i++) {
         long test = values[index++];
         long delta = test - prior;
@@ -86,7 +97,7 @@ public class PredictorCorrectorConstantModel implements IPredictorCorrector {
         mCodec.encode((int) delta);
         prior = test;
       }
-      prior = values[iRow * nColumns];
+
     }
 
     return mCodec.getEncodedLength();
@@ -110,14 +121,20 @@ public class PredictorCorrectorConstantModel implements IPredictorCorrector {
           byte[] encoding, int offset, int length,
           int[] output) {
     CodecM32 mCodec = new CodecM32(encoding, offset, length);
-    int prior = seed; // the seed is never null
-    for (int iRow = 0; iRow < nRows; iRow++) {
+    output[0] = seed;
+    int prior = seed;
+    for (int i = 1; i < nColumns; i++) {
+      prior += mCodec.decode();
+      output[i] = prior;
+    }
+
+    for (int iRow = 1; iRow < nRows; iRow++) {
       int index = iRow * nColumns;
+      prior = output[index - nColumns];
       for (int iCol = 0; iCol < nColumns; iCol++) {
         prior += mCodec.decode();
         output[index++] = prior;
       }
-      prior = output[iRow * nColumns];
     }
   }
 
