@@ -31,6 +31,9 @@
  * 10/2019  G. Lucas     Created  
  *
  * Notes:
+ *   The first two columns are pre-populated using simple differences,
+ * then the remainder of the data is filled in using the linear-predictor.
+ * 
  *
  * -----------------------------------------------------------------------
  */
@@ -54,18 +57,39 @@ public class PredictorCorrectorLinearModel implements IPredictorCorrector {
   }
 
   @Override
-  public void decode(int seed, int nRows, int nColumns, byte[] encoding, int offset, int length, int[] output) {
+  public void decode(
+          int seed, 
+          int nRows, 
+          int nColumns,
+          byte[] encoding, 
+          int offset, 
+          int length, 
+          int[] output)
+  {
     CodecM32 mCodec = new CodecM32(encoding, offset, length);
-    int prior = seed;
-    for (int iRow = 0; iRow < nRows; iRow++) {
-      int k = iRow * nColumns;
-      prior += mCodec.decode();
-      output[k++] = prior;
-      output[k++] = mCodec.decode() + prior;
+    long prior = seed;
+    output[0] = seed;
+    output[1] = (int) (mCodec.decode() + prior);
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      long test = mCodec.decode() + prior;
+      output[index] = (int) test;
+      prior = test;
+      output[index + 1] = (int) (mCodec.decode() + test);
+    }
 
-      //accumulate second differences for remaining columns in row
-      for (int iCol = 2; iCol < nColumns; iCol++, k++) {
-        output[k] = mCodec.decode() + 2 * output[k - 1] - output[k - 2];
+    for (int iRow = 0; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      long a = output[index];
+      long b = output[index + 1];
+
+      //accumulate second differences starting at column 2 for row
+      for (int iCol = 2; iCol < nColumns; iCol++) {
+        long delta = mCodec.decode();
+        long c = delta + 2 * b - a;  // delta = c - 2 * b + a;
+        a = b;
+        b = c;
+        output[index + iCol] = (int) c;
       }
     }
   }
@@ -79,37 +103,45 @@ public class PredictorCorrectorLinearModel implements IPredictorCorrector {
     CodecM32 mCodec = new CodecM32(encoding, 0, encoding.length);
     encodedSeed = values[0];
 
-    long delta;
+    long delta, test;
     long prior = values[0];
+    delta = (long) values[1] - prior;
+    if (isDeltaOutOfBounds(delta)) {
+      return -1;
+    }
+    mCodec.encode((int) delta);
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      test = values[index];
+      delta = test - prior;
+      if (isDeltaOutOfBounds(delta)) {
+        return -1;
+      }
+      mCodec.encode((int) delta);
+      prior = test;
+
+      test = values[index + 1];
+      delta = test - prior;
+      if (isDeltaOutOfBounds(delta)) {
+        return -1;
+      }
+      mCodec.encode((int) delta);
+    }
 
     for (int iRow = 0; iRow < nRows; iRow++) {
-      // column zero uses the constant predictor taking the
-      // prior value from the previous row 
-      int k = iRow * nColumns;
-      int test0 = values[k++];
-      delta = test0 - prior;
-      prior = test0;
-      if (isDeltaOutOfBounds(delta)) {
-        return -1;
-      }
-      mCodec.encode((int) delta);
-
-      // column 1 uses the constant predictor taking the prior value from
-      // column 0
-      int test1 = values[k++];
-      delta = test1 - test0;
-      if (isDeltaOutOfBounds(delta)) {
-        return -1;
-      }
-      mCodec.encode((int) delta);
-
-      //accumulate second differences for remaining columns in row
-      for (int iCol = 2; iCol < nColumns; iCol++, k++) {
-        delta = (long) values[k] - 2 * (long) values[k - 1] + (long) values[k - 2];
+      int index = iRow * nColumns;
+      long a = values[index];
+      long b = values[index + 1];
+      //accumulate second differences starting at column 2
+      for (int iCol = 2; iCol < nColumns; iCol++) {
+        long c = values[index + iCol];
+        delta = c - 2 * b + a;
         if (isDeltaOutOfBounds(delta)) {
           return -1;
         }
         mCodec.encode((int) delta);
+        a = b;
+        b = c;
       }
     }
     return mCodec.getEncodedLength();

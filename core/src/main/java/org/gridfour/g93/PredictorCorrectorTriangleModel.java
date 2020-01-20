@@ -31,7 +31,9 @@
  * 10/2019  G. Lucas     Created  
  *
  * Notes:
- *
+ *   the first row and then the first column are pre-populated using
+ * simple differences. After that, the remainder of the grid is populated
+ * using the triangle predictor.
  * -----------------------------------------------------------------------
  */
 package org.gridfour.g93;
@@ -67,27 +69,30 @@ public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
           int offset,
           int length,
           int[] output) {
-    CodecM32 mCode = new CodecM32(encoding, offset, length);
+    CodecM32 mCodec = new CodecM32(encoding, offset, length);
+
+    // The zeroeth row and column are populated using simple differences.
+    // All other columns are populated using the triangle-predictor
     output[0] = seed;
     int prior = seed;
     for (int i = 1; i < nColumns; i++) {
-      prior += mCode.decode();
+      prior += mCodec.decode();
       output[i] = prior;
     }
+    prior = seed;
+    for (int i = 1; i < nRows; i++) {
+      prior += mCodec.decode();
+      output[i * nColumns] = prior;
+    }
 
-    // the zeroeth column is populated using the constant-predictor model
-    // all other columns are populated using the triangule-predictor
     for (int iRow = 1; iRow < nRows; iRow++) {
       int k1 = iRow * nColumns;
       int k0 = k1 - nColumns;
-      output[k1] = mCode.decode() + output[k0];
       for (int i = 1; i < nColumns; i++) {
-        k0++;
-        k1++;
-        int z0 = output[k0 - 1];
-        int zb = output[k1 - 1];
-        int za = output[k0];
-        output[k1] = mCode.decode() + (za + zb - z0);
+        long za = output[k0++];
+        long zb = output[k1++];
+        long zc = output[k0];
+        output[k1] = (int) (mCodec.decode() + (zb + zc - za));
       }
     }
 
@@ -103,49 +108,50 @@ public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
     if (nRows < 2 || nColumns < 2) {
       return -1;
     }
-    CodecM32 mCode = new CodecM32(encoding, 0, encoding.length);
-    // The triangle coding cannot be performed on the first row, 
-    // so use the constant-predictor model approach
+    CodecM32 mCodec = new CodecM32(encoding, 0, encoding.length);
+    // The zeroeth row and column are populated using simple differences.
+    // All other grid cells are populated using the triangle-predictor
     encodedSeed = values[0];
-    long prior = values[0];
+    long prior = encodedSeed;
     for (int i = 1; i < nColumns; i++) {
       long test = values[i];
       long delta = test - prior;
       if (isDeltaOutOfBounds(delta)) {
         return -1;
       }
-      mCode.encode((int) delta);
+      mCodec.encode((int) delta);
       prior = test;
     }
 
-    // start the triangle encoding with the second row
-    // the first column is populated using the constant-predictor model,
-    // all subsequent columns the triangle predictor
-    for (int iRow = 1; iRow < nRows; iRow++) {
-      int k1 = iRow * nColumns;
-      int k0 = k1 - nColumns;
-      long delta = (long) values[k1] - (long) values[k0];
+    prior = encodedSeed;
+    for (int i = 1; i < nRows; i++) {
+      long test = values[i * nColumns];
+      long delta = test - prior;
       if (isDeltaOutOfBounds(delta)) {
         return -1;
       }
-      mCode.encode((int) delta);
+      mCodec.encode((int) delta);
+      prior = test;
+    }
 
+    // populate the rest of the grid using the triangle-predictor model
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int k1 = iRow * nColumns;
+      int k0 = k1 - nColumns;
       for (int i = 1; i < nColumns; i++) {
-        k0++;
-        k1++;
-        long z0 = values[k0 - 1];
-        long zb = values[k1 - 1];
-        long za = values[k0];
-        long zc = values[k1];
-        delta = zc - (za + zb - z0);
+        long za = values[k0++];
+        long zb = values[k1++];
+        long zc = values[k0];
+        long zs = values[k1];  // the source value 
+        long delta = zs - (zc + zb - za);
         if (isDeltaOutOfBounds(delta)) {
           return -1;
         }
-        mCode.encode((int) delta);
+        mCodec.encode((int) delta);
       }
     }
 
-    return mCode.getEncodedLength();
+    return mCodec.getEncodedLength();
   }
 
   @Override
