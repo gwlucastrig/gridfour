@@ -17,7 +17,7 @@ mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;. 
 in the next decade.
 
 On thing is certain, the existence of projects like Seabed 2030 will result in massive collections
-of grid-based (raster) data sets.  Seabed 2030 itself will include about 7.9 billion grid points [&lsqb;1&rsqb;](#note1).
+of grid-based (raster) data sets.  Seabed 2030 itself will include about 7.6 billion grid points [&lsqb;1&rsqb;](#note1).
 There is a need for software libraries that can assist in
 the processing of that data. In particular, we see a need for more efficient techniques for storage
 and data compression for grid data.  That need inspired us to create Gridfour.
