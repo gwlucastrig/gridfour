@@ -52,75 +52,70 @@ class CodecMaster {
 
   int seed;
 
- private final  List<IG93CompressorCodec> codecs = new ArrayList<>();
- 
- 
- 
+  private final List<IG93CompressorCodec> codecs = new ArrayList<>();
+
   CodecMaster() {
     codecs.add(new CodecHuffman());
     codecs.add(new CodecDeflate());
   }
-  
-  void setCodecs(List<G93SpecificationForCodec>csList) throws IOException {
+
+  void setCodecs(List<G93SpecificationForCodec> csList) throws IOException {
     codecs.clear();
-    for(G93SpecificationForCodec csSpec: csList){
+    for (G93SpecificationForCodec csSpec : csList) {
       Class<?> c = csSpec.getCodec();
       try {
         Constructor<?> constructor = c.getConstructor();
         Object obj = constructor.newInstance();
-        codecs.add((IG93CompressorCodec)obj);
+        codecs.add((IG93CompressorCodec) obj);
       } catch (NoSuchMethodException ex) {
-        throw new IOException("Missing no-argument constructor for codec "+csSpec.getIdentification());
+        throw new IOException("Missing no-argument constructor for codec " + csSpec.getIdentification());
       } catch (SecurityException ex) {
-          throw new IOException("Security exception for codec "+csSpec.getIdentification()+", "+ex.getMessage(), ex);
-      } catch (InstantiationException|IllegalAccessException|IllegalArgumentException |InvocationTargetException ex) {
-         throw new IOException("Failed to construct codec "+csSpec.getIdentification()+", "+ex.getMessage(), ex);
-      }  
-      
+        throw new IOException("Security exception for codec " + csSpec.getIdentification() + ", " + ex.getMessage(), ex);
+      } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+        throw new IOException("Failed to construct codec " + csSpec.getIdentification() + ", " + ex.getMessage(), ex);
+      }
+
     }
   }
 
-  byte [] encode(int nRows, int nCols, int [] values){   
-    byte []result = null;
+  byte[] encode(int nRows, int nCols, int[] values) {
+    byte[] result = null;
     int resultLength = Integer.MAX_VALUE;
-    int k=0;
-    for(IG93CompressorCodec codec: codecs){
-      byte [] test = codec.encode(k, nRows, nCols, values);
-      if(test!=null){
-        if(test.length<resultLength){
-          result = test;
-          resultLength = test.length;
-        }
+    int k = 0;
+    for (IG93CompressorCodec codec : codecs) {
+      byte[] test = codec.encode(k, nRows, nCols, values);
+      if (test != null && test.length < resultLength) {
+        result = test;
+        resultLength = test.length;
       }
       k++;
     }
     return result;
   }
- 
+
   int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
-    int index = packing[0]&0xff;
-    if(index>codecs.size()){
-      throw new IOException("Invalid compression-type code "+index);
+    int index = packing[0] & 0xff;
+    if (index > codecs.size()) {
+      throw new IOException("Invalid compression-type code " + index);
     }
     IG93CompressorCodec codec = codecs.get(index);
     return codec.decode(nRows, nColumns, packing);
   }
 
-   void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
-    int index = packing[0]&0xff;
-    if(index>codecs.size()){
-      throw new IOException("Invalid compression-type code "+index);
+  void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
+    int index = packing[0] & 0xff;
+    if (index > codecs.size()) {
+      throw new IOException("Invalid compression-type code " + index);
     }
     IG93CompressorCodec codec = codecs.get(index);
     codec.analyze(nRows, nColumns, packing);
   }
-  
-   
+
   void reportAndClearAnalysisData(PrintStream ps, int nTilesInRaster) {
     for (IG93CompressorCodec codec : codecs) {
       codec.reportAnalysisData(ps, nTilesInRaster);
       codec.clearAnalysisData();
     }
-   }
-  
+  }
+
 }

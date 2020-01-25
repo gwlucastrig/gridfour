@@ -161,7 +161,7 @@ public class CodecM32 {
     int test = value & 0xffffff80;
     if (test == 0) {
       // the input is in the range 0 to 127, inclusive
-      // scheck for special codes m2 and m3
+      // check for special codes m2 and m3
       if (value < M2) {
         buffer[offset++] = (byte) value;
       } else {

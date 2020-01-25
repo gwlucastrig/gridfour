@@ -87,9 +87,9 @@ public class InterpolateBSpline {
   public InterpolateBSpline(G93File g93) throws IOException {
     this.g93 = g93;
     spec = g93.getSpecification();
-    nRowsInRaster = spec.getRowsInRasterCount();
-    nColsInRaster = spec.getColumnsInRasterCount();
-    if (spec.getRowsInRasterCount() < 4 || spec.getColumnsInRasterCount() < 4) {
+    nRowsInRaster = spec.getRowsInGrid();
+    nColsInRaster = spec.getColumnsInGrid();
+    if (spec.getRowsInGrid() < 4 || spec.getColumnsInGrid() < 4) {
       throw new IllegalArgumentException(
               "Unable to perform B-Spline interpolation on grid smaller than 4x4");
     }
@@ -295,8 +295,8 @@ public class InterpolateBSpline {
     double col = g[1];
     int row0 = (int) row;
     int col0 = (int) col;
-    double ct = (col - col0);  // cell t
-    double cs = (row - row0); // cell s
+    double ct = col - col0;  // cell t
+    double cs = row - row0; // cell s
 
     int c0 = (col0 + nColsInRaster) % nColsInRaster;
     int c1 = (col0 + nColsInRaster + 1) % nColsInRaster;
@@ -316,8 +316,8 @@ public class InterpolateBSpline {
     if (standardHandlingLeft <= iCol && iCol <= standardHandlingRight) {
       int col0 = iCol - 1;
       int row0 = blockLimit(iRow - 1, nRowsInRaster);
-      u = (col - col0 - 1); // x parameter
-      v = (row - row0 - 1); // y parameter
+      u = col - col0 - 1; // x parameter
+      v = row - row0 - 1; // y parameter
 
       return g93.readBlock(row0, col0, 4, 4);
 
@@ -337,8 +337,8 @@ public class InterpolateBSpline {
 
     int col0 = blockLimit(iCol - 1, nColsInRaster);
     int row0 = blockLimit(iRow - 1, nRowsInRaster);
-    u = (col - col0 - 1); // x parameter
-    v = (row - row0 - 1); // y parameter
+    u = col - col0 - 1; // x parameter
+    v = row - row0 - 1; // y parameter
 
     return g93.readBlock(row0, col0, 4, 4);
 

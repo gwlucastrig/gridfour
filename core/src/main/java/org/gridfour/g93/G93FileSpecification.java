@@ -426,7 +426,7 @@ public class G93FileSpecification {
       // (within numerical precision).
       geoBracketsLongitude = false;
       double a360 = Math.abs(Angle.to180(x1 + cellSizeX - x0));
-      geoWrapsLongitude = (a360 < 1.0e-6);
+      geoWrapsLongitude = a360 < 1.0e-6;
     }
   }
 
@@ -513,6 +513,17 @@ public class G93FileSpecification {
     return output;
   }
 
+  /**
+   * Gets the identification string associated with this specification
+   * and the G93File that is created from it. The identification
+   * is supplied by the application that creates a G93 file and is not
+   * required to be populated.
+   * @return a string of up to 64 characters, potentially null.
+   */
+  public String getIdentification(){
+    return identification;
+  }
+  
   /**
    * Construct a specification from the specified file
    *
@@ -686,35 +697,59 @@ public class G93FileSpecification {
    *
    * @return a positive number
    */
-  public int getRowsInRasterCount() {
+  public int getRowsInGrid() {
     return nRowsInRaster;
   }
 
   /**
-   * Gets the number of columns in the overall raster.
+   * Gets the number of columns in the overall raster grid.
    *
-   * @return a positive number
+   * @return a value of 1 or greater.
    */
-  public int getColumnsInRasterCount() {
+  public int getColumnsInGrid() {
     return nColsInRaster;
   }
 
-  public int getRowsOfTilesCount() {
+  /**
+   * Get the number of rows of tiles. This value is computed as
+   * the number of rows in the grid divided by the number of rows in a tile,
+   * rounded up.
+   * @return a value of 1 or greater.
+   */
+  public int getRowsOfTilesInGrid() {
     return nRowsOfTiles;
   }
 
-  public int getColumnsOfTilesCount() {
+  /**
+   * Get the number of columns of tiles. This value is computed as the
+   * number of columns in the grid divided by the number of columns in a tile,
+   * rounded up.
+   * @return a value of 1 or greater.
+   */
+  public int getColumnsOfTilesInGrid() {
     return nColsOfTiles;
   }
 
-  public int getRowsInTileCount() {
+  /**
+   * Gets the number of rows in a tile.
+   * @return a value of 1 or greater.
+   */
+  public int getRowsInTile() {
     return nRowsInTile;
   }
 
-  public int getColumnsInTileCount() {
+  /**
+   * Gets the number of columns in a tile.
+   * @return a value of 1 or greater
+   */
+  public int getColumnsInTile() {
     return nColsInTile;
   }
   
+  /**
+   * Gets the number of elements stored for each grid point.
+   * @return a value of 1 or greater.
+   */
   public int getRank(){
     return rank;
   }
@@ -967,7 +1002,8 @@ public class G93FileSpecification {
 
   /**
    * Gets the sizes for the cells based on the coordinate system set in the
-   * specification.
+   * specification.  These sizes are the distances measured along the
+   * x and y axes in the coordinate system specified for this instance.
    *
    * @return a valid array of dimension 2 giving, respectively, the x and y cell
    * sizes.
@@ -980,12 +1016,21 @@ public class G93FileSpecification {
   }
 
   /**
-   * Gets the count of the number of cells in a tile.
+   * Gets the number of cells (grid points) in the tile definition.
    *
    * @return a value greater than or equal to 1.
    */
-  public int getCellCountForTile() {
+  public int getNumberOfCellsInTile() {
     return nCellsInTile;
+  }
+  
+    /**
+   * Gets the number of cells (grid points) in the raster definition.
+   *
+   * @return a value greater than or equal to 1.
+   */
+  public long getNumberOfCellsInGrid(){
+    return (long)nRowsInRaster*(long)nColsInRaster;
   }
 
   /**
@@ -1125,5 +1170,23 @@ public class G93FileSpecification {
    */
   public Rectangle2D getBounds() {
     return new Rectangle2D.Double(x0, y0, x1-x0, y1-y0);
+  }
+  
+  /**
+   * Gets the UUID assigned to this specification (and any G93 files derived
+   * from it).   The UUID is an arbitrary value automatically assigned to
+   * the specification. Its intended use it to allow G93 to correlate
+   * files of different types (such as the main G93 file and its associated
+   * index file).
+   * <p>
+   * Once established, the UUID is never modified.
+   * <p>
+   * Internally, the UUID is an arbitary set of 16 bytes. Non-Java language
+   * implementations in languages/environments that do not have built-in support 
+   * for UUIDs are free to implement this feature as they see fit.
+   * @return a valid string.
+   */
+  public String getUuid(){
+    return uuid.toString();
   }
 }

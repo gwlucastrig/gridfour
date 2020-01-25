@@ -54,6 +54,7 @@ public class CodecStats {
   long nBytesTotal;
   long nSymbolsTotal;
   long nBitsOverheadTotal;
+  long nObservedM32;
   long[] mCount = new long[256];
 
   /**
@@ -68,7 +69,7 @@ public class CodecStats {
    * Get a label for the predictor-corrector.
    * @return a valid string
    */
-  String getLabel() {
+  public String getLabel() {
     return pcType.name();
   }
 
@@ -81,7 +82,7 @@ public class CodecStats {
    * @param nBitsOverhead Any compressor-specific overhead that an
    * implementation wishes to track.
    */
-  void addToCounts(int nBytesForTile, int nSymbolsInTile, int nBitsOverhead) {
+  public void addToCounts(int nBytesForTile, int nSymbolsInTile, int nBitsOverhead) {
     nTilesCounted++;
     nBytesTotal += nBytesForTile;
     nSymbolsTotal += nSymbolsInTile;
@@ -94,9 +95,15 @@ public class CodecStats {
    * @param nM32 the total number of symbols in the encoded data
    * @param m32 the encoded data
    */
-  void addCountsForM32(int nM32, byte[] m32) {
+  public void addCountsForM32(int nM32, byte[] m32) {
+    int []observed = new int[256];
     for (int i = 0; i < nM32; i++) {
-      mCount[m32[i] & 0xff]++;
+      int index = m32[i]&0xff;
+      mCount[index]++;
+      observed[index] = 1;
+    }
+    for(int i=0; i<256; i++){
+      nObservedM32+=observed[i];
     }
   }
 
@@ -105,10 +112,10 @@ public class CodecStats {
   /**
    * Get the entropy for the data. In information theory, the term 
    * "entropy" is essentially an indicator of the number of bits actually
-   * neeeed to encode data.
+   * needed to encode data.
    * @return a positive value
    */
-  double getEntropy() {
+ public  double getEntropy() {
     long total = 0;
     for (int i = 0; i < 256; i++) {
       total += mCount[i];
@@ -130,7 +137,7 @@ public class CodecStats {
   /**
    * Clear any accumulated counts
    */
-  void clear() {
+ public void clear() {
     nTilesCounted = 0;
     nBytesTotal = 0;
     nSymbolsTotal = 0;
@@ -141,7 +148,7 @@ public class CodecStats {
    * Get the number of bits per symbol in the pre-compression encoding.
    * @return zero or a positive number
    */
-  double getBitsPerSymbol() {
+  public double getBitsPerSymbol() {
     if (nSymbolsTotal == 0) {
       return 0;
     }
@@ -152,16 +159,45 @@ public class CodecStats {
    * Get the number of tiles that have been counted.
    * @return zero or a positive number
    */
-  long getTileCount() {
+  public long getTileCount() {
     return nTilesCounted;
   }
+  
+  /**
+   * Gets the average length of the M32 code length across tiles.
+   *
+   * @return a positive floating point value, potentially zero.
+   */
+  public double getAverageMCodeLength() {
+    long sum = 0;
+    for (int i = 0; i < mCount.length; i++) {
+      sum += mCount[i];
+    }
+    if (nTilesCounted > 0) {
+      return (double) sum / (double) nTilesCounted;
+    }
+    return 0;
+  }
 
+    /**
+   * Gets the average length of the M32 code length across tiles.
+   *
+   * @return a positive floating point value, potentially zero.
+   */
+  public double getAverageObservedMCodes() {
+    if (nTilesCounted > 0) {
+      return (double) nObservedM32 / (double) nTilesCounted;
+    }
+    return 0;
+  }
+  
+  
   /**
    * Get the average overhead per tile. Not all compressors tabulate
    * this value.
    * @return zero or a positive value.
    */
-  double getAverageOverhead() {
+  public double getAverageOverhead() {
     if (nTilesCounted == 0) {
       return 0;
     }
@@ -172,7 +208,7 @@ public class CodecStats {
    * Get the average length of encoded tiles, in bytes.
    * @return zero or a positive number.
    */
-  double getAverageLength() {
+  public double getAverageLength() {
     if (nTilesCounted == 0) {
       return 0;
     }

@@ -81,13 +81,13 @@ class CodecDeflate implements IG93CompressorCodec {
     CodecStats stats = codecStats[packing[1] & 0xff];
     int nValues = nRows * nColumns;
     stats.addToCounts(packing.length - 10, nValues, 0);
-    
-        int nM32 = (packing[6] & 0xff)
+
+    int nM32 = (packing[6] & 0xff)
             | ((packing[7] & 0xff) << 8)
             | ((packing[8] & 0xff) << 16)
             | ((packing[9] & 0xff) << 24);
 
-       byte[] codeM32s = new byte[nM32];
+    byte[] codeM32s = new byte[nM32];
     try {
       Inflater inflater = new Inflater();
       inflater.setInput(packing, 10, packing.length - 10);
@@ -99,7 +99,7 @@ class CodecDeflate implements IG93CompressorCodec {
     } catch (DataFormatException dfe) {
       throw new IOException(dfe.getMessage(), dfe);
     }
-    
+
   }
 
   @Override
@@ -164,7 +164,6 @@ class CodecDeflate implements IG93CompressorCodec {
     if (!containsValidData) {
       return null;
     }
-
 
     byte[] mCode = new byte[5 * nRows * nCols];
 
@@ -232,8 +231,8 @@ class CodecDeflate implements IG93CompressorCodec {
       ps.format("   Tiles Compressed:  0");
       return;
     }
-
-    ps.format("   Predictor               Times Used         bits/sym   entropy     avg bits per tile%n");
+  ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy%n");
+ 
     for (CodecStats stats : codecStats) {
       String label = stats.getLabel();
       if (label.equalsIgnoreCase("None")) {
@@ -241,13 +240,19 @@ class CodecDeflate implements IG93CompressorCodec {
       }
       long tileCount = stats.getTileCount();
       double bitsPerSymbol = stats.getBitsPerSymbol();
+      double avgBitsInText = stats.getAverageLength()*8;
+      double avgUniqueSymbols = stats.getAverageObservedMCodes();
+      double avgMCodeLength = stats.getAverageMCodeLength();
       double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
-         double entropy = stats.getEntropy();
-         double avgBitsPerTile = stats.getAverageLength()*8;
-
-      ps.format("   %-20.20s %8d (%4.1f %%)     %4.1f        %4.1f         %6.1f%n",
-              label, tileCount, percentTiles, bitsPerSymbol, entropy, avgBitsPerTile);
+      double entropy = stats.getEntropy();
+      ps.format("   %-20.20s %8d (%4.1f %%)      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f%n",
+              label, tileCount, percentTiles, 
+              bitsPerSymbol, avgBitsInText,
+              avgMCodeLength, 
+               avgUniqueSymbols,
+              entropy);
     }
+
 
   }
 

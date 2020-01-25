@@ -62,12 +62,12 @@ public class G93ReadPerformance {
     this.inputFile = inputFile;
     try (G93File g93 = new G93File(inputFile, "r")) {
       spec = g93.getSpecification();
-      nRowsInRaster = spec.getRowsInRasterCount();
-      nColsInRaster = spec.getColumnsInRasterCount();
-      nRowsInTile = spec.getRowsInTileCount();
-      nColsInTile = spec.getColumnsInTileCount();
-      nRowsOfTiles = spec.getRowsOfTilesCount();
-      nColsOfTiles = spec.getColumnsOfTilesCount();
+      nRowsInRaster = spec.getRowsInGrid();
+      nColsInRaster = spec.getColumnsInGrid();
+      nRowsInTile = spec.getRowsInTile();
+      nColsInTile = spec.getColumnsInTile();
+      nRowsOfTiles = spec.getRowsOfTilesInGrid();
+      nColsOfTiles = spec.getColumnsOfTilesInGrid();
     }
   }
 
@@ -227,7 +227,6 @@ public class G93ReadPerformance {
   void testTileBlockScan(PrintStream ps) throws IOException {
     try (G93File g93 = new G93File(inputFile, "r")) {
       g93.setTileCacheSize(G93CacheSize.Small);
-      G93DataType dType = spec.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
@@ -259,7 +258,6 @@ public class G93ReadPerformance {
     void testTileLoadTime(PrintStream ps) throws IOException {
     try (G93File g93 = new G93File(inputFile, "r")) {
       g93.setTileCacheSize(G93CacheSize.Small);
-      G93DataType dType = spec.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();

@@ -206,7 +206,8 @@ public class CodecHuffman implements IG93CompressorCodec {
       return;
     }
 
-    ps.format("   Predictor                Times Used        bits/sym   entropy     avg bits in tree/tile%n");
+    ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy | bits in tree%n");
+ 
     for (CodecStats stats : codecStats) {
       String label = stats.getLabel();
       if (label.equalsIgnoreCase("None")) {
@@ -216,10 +217,17 @@ public class CodecHuffman implements IG93CompressorCodec {
       double bitsPerSymbol = stats.getBitsPerSymbol();
       double avgBitsInTree = stats.getAverageOverhead();
       double avgBitsInText = stats.getAverageLength()*8;
+      double avgUniqueSymbols = stats.getAverageObservedMCodes();
+      double avgMCodeLength = stats.getAverageMCodeLength();
       double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
       double entropy = stats.getEntropy();
-      ps.format("   %-20.20s %8d (%4.1f %%)     %4.1f        %4.1f         %6.1f/%3.1f%n",
-              label, tileCount, percentTiles, bitsPerSymbol, entropy,  avgBitsInTree, avgBitsInText);
+      ps.format("   %-20.20s %8d (%4.1f %%)      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f   | %6.1f/%n",
+              label, tileCount, percentTiles, 
+              bitsPerSymbol, avgBitsInText,
+              avgMCodeLength, 
+               avgUniqueSymbols,
+              entropy, 
+              avgBitsInTree);
     }
 
   }

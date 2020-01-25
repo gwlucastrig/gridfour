@@ -83,10 +83,10 @@ public class ReadG93 {
     // metadata, the summarize function is the most efficient way of
     // doing so.
     G93FileSpecification spec = g93.getSpecification();
-    int nRows = spec.getRowsInRasterCount();
-    int nCols = spec.getColumnsInRasterCount();
-    int nRowsOfTiles = spec.getRowsOfTilesCount();
-    int nColsOfTiles = spec.getColumnsOfTilesCount();
+    int nRows = spec.getRowsInGrid();
+    int nCols = spec.getColumnsInGrid();
+    int nRowsOfTiles = spec.getRowsOfTilesInGrid();
+    int nColsOfTiles = spec.getColumnsOfTilesInGrid();
     int nTiles = nRowsOfTiles * nColsOfTiles;
     ps.format("File dimensions%n");
     ps.format("  Rows:      %8d%n", nRows);
@@ -94,9 +94,6 @@ public class ReadG93 {
     ps.format("  Tiles:     %8d%n", nTiles);
     ps.format("Time to read header and index %10.1f ms%n", timeForOpeningFile);
     g93.summarize(ps, true);
-    
-    int nRowsInTile = spec.getRowsInTileCount();
-    int nColsInTile = spec.getColumnsInTileCount();
 
     // Variable length records can contain either binary or text data.
     // The VLR's are read during initial access, though their payload
@@ -129,8 +126,8 @@ public class ReadG93 {
     int rowStep = 1;
     int colStep = 1;
     if(oneTestPerTile){
-       rowStep = spec.getRowsInTileCount();
-       colStep = spec.getColumnsInTileCount();
+       rowStep = spec.getRowsInTile();
+       colStep = spec.getColumnsInTile();
 
     }
     for (int iTest = 0; iTest < nTest; iTest++) {
