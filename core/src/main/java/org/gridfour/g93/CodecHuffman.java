@@ -47,11 +47,11 @@ import org.gridfour.io.BitOutputStore;
 
 /**
  * Provides a codec for data compression using Huffman codes and the
- * predictor-corrector models.
+ * predictive-transform models.
  */
 public class CodecHuffman implements IG93CompressorCodec {
 
-  private final IPredictorCorrector[] predictorCorrector;
+  private final IPredictiveTransform[] predictiveTransform;
 
   private CodecStats[] codecStats;
 
@@ -59,11 +59,11 @@ public class CodecHuffman implements IG93CompressorCodec {
    * Standard constructor
    */
   public CodecHuffman() {
-    predictorCorrector = new IPredictorCorrector[4];
-    predictorCorrector[0] = new PredictorCorrectorConstantModel();
-    predictorCorrector[1] = new PredictorCorrectorLinearModel();
-    predictorCorrector[2] = new PredictorCorrectorTriangleModel();
-    predictorCorrector[3] = new PredictorCorrectorConstantWithNullsModel();
+    predictiveTransform = new IPredictiveTransform[4];
+    predictiveTransform[0] = new PredictiveTransformConstantModel();
+    predictiveTransform[1] = new PredictiveTransformLinearModel();
+    predictiveTransform[2] = new PredictiveTransformTriangleModel();
+    predictiveTransform[3] = new PredictiveTransformConstantWithNulls();
 
   }
 
@@ -87,7 +87,7 @@ public class CodecHuffman implements IG93CompressorCodec {
     int resultLength = Integer.MAX_VALUE;
     BitOutputStore resultStore = null;
 
-    for (IPredictorCorrector testModel : predictorCorrector) {
+    for (IPredictiveTransform testModel : predictiveTransform) {
       if (containsNullValue) {
         if (!testModel.isNullDataSupported()) {
           continue;
@@ -119,7 +119,7 @@ public class CodecHuffman implements IG93CompressorCodec {
     return resultStore.getEncodedText();
   }
 
-  BitOutputStore compress(int codecIndex, IPredictorCorrector pcc, byte[] mCodes, int nM32) {
+  BitOutputStore compress(int codecIndex, IPredictiveTransform pcc, byte[] mCodes, int nM32) {
     HuffmanEncoder huffman = new HuffmanEncoder();
     BitOutputStore store = new BitOutputStore();
     store.appendBits(8, codecIndex);
@@ -132,7 +132,7 @@ public class CodecHuffman implements IG93CompressorCodec {
 
   @Override
   public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
-    IPredictorCorrector pcc = this.decodePredictorCorrector(packing[1]);
+    IPredictiveTransform pcc = this.decodePredictorCorrector(packing[1]);
     int seed
             = (packing[2] & 0xff)
             | ((packing[3] & 0xff) << 8)
@@ -153,17 +153,17 @@ public class CodecHuffman implements IG93CompressorCodec {
     return output;
   }
 
-  private IPredictorCorrector decodePredictorCorrector(int code) throws IOException {
-    PredictorCorrectorType pcType = PredictorCorrectorType.valueOf(code);
+  private IPredictiveTransform decodePredictorCorrector(int code) throws IOException {
+    PredictiveTransformType pcType = PredictiveTransformType.valueOf(code);
     switch (pcType) {
       case Constant:
-        return new PredictorCorrectorConstantModel();
+        return new PredictiveTransformConstantModel();
       case Linear:
-        return new PredictorCorrectorLinearModel();
+        return new PredictiveTransformLinearModel();
       case Triangle:
-        return new PredictorCorrectorTriangleModel();
+        return new PredictiveTransformTriangleModel();
       case ConstantWithNulls:
-        return new PredictorCorrectorConstantWithNullsModel();
+        return new PredictiveTransformConstantWithNulls();
       default:
         throw new IOException("Unknown PredictorCorrector type");
     }
@@ -172,7 +172,7 @@ public class CodecHuffman implements IG93CompressorCodec {
   @Override
   public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
     if (codecStats == null) {
-      PredictorCorrectorType[] pcArray = PredictorCorrectorType.values();
+      PredictiveTransformType[] pcArray = PredictiveTransformType.values();
       codecStats = new CodecStats[pcArray.length];
       for (int i = 0; i < pcArray.length; i++) {
         codecStats[i] = new CodecStats(pcArray[i]);

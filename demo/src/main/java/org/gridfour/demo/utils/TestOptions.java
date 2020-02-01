@@ -432,6 +432,7 @@ public class TestOptions {
     zScale = scanDoubleOption(args, "-zScale", matched, zScale);
     zOffset = scanDoubleOption(args, "-zScale", matched, zOffset);
 
+    tileSize = scanSizeOption(args, "-tileSize", matched);
     checkOptions();
 
     return matched;

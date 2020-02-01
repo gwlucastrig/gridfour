@@ -47,12 +47,12 @@ import static org.gridfour.g93.G93FileConstants.NULL_DATA_CODE;
 
 /**
  * Provides a coder-decoder (codec) for data compression using the standard
- * Deflate (gzip) compressor from the Java API and the predictor-corrector
+ * Deflate (gzip) compressor from the Java API and the predictive-transform
  * models.
  */
 class CodecDeflate implements IG93CompressorCodec {
 
-  private final IPredictorCorrector[] predictorCorrector;
+  private final IPredictiveTransform[] predictiveTransform;
 
   private CodecStats[] codecStats;
 
@@ -60,18 +60,18 @@ class CodecDeflate implements IG93CompressorCodec {
    * Standard constructor
    */
   public CodecDeflate() {
-    predictorCorrector = new IPredictorCorrector[4];
-    predictorCorrector[0] = new PredictorCorrectorConstantModel();
-    predictorCorrector[1] = new PredictorCorrectorLinearModel();
-    predictorCorrector[2] = new PredictorCorrectorTriangleModel();
-    predictorCorrector[3] = new PredictorCorrectorConstantWithNullsModel();
+    predictiveTransform = new IPredictiveTransform[4];
+    predictiveTransform[0] = new PredictiveTransformConstantModel();
+    predictiveTransform[1] = new PredictiveTransformLinearModel();
+    predictiveTransform[2] = new PredictiveTransformTriangleModel();
+    predictiveTransform[3] = new PredictiveTransformConstantWithNulls();
   }
 
   @Override
   public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
 
     if (codecStats == null) {
-      PredictorCorrectorType[] pcArray = PredictorCorrectorType.values();
+      PredictiveTransformType[] pcArray = PredictiveTransformType.values();
       codecStats = new CodecStats[pcArray.length];
       for (int i = 0; i < pcArray.length; i++) {
         codecStats[i] = new CodecStats(pcArray[i]);
@@ -104,20 +104,20 @@ class CodecDeflate implements IG93CompressorCodec {
 
   @Override
   public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
-    PredictorCorrectorType predictorCorrector = PredictorCorrectorType.valueOf(packing[1]);
-    IPredictorCorrector pcc = null;
-    switch (predictorCorrector) {
+    PredictiveTransformType predictiveTransform = PredictiveTransformType.valueOf(packing[1]);
+    IPredictiveTransform pcc = null;
+    switch (predictiveTransform) {
       case Constant:
-        pcc = new PredictorCorrectorConstantModel();
+        pcc = new PredictiveTransformConstantModel();
         break;
       case Linear:
-        pcc = new PredictorCorrectorLinearModel();
+        pcc = new PredictiveTransformLinearModel();
         break;
       case Triangle:
-        pcc = new PredictorCorrectorTriangleModel();
+        pcc = new PredictiveTransformTriangleModel();
         break;
       case ConstantWithNulls:
-        pcc = new PredictorCorrectorConstantWithNullsModel();
+        pcc = new PredictiveTransformConstantWithNulls();
         break;
       default:
         throw new IOException("Unknown PredictorCorrector type");
@@ -170,8 +170,8 @@ class CodecDeflate implements IG93CompressorCodec {
     int resultLength = Integer.MAX_VALUE;
     byte[] resultBytes = null;
 
-    for (int i = 0; i < predictorCorrector.length; i++) {
-      IPredictorCorrector testModel = predictorCorrector[i];
+    for (int i = 0; i < predictiveTransform.length; i++) {
+      IPredictiveTransform testModel = predictiveTransform[i];
       if (containsNullValue) {
         if (!testModel.isNullDataSupported()) {
           continue;
@@ -198,7 +198,7 @@ class CodecDeflate implements IG93CompressorCodec {
 
   }
 
-  byte[] compress(int codecIndex, IPredictorCorrector pcc, byte[] mCodes, int nM32) {
+  byte[] compress(int codecIndex, IPredictiveTransform pcc, byte[] mCodes, int nM32) {
     int seed = pcc.getSeed();
     Deflater deflater = new Deflater(6);
     deflater.setInput(mCodes, 0, nM32);

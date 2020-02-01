@@ -37,12 +37,12 @@
 package org.gridfour.g93;
 
 /**
- * Defines an interface for predictor-corrector implementations.
+ * Defines an interface for predictive-transform implementations.
  */
-public interface IPredictorCorrector {
+public interface IPredictiveTransform {
 
   /**
-   * Decodes the specified data using the predictor-corrector model to compute
+   * Decodes the specified data using the predictive-transform model to compute
    * output values from the specified input.
    *
    * @param seed a seed value to provide the initial value for the encoding
@@ -67,7 +67,7 @@ public interface IPredictorCorrector {
           int[] output);
 
   /**
-   * Encodes the specified data using the predictor-corrector model to develop
+   * Encodes the specified data using the predictive-transform model to develop
    * computed adjustments for the data grid.
    * <p>
    * This routine returns the seed value detected in the data. This value is
@@ -94,7 +94,7 @@ public interface IPredictorCorrector {
           byte[] encoding);
 
   /**
-   * Indicates that the predictor-corrector is intended to handle null values.
+   * Indicates that the predictive-transform is intended to handle null values.
    * 
    * @return true if null values are permitted; otherwise false.
    */
@@ -113,5 +113,5 @@ public interface IPredictorCorrector {
    * Gets the predictor type.
    * @return a valid enumeration corresponding the the type of predictor
    */
-    PredictorCorrectorType getPredictorType();
+    PredictiveTransformType getPredictorType();
 }

@@ -41,7 +41,7 @@ package org.gridfour.g93;
 import org.gridfour.util.CodecM32;
 
 /**
- * Applies the predictor-corrector triangle function model to the data. The
+ * Applies the predictive-transform triangle model to the data. The
  * triangle model assumes that the data lies on a plane that can be defined by
  * three control points spaced at unit distances across the horizontal
  * coordinates.
@@ -51,7 +51,7 @@ import org.gridfour.util.CodecM32;
  * models by Huffman coding", Computers &amp; Geosciences, 18(8),
  * 1013-1024</cite>
  */
-public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
+public class PredictiveTransformTriangleModel implements IPredictiveTransform {
 
   int encodedSeed;
 
@@ -169,7 +169,7 @@ public class PredictorCorrectorTriangleModel implements IPredictorCorrector {
   }
 
   @Override
-  public PredictorCorrectorType getPredictorType() {
-    return PredictorCorrectorType.Triangle;
+  public PredictiveTransformType getPredictorType() {
+    return PredictiveTransformType.Triangle;
   }
 }

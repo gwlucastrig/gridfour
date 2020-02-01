@@ -39,9 +39,9 @@ package org.gridfour.g93;
 /**
  * Used to represent the type of predictor used to encode data
  */
-public enum PredictorCorrectorType {
+public enum PredictiveTransformType {
   /**
-   * No predictor-corrector is applied; the data is stored as literals
+   * No predictive-transform is applied; the data is stored as literals
    */
   None(0),
   /**
@@ -64,13 +64,13 @@ public enum PredictorCorrectorType {
 
   final int codeValue;
 
-  PredictorCorrectorType(int codeValue) {
+  PredictiveTransformType(int codeValue) {
     this.codeValue = codeValue;
   }
 
   /**
    * Gets the code value to be stored in a data file to indicate what kind of
-   * predictor/corrector was used to store data
+   * predictive-transform was used to store data
    *
    * @return an integer in the range 0 to 4.
    */
@@ -84,7 +84,7 @@ public enum PredictorCorrectorType {
    * @param codeValue a valid integer code value
    * @return the associated enumeration instance.
    */
-  public static PredictorCorrectorType valueOf(int codeValue) {
+  public static PredictiveTransformType valueOf(int codeValue) {
     switch (codeValue) {
       case 0:
         return None;

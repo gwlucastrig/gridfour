@@ -46,7 +46,7 @@ package org.gridfour.g93;
 import org.gridfour.util.CodecM32;
 
 /**
- * Applies to predictor-corrector constant-value model to the data. The
+ * Applies to predictive-transform constant-value model to the data. The
  * constant-value model always predicts that the current value in a series will
  * have the same value as the prior value.
  * <p>
@@ -57,7 +57,7 @@ import org.gridfour.util.CodecM32;
  * used in the TIFF specification (see TIFF Tag Predictor horizontal
  * differencing, tag 0x013D).
  */
-public class PredictorCorrectorConstantModel implements IPredictorCorrector {
+public class PredictiveTransformConstantModel implements IPredictiveTransform {
 
   int encodedSeed;
 
@@ -144,7 +144,7 @@ public class PredictorCorrectorConstantModel implements IPredictorCorrector {
   }
 
   @Override
-  public PredictorCorrectorType getPredictorType() {
-    return PredictorCorrectorType.Constant;
+  public PredictiveTransformType getPredictorType() {
+    return PredictiveTransformType.Constant;
   }
 }

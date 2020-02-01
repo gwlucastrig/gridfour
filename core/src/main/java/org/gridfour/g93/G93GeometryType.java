@@ -76,7 +76,7 @@ public enum G93GeometryType {
 
   /**
    * Gets the code value to be stored in a data file to indicate what kind of
-   * predictor/corrector was used to store data
+   * predictive-transform was used to store data
    *
    * @return gets an integer code value indicating the data type; used
    * internally.

@@ -42,12 +42,12 @@ package org.gridfour.g93;
 import org.gridfour.util.CodecM32;
 
 /**
- * Applies the predictor-corrector linear function model to the data. The linear
+ * Applies the predictive-transform linear model to the data. The linear
  * model assumes that the data lies on a constant slope and predicts that the
  * value of a sample can be computed from a line passing through of the previous
  * two samples.
  */
-public class PredictorCorrectorLinearModel implements IPredictorCorrector {
+public class PredictiveTransformLinearModel implements IPredictiveTransform {
 
   int encodedSeed;
 
@@ -162,7 +162,7 @@ public class PredictorCorrectorLinearModel implements IPredictorCorrector {
   }
 
   @Override
-  public PredictorCorrectorType getPredictorType() {
-    return PredictorCorrectorType.Linear;
+  public PredictiveTransformType getPredictorType() {
+    return PredictiveTransformType.Linear;
   }
 }

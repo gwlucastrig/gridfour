@@ -49,7 +49,7 @@ package org.gridfour.g93;
  */
 public class CodecStats {
 
-  final PredictorCorrectorType pcType;
+  final PredictiveTransformType pcType;
   long nTilesCounted;
   long nBytesTotal;
   long nSymbolsTotal;
@@ -58,15 +58,15 @@ public class CodecStats {
   long[] mCount = new long[256];
 
   /**
-   * Construct a statistics object for the specified predictor-corrector.
-   * @param pcType a valid predictor-corrector type.
+   * Construct a statistics object for the specified predictive-transform.
+   * @param pcType a valid predictive-transform type.
    */
-  public CodecStats(PredictorCorrectorType pcType) {
+  public CodecStats(PredictiveTransformType pcType) {
     this.pcType = pcType;
   }
 
   /**
-   * Get a label for the predictor-corrector.
+   * Get a label for the predictive-transform.
    * @return a valid string
    */
   public String getLabel() {
@@ -90,7 +90,7 @@ public class CodecStats {
   }
 
   /**
-   * Add counts for the M32 symbols derived from the predictor-correctors
+   * Add counts for the M32 symbols derived from the predictive-transforms
    * for the tile.
    * @param nM32 the total number of symbols in the encoded data
    * @param m32 the encoded data

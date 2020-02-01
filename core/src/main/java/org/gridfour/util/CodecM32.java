@@ -155,7 +155,7 @@ public class CodecM32 {
   public void encode(int value) {
 
     // first test to see if the value is in the one-byte range.
-    // if the predictor/correctors are effective, most of the data 
+    // if the predictive-transforms are effective, most of the data 
     // will be in this range, with the remainder being mostly in the
     // two-byte range, with just a small incident of 3 or 4 byte values.
     int test = value & 0xffffff80;
