@@ -236,8 +236,8 @@ public class G93FileSpecification {
     y0 = 0;
     x1 = nColsInRaster - 1;
     y1 = nRowsInRaster - 1;
-    cellSizeX = (x1 - x0) / nColsInRaster;
-    cellSizeY = (y1 - y0) / nRowsInRaster;
+    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
+    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
 
     nCellsInTile = nRowsInTile * nColsInTile;
 
@@ -379,25 +379,25 @@ public class G93FileSpecification {
    *
    * @param latRow0 the latitude of the first row in the grid
    * @param lonCol0 the longitude of the first column of the raster (column 0).
-   * @param latRowMax the latitude of the last row of the raster.
-   * @param lonColMax the longitude of the the last column of the raster.
+   * @param latRowLast the latitude of the last row of the raster.
+   * @param lonColLast the longitude of the the last column of the raster.
    */
   public void setGeographicCoordinates(
-          double latRow0, double lonCol0, double latRowMax, double lonColMax) {
+          double latRow0, double lonCol0, double latRowLast, double lonColLast) {
     this.isGeographicCoordinateSystemSet = true;
     this.isCartesianCoordinateSystemSet = false;
     if (!isFinite(latRow0)
             || !isFinite(lonCol0)
-            || !isFinite(latRowMax)
-            || !isFinite(lonColMax)) {
+            || !isFinite(latRowLast)
+            || !isFinite(lonColLast)) {
       throw new IllegalArgumentException("Invalid floating-point value");
     }
-    if (latRowMax <= latRow0) {
-      throw new IllegalArgumentException(
-              "Northwest latitude must be greater than Southeast latitude");
-    }
+//    if (latRowMax <= latRow0) {
+//      throw new IllegalArgumentException(
+//              "Northwest latitude must be greater than Southeast latitude");
+//    }
 
-    double gxDelta = Angle.to360(lonColMax - lonCol0);
+    double gxDelta = Angle.to360(lonColLast - lonCol0);
     if (gxDelta == 0) {
       gxDelta = 360;
     }
@@ -406,9 +406,9 @@ public class G93FileSpecification {
     x0 = gx0;
     y0 = latRow0;
     x1 = gx1;
-    y1 = latRowMax;
-    cellSizeX = (x1 - x0) / nColsInRaster;
-    cellSizeY = (y1 - y0) / nRowsInRaster;
+    y1 = latRowLast;
+    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
+    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     checkGeographicCoverage();
 
   }
@@ -514,16 +514,16 @@ public class G93FileSpecification {
   }
 
   /**
-   * Gets the identification string associated with this specification
-   * and the G93File that is created from it. The identification
-   * is supplied by the application that creates a G93 file and is not
-   * required to be populated.
+   * Gets the identification string associated with this specification and the
+   * G93File that is created from it. The identification is supplied by the
+   * application that creates a G93 file and is not required to be populated.
+   *
    * @return a string of up to 64 characters, potentially null.
    */
-  public String getIdentification(){
+  public String getIdentification() {
     return identification;
   }
-  
+
   /**
    * Construct a specification from the specified file
    *
@@ -711,9 +711,9 @@ public class G93FileSpecification {
   }
 
   /**
-   * Get the number of rows of tiles. This value is computed as
-   * the number of rows in the grid divided by the number of rows in a tile,
-   * rounded up.
+   * Get the number of rows of tiles. This value is computed as the number of
+   * rows in the grid divided by the number of rows in a tile, rounded up.
+   *
    * @return a value of 1 or greater.
    */
   public int getRowsOfTilesInGrid() {
@@ -721,9 +721,9 @@ public class G93FileSpecification {
   }
 
   /**
-   * Get the number of columns of tiles. This value is computed as the
-   * number of columns in the grid divided by the number of columns in a tile,
-   * rounded up.
+   * Get the number of columns of tiles. This value is computed as the number of
+   * columns in the grid divided by the number of columns in a tile, rounded up.
+   *
    * @return a value of 1 or greater.
    */
   public int getColumnsOfTilesInGrid() {
@@ -732,6 +732,7 @@ public class G93FileSpecification {
 
   /**
    * Gets the number of rows in a tile.
+   *
    * @return a value of 1 or greater.
    */
   public int getRowsInTile() {
@@ -740,17 +741,19 @@ public class G93FileSpecification {
 
   /**
    * Gets the number of columns in a tile.
+   *
    * @return a value of 1 or greater
    */
   public int getColumnsInTile() {
     return nColsInTile;
   }
-  
+
   /**
    * Gets the number of elements stored for each grid point.
+   *
    * @return a value of 1 or greater.
    */
-  public int getRank(){
+  public int getRank() {
     return rank;
   }
 
@@ -859,7 +862,7 @@ public class G93FileSpecification {
   public double[] mapGridToCartesian(double row, double column) {
     double[] c = new double[2];
     c[0] = (x1 - x0) * column / (nColsInRaster - 1) + x0;
-    c[1] = (y1 - y0) * row / (nRowsInRaster) + y0;
+    c[1] = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
     return c;
   }
 
@@ -903,7 +906,7 @@ public class G93FileSpecification {
    */
   public double[] mapGridToGeographic(double row, double column) {
     double[] c = new double[2];
-    c[0] = (y1 - y0) * row / (nRowsInRaster) + y0;
+    c[0] = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
     c[1] = (x1 - x0) * column / (nColsInRaster - 1) + x0;
     return c;
   }
@@ -1002,8 +1005,8 @@ public class G93FileSpecification {
 
   /**
    * Gets the sizes for the cells based on the coordinate system set in the
-   * specification.  These sizes are the distances measured along the
-   * x and y axes in the coordinate system specified for this instance.
+   * specification. These sizes are the distances measured along the x and y
+   * axes in the coordinate system specified for this instance.
    *
    * @return a valid array of dimension 2 giving, respectively, the x and y cell
    * sizes.
@@ -1023,14 +1026,14 @@ public class G93FileSpecification {
   public int getNumberOfCellsInTile() {
     return nCellsInTile;
   }
-  
-    /**
+
+  /**
    * Gets the number of cells (grid points) in the raster definition.
    *
    * @return a value greater than or equal to 1.
    */
-  public long getNumberOfCellsInGrid(){
-    return (long)nRowsInRaster*(long)nColsInRaster;
+  public long getNumberOfCellsInGrid() {
+    return (long) nRowsInRaster * (long) nColsInRaster;
   }
 
   /**
@@ -1169,24 +1172,24 @@ public class G93FileSpecification {
    * @return a valid instance of Rectangle2D giving the bounds
    */
   public Rectangle2D getBounds() {
-    return new Rectangle2D.Double(x0, y0, x1-x0, y1-y0);
+    return new Rectangle2D.Double(x0, y0, x1 - x0, y1 - y0);
   }
-  
+
   /**
    * Gets the UUID assigned to this specification (and any G93 files derived
-   * from it).   The UUID is an arbitrary value automatically assigned to
-   * the specification. Its intended use it to allow G93 to correlate
-   * files of different types (such as the main G93 file and its associated
-   * index file).
+   * from it). The UUID is an arbitrary value automatically assigned to the
+   * specification. Its intended use it to allow G93 to correlate files of
+   * different types (such as the main G93 file and its associated index file).
    * <p>
    * Once established, the UUID is never modified.
    * <p>
    * Internally, the UUID is an arbitary set of 16 bytes. Non-Java language
-   * implementations in languages/environments that do not have built-in support 
+   * implementations in languages/environments that do not have built-in support
    * for UUIDs are free to implement this feature as they see fit.
+   *
    * @return a valid string.
    */
-  public String getUuid(){
+  public String getUuid() {
     return uuid.toString();
   }
 }

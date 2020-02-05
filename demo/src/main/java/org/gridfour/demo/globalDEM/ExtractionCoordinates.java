@@ -37,6 +37,8 @@ package org.gridfour.demo.globalDEM;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.util.Angle;
 import ucar.ma2.Array;
 import ucar.nc2.Variable;
 
@@ -66,6 +68,9 @@ class ExtractionCoordinates {
   double lonSpacingDeg;
   double lonColMin;
   double lonColMax;
+
+  final private double[] cLat;
+  final private double[] cLon;
 
   ExtractionCoordinates(Variable latitude, Variable longitude) throws IOException {
     // both the latitude and longitude Variable instances should
@@ -102,6 +107,10 @@ class ExtractionCoordinates {
     latRowMax = array.getDouble(n - 1);
     // the spacing is just the difference between two adjacent rows.
     latSpacingDeg = array.getDouble(1) - latRowMin;
+    cLat = new double[n];
+    for (int i = 0; i < n; i++) {
+      cLat[i] = array.getDouble(i);
+    }
 
     lonVariableName = longitude.getShortName();
     shape = longitude.getShape();
@@ -111,6 +120,10 @@ class ExtractionCoordinates {
     lonColMax = array.getDouble(n - 1);
     // the spacing is just the difference between two adjacent columns
     lonSpacingDeg = array.getDouble(1) - lonColMin;
+    cLon = new double[n];
+    for (int i = 0; i < n; i++) {
+      cLon[i] = array.getDouble(i);
+    }
   }
 
   /**
@@ -159,8 +172,7 @@ class ExtractionCoordinates {
             + ", %6.3f km at the equator%n",
             s, vMin, vMax, vSpacing * 60, vSpacing * 3600, m);
   }
-  
-  
+
   /**
    * Gets the coordinate bounds defined by the lat/lon variables. The results
    * are stored in an array giving (in order) latitude for the first row,
@@ -178,4 +190,64 @@ class ExtractionCoordinates {
     return bounds;
   }
 
+  /**
+   * Performs a test to verify that the mappings between the geographic
+   * coordinate system (latitude, longitude) and grid coordinate system (row,
+   * column) are fully invertible (bijective) except in certain special cases
+   * where the longitude wraps around the 180 degree boundary.
+   *
+   * @param ps a valid print stream
+   * @param spec a valid specification populated using this instance.
+   */
+  void checkSpecificationTransform(PrintStream ps, G93FileSpecification spec) {
+    for (int i = 0; i < cLat.length; i++) {
+      double[] g = spec.mapGeographicToGrid(cLat[i], lonColMin);
+      double absDelta = Math.abs(g[0] - i);
+      if (absDelta > Math.abs(latSpacingDeg) / 1.0e+4) {
+        ps.format("Error in latitude to grid conversion, lat %f, row %d%n", cLat[i], i);
+        return;
+      }
+    }
+    for (int i = 0; i < cLat.length; i++) {
+      double[] g = spec.mapGridToGeographic(i, 0);
+      double absDelta = Math.abs(cLat[i] - g[0]);
+      if (absDelta > Math.abs(latSpacingDeg) / 1.0e+4) {
+        ps.format("Error grid to latitude conversion, lat %f, row %d%, computed %f%n", cLat[i], i, g[0]);
+        return;
+      }
+    }
+
+    // Columns are trickier because they must account for the
+    // longitude wrap-around feature (if present in the specification).
+    int nColumns = spec.getColumnsInGrid();
+
+    for (int i = 0; i < nColumns; i++) {
+      int testIndex = i;
+      double[] g = spec.mapGeographicToGrid(latRowMin, cLon[i]);
+      if (i == nColumns - 1 && spec.doGeographicCoordinatesBracketLongitude()) {
+        // the last column is also the first column.
+        testIndex = 0;
+      }
+      double absDelta = Math.abs(g[1] - testIndex);
+      if (absDelta > Math.abs(lonSpacingDeg) / 1.0e+4) {
+        ps.format("Error in longitude to grid conversion, lat %f, column %d%n", cLon[i], i);
+        return;
+      }
+    }
+    for (int i = 0; i < nColumns; i++) {
+      double testLon = cLon[i];
+      if (i == nColumns - 1 && spec.doGeographicCoordinatesBracketLongitude()) {
+        // the last column is also the first column.
+        testLon = cLon[0];
+      }
+      double[] g = spec.mapGridToGeographic(0, i);
+      double absDelta = Math.abs(Angle.to180(g[1] - testLon));
+      if (absDelta > Math.abs(lonSpacingDeg) / 1.0e+4) {
+        ps.format("Error grid to longitude conversion, lat %f, column %d%n", cLat[i], i);
+        return;
+      }
+    }
+
+    ps.println("Grid to geographic coordinate mapping test completed successfully");
+  }
 }

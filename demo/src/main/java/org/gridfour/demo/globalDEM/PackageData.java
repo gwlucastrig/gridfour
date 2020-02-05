@@ -204,6 +204,12 @@ public class PackageData {
             geoCoords[1],
             geoCoords[2],
             geoCoords[3]);
+    
+    // Check to verify that the geographic coordinates and grid coordinate
+    // are correctly implemented. This test is not truly part of the packaging
+    // process (since it should always work), but is included here as a
+    // diagnostic.
+    extractionCoords.checkSpecificationTransform(ps, spec);
 
     try (G93File g93 = new G93File(outputFile, spec)) {
       g93.setTileCacheSize(G93CacheSize.Large);
