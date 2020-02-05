@@ -392,10 +392,6 @@ public class G93FileSpecification {
             || !isFinite(lonColLast)) {
       throw new IllegalArgumentException("Invalid floating-point value");
     }
-//    if (latRowMax <= latRow0) {
-//      throw new IllegalArgumentException(
-//              "Northwest latitude must be greater than Southeast latitude");
-//    }
 
     double gxDelta = Angle.to360(lonColLast - lonCol0);
     if (gxDelta == 0) {
@@ -460,12 +456,12 @@ public class G93FileSpecification {
               "Cartesian coordinate y0 must not equal y1");
     }
 
-    x0 = x0;
-    y0 = y0;
-    x1 = x1;
-    y1 = y1;
-    cellSizeX = (x1 - x0) / nColsInRaster;
-    cellSizeY = (y1 - y0) / nRowsInRaster;
+    this.x0 = x0;
+    this.y0 = y0;
+    this.x1 = x1;
+    this.y1 = y1;
+    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
+    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
   }
 
   /**
@@ -588,8 +584,8 @@ public class G93FileSpecification {
     y0 = braf.leReadDouble();
     x1 = braf.leReadDouble();
     y1 = braf.leReadDouble();
-    cellSizeX = (x1 - x0) / nColsInRaster;
-    cellSizeY = (y1 - y0) / nRowsInRaster;
+    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
+    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     if (isGeographicCoordinateSystemSet) {
       checkGeographicCoverage();
     }
