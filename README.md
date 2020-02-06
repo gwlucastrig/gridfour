@@ -31,11 +31,12 @@ the persistent storage of data between runs. And, finally, it includes custom
 data compression that significantly reduces the storage size required for
 raster data. 
 
-The algorithms used in G93 have been around for a long time. 
+The algorithms used in G93 have been around for a long time
 They were originally developed for a project named Gem93 that was
 completed in 1993 (we've named our file format "G93" in its honor).  Gem93 included 
 a number of tools for working with raster data, among them a data compression technique
-inspired by the work of Kidner and Smith (1992).
+inspired by the work of Kidner and Smith (1992). You can read more about them at our wiki page
+[G93 Compression Algorithms](https://github.com/gwlucastrig/gridfour/wiki/G93-Compression-Algorithms).
 
 Of course, the state of the art has advanced quite a bit since 1993. And although
 the Gridfour is based on old ideas, we hope that our G93 library will provide
