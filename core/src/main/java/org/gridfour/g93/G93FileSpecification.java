@@ -259,6 +259,8 @@ public class G93FileSpecification {
     nRowsOfTiles = s.nRowsOfTiles;
     nColsOfTiles = s.nColsOfTiles;
     nCellsInTile = s.nCellsInTile;
+    
+    identification = s.identification;
 
     rank = s.rank;
     dataType = s.dataType;
@@ -497,7 +499,7 @@ public class G93FileSpecification {
     if (identification != null && !identification.isEmpty()) {
       try {
         byte[] b = identification.getBytes("UTF-8");
-        System.arraycopy(b, 0, output, 0, IDENTIFICATION_SIZE);
+        System.arraycopy(b, 0, output, 0, b.length);
       } catch (UnsupportedEncodingException ex) {
         String s = "Unsupported Encoding";
         output = new byte[IDENTIFICATION_SIZE];
@@ -651,7 +653,7 @@ public class G93FileSpecification {
       coordinateSystem = 2;
     }
 
-    braf.writeUnsignedByte(coordinateSystem);
+    braf.writeByte(coordinateSystem);
     braf.leWriteDouble(x0);
     braf.leWriteDouble(y0);
     braf.leWriteDouble(x1);

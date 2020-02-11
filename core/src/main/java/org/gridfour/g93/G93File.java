@@ -139,10 +139,10 @@ public class G93File implements Closeable, AutoCloseable {
     timeModified = System.currentTimeMillis();
 
     braf.writeASCII(RasterFileType.G93raster.getIdentifier(), 12);
-    braf.writeUnsignedByte(G93FileSpecification.VERSION);
-    braf.writeUnsignedByte(G93FileSpecification.SUB_VERSION);
-    braf.writeUnsignedByte(0); // reserved  
-    braf.writeUnsignedByte(0); // reserved 
+    braf.writeByte(G93FileSpecification.VERSION);
+    braf.writeByte(G93FileSpecification.SUB_VERSION);
+    braf.writeByte(0); // reserved  
+    braf.writeByte(0); // reserved 
 
     braf.leWriteLong(timeModified);  // time modified
     braf.leWriteLong(timeModified);    // time opened
@@ -509,7 +509,7 @@ public class G93File implements Closeable, AutoCloseable {
     if (tile == null) {
       tile = tileCache.allocateNewTile(accessElements.tileIndex);
     }
-
+ 
     tile.setValues(accessElements.rowInTile, accessElements.colInTile, values);
   }
 
@@ -641,10 +641,10 @@ public class G93File implements Closeable, AutoCloseable {
     BufferedRandomAccessFile idxraf
             = new BufferedRandomAccessFile(indexFile, "rw");
     idxraf.writeASCII(RasterFileType.G93index.getIdentifier(), 12);
-    idxraf.writeUnsignedByte(G93FileSpecification.VERSION);
-    idxraf.writeUnsignedByte(G93FileSpecification.SUB_VERSION);
-    idxraf.writeUnsignedByte(0); // reserved  
-    idxraf.writeUnsignedByte(0); // reserved 
+    idxraf.writeByte(G93FileSpecification.VERSION);
+    idxraf.writeByte(G93FileSpecification.SUB_VERSION);
+    idxraf.writeByte(0); // reserved  
+    idxraf.writeByte(0); // reserved 
 
     idxraf.leWriteLong(closingTime);  // time modified
     idxraf.leWriteLong(spec.uuid.getLeastSignificantBits());

@@ -153,14 +153,17 @@ public class PackageData {
     lon = ncfile.findVariable("lon");
     z = ncfile.findVariable("elevation");
     int[] tileSize;
+    String identification;
     if (lat == null) {
       // ETOPO1 specification
       tileSize = options.getTileSize(90, 120);
       lat = ncfile.findVariable("y");
       lon = ncfile.findVariable("x");
       z = ncfile.findVariable("z");
+      identification = "ETOPO1";
     } else {
       tileSize = options.getTileSize(90, 120);
+      identification = "GEBCO 2019";
     }
     if (lat == null || lon == null || z == null) {
       throw new IllegalArgumentException(
@@ -190,6 +193,8 @@ public class PackageData {
 
     G93FileSpecification spec
             = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
+    spec.setIdentification(identification);
+    
     spec.setDataCompressionEnabled(compressionEnabled);
     DataType zType = z.getDataType();
     if (zType.isIntegral()) {
