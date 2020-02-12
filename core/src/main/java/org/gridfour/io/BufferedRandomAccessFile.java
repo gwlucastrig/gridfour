@@ -39,12 +39,15 @@
 package org.gridfour.io;
 
 import java.io.Closeable;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
+import java.io.UTFDataFormatException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -74,7 +77,8 @@ import java.nio.channels.FileChannel;
  * appropriate behavior.
  *
  */
-public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
+public class BufferedRandomAccessFile
+        implements Closeable, AutoCloseable, DataInput, DataOutput {
 
   private static final int BUFFER_SIZE = 8 * 1024;
 
@@ -299,14 +303,29 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
   }
 
+  /**
+   * Gets the size of the file in bytes.
+   * @return a positive long integer value.
+   */
   public long getFileSize() {
     return virtualLength;
   }
 
+  /**
+   * Gets the position within the file at which the next write or read operation
+   * will be performed. The file position is measured in bytes and given as
+   * an offset from the first byte in the file (i.e. the first byte is at
+   * position zero).
+   * @return a positive long integer value
+   */
   public long getFilePosition() {
     return virtualPosition;
   }
 
+  /**
+   * Gets a reference to the file associated with this class.
+   * @return a valid file reference.
+   */
   public File getFile() {
     return file;
   }
@@ -321,6 +340,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     return buffer.getFloat();
   }
 
+  
   public int leReadInt() throws IOException {
     prepRead(4);
     return buffer.getInt();
@@ -366,6 +386,13 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     buffer.putDouble(v);
   }
 
+   /**
+   * Reads an array of integers accessing them in little-endian order.
+   * @param array a valid, non-zero sized array
+   * @param arrayOffset the starting position within the array.
+   * @param length the number of values to read.
+   * @throws IOException in the event of an I/O error.
+   */
   public void leReadIntArray(int[] array, int arrayOffset, int length)
           throws IOException {
     int offset = arrayOffset;
@@ -447,6 +474,13 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
   }
 
+  /**
+   * Read an array of floats accessing them in little-endian order.
+   * @param array a valid, non-zero sized array
+   * @param arrayOffset the starting position within the array.
+   * @param length the number of values to read.
+   * @throws IOException in the event of an I/O error.
+   */
   public void leReadFloatArray(float[] array, int arrayOffset, int length)
           throws IOException {
     int offset = arrayOffset;
@@ -536,6 +570,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return the boolean value read from the source file.
    * @throws IOException if an I/O error occurs.
    */
+  @Override
   public boolean readBoolean() throws IOException {
     prepRead(1);
     byte test = buffer.get();
@@ -550,6 +585,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return a signed by value.
    * @throws IOException if an I/O error occurs.
    */
+  @Override
   public byte readByte() throws IOException {
     prepRead(1);
     return buffer.get();
@@ -573,6 +609,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @throws IOException if an I/O error occurs, including an end-of-file
    * condition.
    */
+  @Override
   public void readFully(byte[] array) throws IOException {
     readFully(array, 0, array.length);
   }
@@ -588,6 +625,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @throws IOException if an I/O error occurs, including an end-of-file
    * condition.
    */
+  @Override
   public void readFully(byte[] array, int arrayOffset, int length)
           throws IOException {
     int offset = arrayOffset;
@@ -670,6 +708,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return a signed by value.
    * @throws IOException if an I/O error occurs.
    */
+  @Override
   public int readUnsignedByte() throws IOException {
     prepRead(1);
     int i = (int) (buffer.get()) & 0x000000ff;
@@ -709,10 +748,11 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
       builder.append(c);
     }
 
-    while (nRead < nBytesToRead) {
-      b = buffer.get();
-      nRead++;
+    if (nRead < nBytesToRead) {
+      // advanced the file position past the remaining characters.
+      skipBytes(nBytesToRead - nRead);
     }
+
     return nValid;
   }
 
@@ -775,6 +815,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return the actual number of bytes skipped.
    * @throws IOException if an I/O error occurs.
    */
+  @Override
   public int skipBytes(int n) throws IOException {
     // handle the most straightforward case directly,
     // otherwise, fall through to seek().
@@ -789,6 +830,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     return n;
   }
 
+  @Override
   public void writeByte(int value) throws IOException {
     prepWrite(1);
     buffer.put((byte) (value & 0xff));
@@ -851,6 +893,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
   }
 
+  @Override
   public void write(int b) throws IOException {
     prepWrite(1);
     buffer.put((byte) (b & 0xff));
@@ -862,14 +905,17 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @param b a valid array of bytes
    * @throws IOException in the event of an unexpected I/O condition
    */
+  @Override
   public void write(byte[] b) throws IOException {
     writeFully(b, 0, b.length);
   }
 
+  @Override
   public void write(byte[] b, int offset, int length) throws IOException {
     writeFully(b, offset, length);
   }
 
+  @Override
   public void writeBoolean(boolean v) throws IOException {
     prepWrite(1);
     if (v) {
@@ -879,6 +925,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     }
   }
 
+  @Override
   public void writeBytes(String s) throws IOException {
     if (s == null) {
       throw new NullPointerException();
@@ -911,12 +958,29 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   }
 
   /**
+   * Writes two bytes to the output following the specifications of the Java
+   * DataOutput interface.
+   *
+   * @param s an integer value. If the value is outside the range of a short
+   * integer (-32768 to 32767), only the two low-order bytes will be written.
+   * @throws IOException in the event of an I/O error
+   */
+  @Override
+  public void writeShort(int s) throws IOException {
+    this.prepRead(2);
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    buffer.putShort((short) s);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+  }
+
+  /**
    * Writes a 4 byte integer value to the output in a form consistent with the
    * Java DataOutput interface.
    *
    * @param value an integer value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public void writeInt(int value) throws IOException {
     prepWrite(4);
     buffer.order(ByteOrder.BIG_ENDIAN);
@@ -924,43 +988,63 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     buffer.order(ByteOrder.LITTLE_ENDIAN);
   }
 
-  
-  
-  
   /**
-   * Reads a 8-byte floating-point value in the big-endian order compatible 
-   * with the Java DataInput interface.
+   * Writes a series of UTF-8 characters following the specifications of the
+   * DataOutput interface. The first two bytes give a short integer indicating
+   * the length of the string specification, followed by the bytes comprising
+   * the UTF-8 encoded characters for the string. Note that some of the UTF-8
+   * characters in the string may require more than a single byte for their
+   * representation.
+   *
+   * @param s a valid String
+   * @throws IOException in the event of an I/O error.
+   */
+  @Override
+  public void writeUTF(String s) throws IOException {
+    if (s == null) {
+      throw new NullPointerException("Null string passed to writeUTF");
+    }
+    byte[] b = s.getBytes("UTF-8");
+    if (b.length > 65535) {
+      throw new UTFDataFormatException(
+              "String passed to writeUTF exceeds 65535 byte maximum");
+    }
+    writeShort(b.length);
+    writeFully(b, 0, b.length);
+  }
+
+  /**
+   * Reads a 8-byte floating-point value in the big-endian order compatible with
+   * the Java DataInput interface.
    *
    * @return if successful, a valid float value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public double readDouble() throws IOException {
     this.prepRead(8);
     buffer.order(ByteOrder.BIG_ENDIAN);
-    double test  = buffer.getDouble();
+    double test = buffer.getDouble();
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return test;
   }
 
-  
-  
   /**
-   * Reads a 4-byte floating-point value in the big-endian order compatible with the
-   * Java DataInput interface.
+   * Reads a 4-byte floating-point value in the big-endian order compatible with
+   * the Java DataInput interface.
    *
    * @return if successful, a valid float value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public float readFloat() throws IOException {
     this.prepRead(4);
     buffer.order(ByteOrder.BIG_ENDIAN);
-    float test  = buffer.getFloat();
+    float test = buffer.getFloat();
     buffer.order(ByteOrder.LITTLE_ENDIAN);
     return test;
   }
 
-  
-  
   /**
    * Reads a 4-byte integer value in the big-endian order compatible with the
    * Java DataInput interface.
@@ -968,6 +1052,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return if successful, a valid integer value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public int readInt() throws IOException {
     this.prepRead(4);
     buffer.order(ByteOrder.BIG_ENDIAN);
@@ -976,14 +1061,14 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     return test;
   }
 
-  
-   /**
+  /**
    * Reads a 8-byte integer value in the big-endian order compatible with the
    * Java DataInput interface.
    *
    * @return if successful, a valid integer value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public long readLong() throws IOException {
     this.prepRead(8);
     buffer.order(ByteOrder.BIG_ENDIAN);
@@ -992,7 +1077,6 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
     return test;
   }
 
-  
   /**
    * Reads a 2-byte (short) integer value in the big-endian order compatible
    * with the Java DataInput interface.
@@ -1000,6 +1084,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return if successful, a valid signed short value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public short readShort() throws IOException {
     this.prepRead(2);
     buffer.order(ByteOrder.BIG_ENDIAN);
@@ -1015,6 +1100,7 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
    * @return if successful, a valid signed short value
    * @throws IOException in the event of an I/O error
    */
+  @Override
   public int readUnsignedShort() throws IOException {
     this.prepRead(2);
     buffer.order(ByteOrder.BIG_ENDIAN);
@@ -1024,15 +1110,39 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Reads the next linhe of text from the input following the general
-   * specifications of the DataInput interface.  Note that this method
-   * reads characters one byte at a time and does not fully implement the
-   * Unicode character set.
-   * @return if successful, a valid potentially empty string; if unsuccessful,
-   * a null.
-   * @throws IOException in the event of an I/O error. 
+   * Reads a series of UTF-8 characters following the specifications of the
+   * DataOutput interface. The first two bytes give a short integer indicating
+   * the length of the string specification, followed by the bytes comprising
+   * the UTF-8 encoded characters for the string. Note that some of the UTF-8
+   * characters in the string may require more than a single byte for their
+   * representation.
+   *
+   * @return a valid, potentially empty string.
+   * @throws IOException in the event of an I/O error.
    */
-    public String readLine() throws IOException {
+  @Override
+  public String readUTF() throws IOException {
+    int length = readUnsignedShort();
+    if (length == 0) {
+      return "";
+    }
+    byte[] b = new byte[length];
+    readFully(b, 0, length);
+    return new String(b, "UTF-8");
+  }
+
+  /**
+   * Reads the next linhe of text from the input following the general
+   * specifications of the DataInput interface. Note that this method reads
+   * characters one byte at a time and does not fully implement the Unicode
+   * character set.
+   *
+   * @return if successful, a valid potentially empty string; if unsuccessful, a
+   * null.
+   * @throws IOException in the event of an I/O error.
+   */
+  @Override
+  public String readLine() throws IOException {
     StringBuilder sb = new StringBuilder();
     byte b;
     boolean foundAtLeastOneByte = false;
@@ -1083,12 +1193,64 @@ public class BufferedRandomAccessFile implements Closeable, AutoCloseable {
   /**
    * Reads two input bytes and returns a char value following the general
    * specification of the Java DataInput interface.
+   *
    * @return a valid char
    * @throws IOException in the event of an I/O error.
    */
-  char readChar() throws IOException {
+  @Override
+  public char readChar() throws IOException {
     byte a = readByte();
     byte b = readByte();
-    return (char)((a<<8)|(b&0xff));
+    return (char) ((a << 8) | (b & 0xff));
+  }
+
+  /**
+   * Writes a character using two output bytes following the general
+   * specification of the Java DataOutput interface.
+   *
+   * @param v a valid char; due to the two-byte limitation, not all UTF
+   * characters are supported
+   * @throws IOException in the event of an I/O error.
+   */
+  @Override
+  public void writeChar(int v) throws IOException {
+    write((v >> 8) & 0xff);
+    write(v & 0xff);
+
+  }
+
+  @Override
+  public void writeLong(long v) throws IOException {
+    prepWrite(8);
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    buffer.putLong(v);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+  }
+
+  @Override
+  public void writeFloat(float v) throws IOException {
+    prepWrite(4);
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    buffer.putFloat(v);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+  }
+
+  @Override
+  public void writeDouble(double v) throws IOException {
+    prepWrite(8);
+    buffer.order(ByteOrder.BIG_ENDIAN);
+    buffer.putDouble(v);
+    buffer.order(ByteOrder.LITTLE_ENDIAN);
+  }
+
+  @Override
+  public void writeChars(String s) throws IOException {
+    if (s == null) {
+      throw new NullPointerException("Null string passed to writeChars");
+    }
+    for (int i = 0; i < s.length(); i++) {
+      char c = s.charAt(i);
+      writeChar(c);
+    }
   }
 }

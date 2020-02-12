@@ -1140,6 +1140,10 @@ public class G93FileSpecification {
     return dataType;
   }
 
+  /**
+   * Prints a summary of the specification to the indicated output stream.
+   * @param ps any valid PrintStream including System&#46;out and System&#46;err.
+   */
   public void summarize(PrintStream ps) {
     ps.format("Identification:    %s%n",
             identification == null || identification.isEmpty()
