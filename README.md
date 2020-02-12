@@ -59,7 +59,10 @@ users with ideas for new features and how to apply the library.
 The Gridfour Software Project is still in its infancy.  There is a lot
 of opportunity for new ideas and new software development. In the future
 we hope to include implementations of contouring, statistical analysis,
-and physical modeling logic to our collection.
+and physical modeling logic to our collection. We are also building tools to
+simplify access to data from the Shuttle Radar Topography Mission [SRTM](https://www2.jpl.nasa.gov/srtm/)
+and the U.S. Geological Survey's high-resolution National Elevation Dataset
+[NED](https://catalog.data.gov/dataset/usgs-national-elevation-dataset-ned).
 
 In the meantime, you are welcome to visit our companion Tinfour Software Project at https://github.com/gwlucastrig/Tinfour
 
@@ -67,8 +70,10 @@ Finally, we end with a picture that was created using G93 and a set of elevation
 and bathymetry data taken from the GEBCO_2019 global data set.  The picture
 shows a view of the Island of Hokkaido, Japan. 
 GEBCO_2019 was one of the data sets used for the G93 pilot project and a good example of the
-potential of systems like it.  The G93 data compression reduces the size of this
-data set down to about 17.2 percent of its original size &#40;see [G93 Performance](https://github.com/gwlucastrig/gridfour/wiki/G93-Performance)
+potential of systems like it.  Color-coding was based on elevation obtained from a G93 file
+and shading was computed using the surface normal obtained with Gridfour's B-Spline raster interpolation class.
+The G93 data compression reduces the size of this data set down to about 17.2 percent of
+its original size &#40;see [G93 Performance](https://github.com/gwlucastrig/gridfour/wiki/G93-Performance)
 for more details &#41;. Future work may bring about more improvements.
 
 ![Gridfour rendering of Hokkaido, Japan](doc/images/hokkaido_800_720_60_scaled.jpg "Gridfour/GEBCO_2019 rendering of Hokkaido, Japan")
