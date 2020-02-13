@@ -60,9 +60,9 @@ The Gridfour Software Project is still in its infancy.  There is a lot
 of opportunity for new ideas and new software development. In the future
 we hope to include implementations of contouring, statistical analysis,
 and physical modeling logic to our collection. We are also building tools to
-simplify access to data from the Shuttle Radar Topography Mission [SRTM](https://www2.jpl.nasa.gov/srtm/)
+simplify access to data from the Shuttle Radar Topography Mission &#40; [SRTM](https://www2.jpl.nasa.gov/srtm/) &#41;
 and the U.S. Geological Survey's high-resolution National Elevation Dataset
-[NED](https://catalog.data.gov/dataset/usgs-national-elevation-dataset-ned).
+&#40; [NED](https://catalog.data.gov/dataset/usgs-national-elevation-dataset-ned) &#41;.
 
 In the meantime, you are welcome to visit our companion Tinfour Software Project at https://github.com/gwlucastrig/Tinfour
 
