@@ -730,12 +730,11 @@ public class BufferedRandomAccessFile
    */
   public int readASCII(StringBuilder builder, int nBytesToRead)
           throws IOException {
-    prepRead(nBytesToRead);
     int b;
     char c;
     int nValid = 0, nRead = 0;
     while (nRead < nBytesToRead) {
-      b = buffer.get();
+      b = readUnsignedByte();  
       nRead++;
       if (b == 0) {
         break;

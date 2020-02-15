@@ -93,6 +93,7 @@ public class PackageData {
     } catch (IOException | IllegalArgumentException ex) {
       System.err.println("Error processing " + args[0] + " file " + args[1]);
       System.err.println(ex.getMessage());
+      ex.printStackTrace(System.err);
     }
 
   }
