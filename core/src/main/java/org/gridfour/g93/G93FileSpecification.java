@@ -147,16 +147,27 @@ public class G93FileSpecification {
    */
   String identification;
 
+  // The "rank" element has the wrong name.  It probably should be called
+  // something like "dimension vector of dependent variables" because that's what
+  // it is really meant to be.  
+  //   At this time, I am wrestling with the idea of whether to support
+  // heterogeneous data types.  Doing so would add useful functionality
+  // to the library, but would complicate the API. All of the following elements 
+  // are here to supportthe transition from the earlier version of the code
+  // and are subject to change moving forward.
   int rank = 1;
   G93DataType dataType = G93DataType.IntegerFormat;
   float valueScale = 1;
   float valueOffset = 0;
+  String variableName = "Variable:0";
   int standardTileSizeInBytes;
 
   G93GeometryType geometryType
           = G93GeometryType.Unspecified;
 
   LinkedHashMap<String, Class<?>> rasterCodecMap = new LinkedHashMap<>();
+
+  List<G93VariableSpecification> variableSpecifications = new ArrayList<>();
 
   /**
    * Construct a specification for creating a G93 raster with the indicated
@@ -242,6 +253,11 @@ public class G93FileSpecification {
     nCellsInTile = nRowsInTile * nColsInTile;
 
     standardTileSizeInBytes = rank * nCellsInTile * dataType.getBytesPerSample();
+    variableSpecifications.add(
+            new G93VariableSpecification(dataType,
+                    valueScale,
+                    valueOffset,
+                    variableName));
   }
 
   /**
@@ -259,7 +275,7 @@ public class G93FileSpecification {
     nRowsOfTiles = s.nRowsOfTiles;
     nColsOfTiles = s.nColsOfTiles;
     nCellsInTile = s.nCellsInTile;
-    
+
     identification = s.identification;
 
     rank = s.rank;
@@ -288,6 +304,14 @@ public class G93FileSpecification {
     for (G93SpecificationForCodec srcs : sList) {
       rasterCodecMap.put(srcs.getIdentification(), srcs.getCodec());
     }
+
+    variableSpecifications.addAll(s.variableSpecifications);
+    G93VariableSpecification vtemp = variableSpecifications.get(0);
+    dataType = vtemp.dataType;
+    valueScale = vtemp.scale;
+    valueOffset = vtemp.offset;
+    variableName = vtemp.name;
+
   }
 
   /**
@@ -329,8 +353,17 @@ public class G93FileSpecification {
     dataType = G93DataType.FloatFormat;
     valueScale = scale;
     valueOffset = offset;
+    variableName = "Variables";
     standardTileSizeInBytes
             = rank * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+    variableSpecifications.clear();
+    for (int i = 0; i < rank; i++) {
+      variableSpecifications.add(
+              new G93VariableSpecification(dataType,
+                      valueScale,
+                      valueOffset,
+                      "Variable: " + i));
+    }
   }
 
   public void setDataModelInt(int rank) {
@@ -344,6 +377,14 @@ public class G93FileSpecification {
     valueOffset = 0.0F;
     standardTileSizeInBytes
             = rank * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+    variableSpecifications.clear();
+    for (int i = 0; i < rank; i++) {
+      variableSpecifications.add(
+              new G93VariableSpecification(dataType,
+                      valueScale,
+                      valueOffset,
+                      "Variable: " + i));
+    }
   }
 
   /**
@@ -556,25 +597,34 @@ public class G93FileSpecification {
     // definition between value blocks (rank is the number of blocks).
     // Furture implementations may allow variations
     rank = braf.leReadInt();
-    byte[] codeValue = new byte[4];
-    braf.readFully(codeValue, 0, 4);
-    dataType = G93DataType.valueOf(codeValue[0]);
-    // the three other bytes are spares.
-    codeValue[0] = (byte) dataType.getCodeValue();
-    valueScale = braf.leReadFloat();
-    valueOffset = braf.leReadFloat();
-    braf.skipBytes(4);  // would be an integer or a float
-    // currently, the additional block definitions would be 
-    // repetitions of the first one.  In future releases, that may change.
-    // For now, just skip them.
-    if (rank > 1) {
-      braf.skipBytes((rank - 1) * 4 * 4);
+    for (int iRank = 0; iRank < rank; iRank++) {
+      byte[] codeValue = new byte[4];
+      braf.readFully(codeValue, 0, 4);
+      G93DataType vDataType = G93DataType.valueOf(codeValue[0]);
+      // the three other bytes are spares.
+      codeValue[0] = (byte) vDataType.getCodeValue();
+      float vValueScale = braf.leReadFloat();
+      float vValueOffset = braf.leReadFloat();
+      braf.skipBytes(4);  // would be an integer or a float for the no-data value
+      String vName = braf.readASCII(16);
+      G93VariableSpecification vSpec = new G93VariableSpecification(vDataType, vValueScale, vValueOffset, vName);
+      variableSpecifications.add(vSpec);
     }
+
+    if (variableSpecifications.isEmpty()) {
+      throw new IOException("Empty specification for variable definitions");
+    }
+    G93VariableSpecification vtemp = variableSpecifications.get(0);
+    dataType = vtemp.dataType;
+    valueScale = vtemp.scale;
+    valueOffset = vtemp.offset;
+    variableName = vtemp.name;
 
     isExtendedFileSizeEnabled = braf.readBoolean();
     int geometryCode = braf.readUnsignedByte();
     geometryType = G93GeometryType.valueOf(geometryCode);
 
+    braf.skipBytes(1); // available for future use
     int coordinateSystem = braf.readUnsignedByte();
     if (coordinateSystem == 1) {
       isCartesianCoordinateSystemSet = true;
@@ -641,10 +691,12 @@ public class G93FileSpecification {
       } else {
         braf.leWriteInt(Integer.MIN_VALUE);
       }
+      braf.writeASCII("Variable:" + i, 16);
     }
 
     braf.writeBoolean(isExtendedFileSizeEnabled);
     braf.writeByte(geometryType.getCodeValue());
+    braf.writeByte(0); // available
 
     int coordinateSystem = 0;
     if (isCartesianCoordinateSystemSet) {
@@ -652,7 +704,6 @@ public class G93FileSpecification {
     } else if (isGeographicCoordinateSystemSet) {
       coordinateSystem = 2;
     }
-
     braf.writeByte(coordinateSystem);
     braf.leWriteDouble(x0);
     braf.leWriteDouble(y0);
@@ -1142,7 +1193,9 @@ public class G93FileSpecification {
 
   /**
    * Prints a summary of the specification to the indicated output stream.
-   * @param ps any valid PrintStream including System&#46;out and System&#46;err.
+   *
+   * @param ps any valid PrintStream including System&#46;out and
+   * System&#46;err.
    */
   public void summarize(PrintStream ps) {
     ps.format("Identification:    %s%n",

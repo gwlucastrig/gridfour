@@ -13,13 +13,18 @@
     <version>0.5-SNAPSHOT</version>
   </parent>
 
-  <artifactId>GridfourDemo</artifactId>
-  <name>Demo</name>
-  <description>Demonstration classes, examples, and performance testing tools</description>
-
+	<artifactId>GridfourDemo</artifactId>
+	<name>Demo</name>
+	<description>Demonstration classes, examples, and performance testing tools</description>
+	<repositories>
+		<repository>
+			<id>unidata-all</id>
+			<name>Unidata All</name>
+			<url>https://artifacts.unidata.ucar.edu/repository/unidata-all/</url>
+		</repository>
+	</repositories>
+	
   <dependencies>
-
-    
 	<dependency>
       <groupId>org.gridfour</groupId>
       <artifactId>GridfourCore</artifactId>

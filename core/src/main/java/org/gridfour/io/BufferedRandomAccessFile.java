@@ -966,7 +966,7 @@ public class BufferedRandomAccessFile
    */
   @Override
   public void writeShort(int s) throws IOException {
-    this.prepRead(2);
+    this.prepWrite(2);
     buffer.order(ByteOrder.BIG_ENDIAN);
     buffer.putShort((short) s);
     buffer.order(ByteOrder.LITTLE_ENDIAN);
