@@ -1,7 +1,44 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/* --------------------------------------------------------------------
+ *
+ * The MIT License
+ *
+ * Copyright (C) 2019  Gary W. Lucas.
+
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ * ---------------------------------------------------------------------
+ */
+
+ /*
+ * -----------------------------------------------------------------------
+ *
+ * Revision History:
+ * Date     Name         Description
+ * ------   ---------    -------------------------------------------------
+ * 02/2020  G. Lucas     Created  
+ *
+ * Notes:
+ *   At this time, this class only tests a limited range of integers.
+ *   Unfortunately, the complete test takes about 20 minutes, which is
+ *   way too long for a unit test (and is also pushing things for
+ *   and integration test).   You may experiment by modifying the "bracket"
+ *   element included below.
+ * -----------------------------------------------------------------------
  */
 package org.gridfour.util;
 
@@ -13,7 +50,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- *
+ * Performs round-trip tests for coding and decoding integers using the
+ * M32 codec.
  */
 public class CodecM32Test {
 
@@ -67,6 +105,8 @@ public class CodecM32Test {
      testSize(m32, (1 << 23), 5);
    
      testSize(m32, -(1 << 23), 4);
+	 
+	 testSize(m32, Integer.MIN_VALUE, 1);   // special use as a NO-DATA flag.
  
   }
   
