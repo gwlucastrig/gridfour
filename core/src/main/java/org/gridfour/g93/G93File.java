@@ -479,7 +479,7 @@ public class G93File implements Closeable, AutoCloseable {
 
   /**
    * Stores an array of values in the g93 raster file. The array should be
-   * defined to be at least the size of the "rank" value given in the
+   * defined to be at least the size of the "dimension" value given in the
    * SimpleRasterSpecification used to create this file. Extra elements will be
    * ignored.
    * <p>
@@ -495,7 +495,8 @@ public class G93File implements Closeable, AutoCloseable {
    * specifications.
    * @param column a positive value in the range defined by the file
    * specifications.
-   * @param values an array of at least the rank of the file, used to supply
+   * @param values an array of at least the dimension of the dimension of the variables
+   * defined for the file, used to supply
    * values for storage.
    * @throws IOException in the event of an unrecoverable I/O exception.
    */
@@ -516,14 +517,14 @@ public class G93File implements Closeable, AutoCloseable {
   /**
    * Reads a floating-point value from the G93File. If no data exists for the
    * specified row and column, the value Float.NaN will be returned. This method
-   * is intended to support cases where the file definition has a rank greater
+   * is intended to support cases where the file definition has a dimension greater
    * than 1 (i.e. in cases where the file stores vector elements).
    *
    * @param row a positive value in the range defined by the file
    * specifications.
    * @param column a positive value in the range defined by the file
    * specifications.
-   * @param values an array of at least the rank of the file, used to store the
+   * @param values an array of at least the dimension of the file, used to store the
    * results of a read operation.
    * @throws IOException in the event of a non-recoverable I/O exception.
    */
@@ -926,7 +927,7 @@ public class G93File implements Closeable, AutoCloseable {
    * Reads a block (sub-grid) of values from the G93 file based on the grid row,
    * column, and block-size specifications. If successful, the return value from
    * this method is an array giving a sub-grid of values in row-major order. If
-   * the source file has a rank greater than 1, than the sub-grids for each
+   * the source file has a dimension greater than 1, than the sub-grids for each
    * layer are given one at a time. Thus, the index into the array for a
    * particular row, column, and layer within the sub-grid would be
    * <p>
@@ -940,8 +941,8 @@ public class G93File implements Closeable, AutoCloseable {
    * @param row the grid row index for the starting row of the block
    * @param column the grid column index for the starting column of the block
    * @param nRows the number of rows in the block to be retrieved
-   * @param nColumns the number of columns in the block to be retrievd
-   * @return if successful, a valid array of size nRow*nColumns*rank.
+   * @param nColumns the number of columns in the block to be retrieved
+   * @return if successful, a valid array of size nRow*nColumns*dimension.
    * @throws IOException in the event of an I/O error.
    */
   public float[] readBlock(int row, int column, int nRows, int nColumns)
@@ -982,7 +983,7 @@ public class G93File implements Closeable, AutoCloseable {
     // are performed in the accessElements.computeElements() method
     // which will throw an exception if bounds are violated.
     int nValuesInSubBlock = nRows * nColumns;
-    float[] block = new float[nValuesInSubBlock * spec.rank];
+    float[] block = new float[nValuesInSubBlock * spec.dimension];
     int gr0 = row;
     int gc0 = column;
     int gr1 = row + nRows - 1;
@@ -1028,12 +1029,12 @@ public class G93File implements Closeable, AutoCloseable {
         int tileIndex = tileRow * spec.nColsOfTiles + tileCol;
         RasterTile tile = tileCache.getTile(tileIndex);
         if (tile instanceof RasterTileFloat) {
-          for (int iRank = 0; iRank < spec.rank; iRank++) {
-            float[] v = ((RasterTileFloat) tile).valuesArray[iRank];
+          for (int iDimension = 0; iDimension < spec.dimension; iDimension++) {
+            float[] v = ((RasterTileFloat) tile).valuesArray[iDimension];
             for (int tr = tr0; tr <= tr1; tr++) {
               int br = tr + gtRowOffset - gr0;
               int bc = tc0 + gtColOffset - gc0;
-              int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
+              int bIndex = br * nColumns + bc + iDimension * nValuesInSubBlock;
               int tIndex = tr * spec.nColsInTile;
               for (int tc = tc0; tc <= tc1; tc++) {
                 block[bIndex] = v[tIndex+tc];
@@ -1042,12 +1043,12 @@ public class G93File implements Closeable, AutoCloseable {
             }
           }
         } else if (tile instanceof RasterTileInt) {
-          for (int iRank = 0; iRank < spec.rank; iRank++) {
-            int[] v = ((RasterTileInt) tile).valuesArray[iRank];
+          for (int iDimension = 0; iDimension < spec.dimension; iDimension++) {
+            int[] v = ((RasterTileInt) tile).valuesArray[iDimension];
             for (int tr = tr0; tr <= tr1; tr++) {
               int br = tr + gtRowOffset - gr0;
               int bc = tc0 + gtColOffset - gc0;
-              int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
+              int bIndex = br * nColumns + bc + iDimension * nValuesInSubBlock;
               int tIndex = tr * spec.nColsInTile;
               for (int tc = tc0; tc <= tc1; tc++) {
                 int s = v[tIndex+tc];
@@ -1061,11 +1062,11 @@ public class G93File implements Closeable, AutoCloseable {
             }
           }
         } else {
-          for (int iRank = 0; iRank < spec.rank; iRank++) {
+          for (int iDimension = 0; iDimension < spec.dimension; iDimension++) {
             for (int tr = tr0; tr <= tr1; tr++) {
               int br = tr + gtRowOffset - gr0;
               int bc = tc0 + gtColOffset - gc0;
-              int bIndex = br * nColumns + bc + iRank * nValuesInSubBlock;
+              int bIndex = br * nColumns + bc + iDimension * nValuesInSubBlock;
               for (int tc = tc0; tc <= tc1; tc++) {
                 block[bIndex] = Float.NaN;
                 bIndex++;

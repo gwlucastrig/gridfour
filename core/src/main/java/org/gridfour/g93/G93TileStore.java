@@ -662,7 +662,7 @@ class G93TileStore {
         // it's compressed
         int paddedPayloadSize = recordSize - RECORD_HEADER_SIZE;
         byte[] packing = new byte[paddedPayloadSize];
-        for (int iRank = 0; iRank < spec.rank; iRank++) {
+        for (int iRank = 0; iRank < spec.dimension; iRank++) {
           braf.readFully(packing, 0, 4);
           int a = packing[0] & 0xff;
           int b = packing[1] & 0xff;

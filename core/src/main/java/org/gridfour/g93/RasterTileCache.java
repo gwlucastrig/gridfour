@@ -146,7 +146,7 @@ class RasterTileCache {
               tileCol,
               spec.nRowsInTile,
               spec.nColsInTile,
-              spec.rank,
+              spec.dimension,
               spec.valueScale,
               spec.valueOffset,
               false);
@@ -157,7 +157,7 @@ class RasterTileCache {
               tileCol,
               spec.nRowsInTile,
               spec.nColsInTile,
-              spec.rank,
+              spec.dimension,
               spec.valueScale,
               spec.valueOffset,
               false);
@@ -199,7 +199,7 @@ class RasterTileCache {
               tileCol,
               spec.nRowsInTile,
               spec.nColsInTile,
-              spec.rank,
+              spec.dimension,
               spec.valueScale,
               spec.valueOffset,
               true);
@@ -210,7 +210,7 @@ class RasterTileCache {
               tileCol,
               spec.nRowsInTile,
               spec.nColsInTile,
-              spec.rank,
+              spec.dimension,
               spec.valueScale,
               spec.valueOffset,
               true);

@@ -72,22 +72,21 @@ class RasterTileFloat extends RasterTile {
           int tileColumn,
           int nRows,
           int nColumns,
-          int rank,
+          int dimension,
           float valueScale,
           float valueOffset,
           boolean initializeValues) {
-    super(
-            tileIndex,
+    super(tileIndex,
             tileRow,
             tileColumn,
             nRows,
             nColumns,
-            rank,
+            dimension,
             valueScale,
             valueOffset);
 
-    valuesArray = new float[rank][nValues];
-    for (int i = 0; i < rank; i++) {
+    valuesArray = new float[dimension][nValues];
+    for (int i = 0; i < dimension; i++) {
       valuesArray[i] = new float[nValues];
       if (initializeValues) {
         Arrays.fill(valuesArray[i], NULL_DATA_CODE);
@@ -98,20 +97,20 @@ class RasterTileFloat extends RasterTile {
 
   /**
    * Gets the standard size of the data when stored in non-compressed format.
-   * This size is the product of rank, number of rows and columns, and 4 bytes
+   * This size is the product of dimension, number of rows and columns, and 4 bytes
    * for integer or float formats.
    *
    * @return a positive value.
    */
   @Override
   int getStandardSize() {
-    return rank * nRows * nCols * 4;
+    return dimension * nRows * nCols * 4;
   }
 
   @Override
   void writeStandardFormat(BufferedRandomAccessFile braf) throws IOException {
-    for (int iRank = 0; iRank < rank; iRank++) {
-      float[] f = valuesArray[iRank];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      float[] f = valuesArray[iVariable];
       for (int i = 0; i < nValues; i++) {
         braf.leWriteFloat(f[i]);
       }
@@ -120,8 +119,8 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   void readStandardFormat(BufferedRandomAccessFile braf) throws IOException {
-    for (int iRank = 0; iRank < rank; iRank++) {
-      float[] f = valuesArray[iRank];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      float[] f = valuesArray[iVariable];
       braf.leReadFloatArray(f, 0, nValues);
     }
   }
@@ -129,7 +128,7 @@ class RasterTileFloat extends RasterTile {
   @Override
   void readCompressedFormat(CodecMaster codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException {
     byte[] packing = new byte[payloadSize];
-    for (int iRank = 0; iRank < rank; iRank++) {
+    for (int iRank = 0; iRank < dimension; iRank++) {
       braf.readFully(packing, 0, 4);
       int a = packing[0] & 0xff;
       int b = packing[1] & 0xff;
@@ -211,8 +210,8 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   int[][] getIntCoding() {
-    int[][] coding = new int[rank][];
-    for (int iRank = 0; iRank < rank; iRank++) {
+    int[][] coding = new int[dimension][];
+    for (int iRank = 0; iRank < dimension; iRank++) {
       int[] v = new int[nValues];
       coding[iRank] = v;
       float[] f = valuesArray[iRank];
@@ -238,7 +237,7 @@ class RasterTileFloat extends RasterTile {
   @Override
   void setValues(int tileRow, int tileColumn, float[] input) {
     int index = tileRow * nCols + tileColumn;
-    for (int iRank = 0; iRank < rank; iRank++) {
+    for (int iRank = 0; iRank < dimension; iRank++) {
       valuesArray[iRank][index] = input[iRank];
     }
     writingRequired = true;
@@ -247,7 +246,7 @@ class RasterTileFloat extends RasterTile {
   @Override
   void getValues(int tileRow, int tileColumn, float[] output) {
     int index = tileRow * nCols + tileColumn;
-    for (int iRank = 0; iRank < rank; iRank++) {
+    for (int iRank = 0; iRank < dimension; iRank++) {
       output[iRank] = valuesArray[iRank][index];
     }
   }

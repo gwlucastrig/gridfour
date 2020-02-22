@@ -59,15 +59,15 @@ import java.io.IOException;
  * <strong>Under development</strong> Module has undergone some testing and
  * seems to reliably compute correct values. Development is required to add more
  * more methods, including the computation of surface derivatives and proper
- * access to G93 files of rank higher than 1.
+ * access to G93 files of dimension higher than 1.
  */
-public class InterpolateBSpline {
+public class G93InterpolatorBSpline {
 
   private final G93File g93;
   private final G93FileSpecification spec;
   private final int nRowsInRaster;
   private final int nColsInRaster;
-  private final int rank;
+  private final int dimension;
   private final int nColsForWrap;
   private final int standardHandlingLeft;
   private final int standardHandlingRight;
@@ -84,7 +84,7 @@ public class InterpolateBSpline {
    * @param g93 a valid G93 file opened for read access.
    * @throws java.io.IOException in the event of an I/O error
    */
-  public InterpolateBSpline(G93File g93) throws IOException {
+  public G93InterpolatorBSpline(G93File g93) throws IOException {
     this.g93 = g93;
     spec = g93.getSpecification();
     nRowsInRaster = spec.getRowsInGrid();
@@ -94,7 +94,7 @@ public class InterpolateBSpline {
               "Unable to perform B-Spline interpolation on grid smaller than 4x4");
     }
 
-    rank = spec.getRank();
+    dimension = spec.getDimension();
 
     geoCoordinates = spec.isGeographicCoordinateSystemSpecified();
     if (geoCoordinates) {
@@ -279,7 +279,7 @@ public class InterpolateBSpline {
    *
    * @param x the x coordinate of the interpolation point
    * @param y the y coordinate of the interpolation point
-   * @param index a value in the range 0 to rank-1, giving the index for the
+   * @param index a value in the range 0 to dimension-1, giving the index for the
    * data element to be retrieved.
    * @return if successful, a valid floating point value; otherwise, NaN
    * @throws IOException in the event of an IO error
@@ -366,12 +366,12 @@ public class InterpolateBSpline {
       z1 = g93.readBlock(row0, col0, 4, n1);
       z2 = g93.readBlock(row0, 0, 4, n2);
     }
-    float[] z = new float[16 * rank];
-    for (int iRank = 0; iRank < rank; iRank++) {
-      int rankOffset = iRank * 16;
+    float[] z = new float[16 * dimension];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      int variableOffset = iVariable * 16;
       for (int i = 0; i < 4; i++) {
-        System.arraycopy(z1, i * n1, z, rankOffset + i * 4, n1);
-        System.arraycopy(z2, i * n2, z, rankOffset + i * 4 + n1, n2);
+        System.arraycopy(z1, i * n1, z, variableOffset + i * 4, n1);
+        System.arraycopy(z2, i * n2, z, variableOffset + i * 4 + n1, n2);
       }
     }
 

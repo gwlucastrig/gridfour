@@ -147,15 +147,12 @@ public class G93FileSpecification {
    */
   String identification;
 
-  // The "rank" element has the wrong name.  It probably should be called
-  // something like "dimension vector of dependent variables" because that's what
-  // it is really meant to be.  
   //   At this time, I am wrestling with the idea of whether to support
   // heterogeneous data types.  Doing so would add useful functionality
   // to the library, but would complicate the API. All of the following elements 
   // are here to supportthe transition from the earlier version of the code
   // and are subject to change moving forward.
-  int rank = 1;
+  int dimension = 1;
   G93DataType dataType = G93DataType.IntegerFormat;
   float valueScale = 1;
   float valueOffset = 0;
@@ -252,7 +249,7 @@ public class G93FileSpecification {
 
     nCellsInTile = nRowsInTile * nColsInTile;
 
-    standardTileSizeInBytes = rank * nCellsInTile * dataType.getBytesPerSample();
+    standardTileSizeInBytes = dimension * nCellsInTile * dataType.getBytesPerSample();
     variableSpecifications.add(
             new G93VariableSpecification(dataType,
                     valueScale,
@@ -278,7 +275,7 @@ public class G93FileSpecification {
 
     identification = s.identification;
 
-    rank = s.rank;
+    dimension = s.dimension;
     dataType = s.dataType;
     valueScale = s.valueScale;
     valueOffset = s.valueOffset;
@@ -315,7 +312,7 @@ public class G93FileSpecification {
   }
 
   /**
-   * Sets the data model to float with the specified rank.
+   * Sets the data model to float with the specified dimension.
    * <p>
    * This method provides the associated scale and offset parameters to be used
    * to convert floating-point data to integer values when integer-based data
@@ -332,11 +329,11 @@ public class G93FileSpecification {
    * 1.0 and an offset of zero.
    *
    *
-   * @param rank the rank of the data.
+   * @param dimension the dimension of the dependent variables for the raster
    * @param scale non-zero value for scaling data
    * @param offset an offset factor (or zero if desired
    */
-  public void setDataModelFloat(int rank, float scale, float offset) {
+  public void setDataModelFloat(int dimension, float scale, float offset) {
     if (scale == 0 || Float.isNaN(scale)) {
       throw new IllegalArgumentException(
               "A scale value of zero or Float.NaN is not supported");
@@ -345,19 +342,19 @@ public class G93FileSpecification {
       throw new IllegalArgumentException(
               "An offset value of Float.NaN is not supported");
     }
-    if (rank < 1) {
+    if (dimension < 1) {
       throw new IllegalArgumentException(
-              "Zero or negative rank value not supported");
+              "Zero or negative dimension value not supported");
     }
-    this.rank = rank;
+    this.dimension = dimension;
     dataType = G93DataType.FloatFormat;
     valueScale = scale;
     valueOffset = offset;
     variableName = "Variables";
     standardTileSizeInBytes
-            = rank * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
     variableSpecifications.clear();
-    for (int i = 0; i < rank; i++) {
+    for (int i = 0; i < dimension; i++) {
       variableSpecifications.add(
               new G93VariableSpecification(dataType,
                       valueScale,
@@ -366,19 +363,24 @@ public class G93FileSpecification {
     }
   }
 
-  public void setDataModelInt(int rank) {
-    if (rank < 1) {
+  /**
+   * Sets the data model to integer with the specified dimension.
+   * 
+   * @param dimension the dimension of the dependent variables for the raster.
+   */
+  public void setDataModelInt(int dimension) {
+    if (dimension < 1) {
       throw new IllegalArgumentException(
-              "Zero or negative rank value not supported");
+              "Zero or negative dimension value not supported");
     }
-    this.rank = rank;
+    this.dimension = dimension;
     dataType = G93DataType.IntegerFormat;
     valueScale = 1.0F;
     valueOffset = 0.0F;
     standardTileSizeInBytes
-            = rank * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
     variableSpecifications.clear();
-    for (int i = 0; i < rank; i++) {
+    for (int i = 0; i < dimension; i++) {
       variableSpecifications.add(
               new G93VariableSpecification(dataType,
                       valueScale,
@@ -389,7 +391,7 @@ public class G93FileSpecification {
 
   /**
    * Gets the standard size of the data when stored in non-compressed format.
-   * This size is the product of rank, number of rows and columns, and the size
+   * This size is the product of dimension, number of rows and columns, and the size
    * of the data element (usually 4 for integers or floats).
    *
    * @return a positive value greater than or equal to 1.
@@ -594,10 +596,10 @@ public class G93FileSpecification {
 
     // This loop is implemented in advance of planned changes to the
     // API.  Currently, all values are assumed to be of a consistent
-    // definition between value blocks (rank is the number of blocks).
+    // definition between value blocks (dimension is the number of blocks).
     // Furture implementations may allow variations
-    rank = braf.leReadInt();
-    for (int iRank = 0; iRank < rank; iRank++) {
+    dimension = braf.leReadInt();
+    for (int iDependent = 0; iDependent < dimension; iDependent++) {
       byte[] codeValue = new byte[4];
       braf.readFully(codeValue, 0, 4);
       G93DataType vDataType = G93DataType.valueOf(codeValue[0]);
@@ -652,7 +654,7 @@ public class G93FileSpecification {
     }
 
     standardTileSizeInBytes
-            = rank * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
   }
 
   /**
@@ -676,10 +678,10 @@ public class G93FileSpecification {
 
     // This loop is implemented in advance of planned changes to the
     // API.  Currently, all values are assumed to be of a consistent
-    // definition between value blocks (rank is the number of blocks).
+    // definition between value blocks (dimension is the number of blocks).
     // Furture implementations may allow variations
-    braf.leWriteInt(rank);
-    for (int i = 0; i < rank; i++) {
+    braf.leWriteInt(dimension);
+    for (int i = 0; i < dimension; i++) {
       byte[] codeValue = new byte[4];
       codeValue[0] = (byte) dataType.getCodeValue();
       // next 3 bytes are spares
@@ -798,12 +800,14 @@ public class G93FileSpecification {
   }
 
   /**
-   * Gets the number of elements stored for each grid point.
+   * Gets the number of elements stored for each grid point. This value
+   * is essentially the dimension of a dependent variable defined over
+   * the grid coordinate system.
    *
    * @return a value of 1 or greater.
    */
-  public int getRank() {
-    return rank;
+  public int getDimension() {
+    return dimension;
   }
 
   /**

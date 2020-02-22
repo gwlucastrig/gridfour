@@ -51,7 +51,7 @@ abstract class RasterTile {
   final int tileRow;
   final int tileCol;
   final int nValues;
-  final int rank;
+  final int dimension;
   final float valueScale;
   final float valueOffset;
 
@@ -80,7 +80,7 @@ abstract class RasterTile {
           int tileColumn,
           int nRows,
           int nColumns,
-          int rank,
+          int dimension,
           float valueScale,
           float valueOffset) {
     this.tileIndex = tileIndex;
@@ -89,7 +89,7 @@ abstract class RasterTile {
     this.nRows = nRows;
     this.nCols = nColumns;
     this.nValues = nRows * nColumns;
-    this.rank = rank;
+    this.dimension = dimension;
     this.valueScale = valueScale;
     this.valueOffset = valueOffset;
 
@@ -100,27 +100,27 @@ abstract class RasterTile {
     // compress each element of the tile data and collect
     // the packings.  If successful, concatentate them into
     // a single array of bytes for storage in the output file.
-    byte[][] results = new byte[rank][];
+    byte[][] results = new byte[dimension][];
     int[][] codings = getIntCoding();
     int nBytesTotal = 0;
-    for (int iRank = 0; iRank < rank; iRank++) {
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
 
-      results[iRank] = codec.encode(nRows, nCols, codings[iRank]);
-      if (results[iRank] == null) {
+      results[iVariable] = codec.encode(nRows, nCols, codings[iVariable]);
+      if (results[iVariable] == null) {
         return null;
       }
-      nBytesTotal += results[iRank].length;
+      nBytesTotal += results[iVariable].length;
     }
 
     int k = 0;
-    byte b[] = new byte[nBytesTotal + rank * 4];
-    for (int iRank = 0; iRank < rank; iRank++) {
-      int n = results[iRank].length;
+    byte b[] = new byte[nBytesTotal + dimension * 4];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      int n = results[iVariable].length;
       b[k++] = (byte) ((n & 0xff));
       b[k++] = (byte) ((n >> 8) & 0xff);
       b[k++] = (byte) ((n >> 16) & 0xff);
       b[k++] = (byte) ((n >> 24) & 0xff);
-      System.arraycopy(results[iRank], 0, b, k, n);
+      System.arraycopy(results[iVariable], 0, b, k, n);
       k += n;
     }
     return b;
@@ -128,7 +128,7 @@ abstract class RasterTile {
 
   /**
    * Gets the standard size of the data when stored in non-compressed format.
-   * This size is the product of rank, number of rows and columns, and 4 bytes
+   * This size is the product of dimension, number of rows and columns, and 4 bytes
    * for integer or float formats.
    *
    * @return a positive value.

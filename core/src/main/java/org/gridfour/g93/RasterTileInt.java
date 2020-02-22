@@ -68,22 +68,21 @@ class RasterTileInt extends RasterTile {
           int tileColumn,
           int nRows,
           int nColumns,
-          int rank,
+          int dimension,
           float valueScale,
           float valueOffset,
           boolean initializeValues) {
-    super(
-            tileIndex,
+    super(tileIndex,
             tileRow,
             tileColumn,
             nRows,
             nColumns,
-            rank,
+            dimension,
             valueScale,
             valueOffset);
 
-    valuesArray = new int[rank][nValues];
-    for (int i = 0; i < rank; i++) {
+    valuesArray = new int[dimension][nValues];
+    for (int i = 0; i < dimension; i++) {
       valuesArray[i] = new int[nValues];
       if (initializeValues) {
         Arrays.fill(valuesArray[i], NULL_DATA_CODE);
@@ -94,20 +93,20 @@ class RasterTileInt extends RasterTile {
 
   /**
    * Gets the standard size of the data when stored in non-compressed format.
-   * This size is the product of rank, number of rows and columns, and 4 bytes
+   * This size is the product of dimension, number of rows and columns, and 4 bytes
    * for integer or float formats.
    *
    * @return a positive value.
    */
   @Override
   int getStandardSize() {
-    return rank * nRows * nCols * 4;
+    return dimension * nRows * nCols * 4;
   }
 
   @Override
   void writeStandardFormat(BufferedRandomAccessFile braf) throws IOException {
-    for (int iRank = 0; iRank < rank; iRank++) {
-      int[] v = valuesArray[iRank];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      int[] v = valuesArray[iVariable];
       for (int i = 0; i < nValues; i++) {
         braf.leWriteInt(v[i]);
       }
@@ -116,15 +115,15 @@ class RasterTileInt extends RasterTile {
 
   @Override
   void readStandardFormat(BufferedRandomAccessFile braf) throws IOException {
-    for (int iRank = 0; iRank < rank; iRank++) {
-      braf.leReadIntArray(valuesArray[iRank], 0, nValues);
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      braf.leReadIntArray(valuesArray[iVariable], 0, nValues);
     }
   }
 
   @Override
   void readCompressedFormat(CodecMaster codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException {
     byte[] packing = new byte[payloadSize];
-    for (int iRank = 0; iRank < rank; iRank++) {
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
       braf.readFully(packing, 0, 4);
       int a = packing[0] & 0xff;
       int b = packing[1] & 0xff;
@@ -137,7 +136,7 @@ class RasterTileInt extends RasterTile {
         // oh snap.
         v = codec.decode(nRows, nCols, packing);
       }
-      System.arraycopy(v, 0, valuesArray[iRank], 0, nValues);
+      System.arraycopy(v, 0, valuesArray[iVariable], 0, nValues);
     }
   }
 
@@ -207,7 +206,7 @@ class RasterTileInt extends RasterTile {
 
   @Override
   int[][] getIntCoding() {
-    return Arrays.copyOf(valuesArray, rank);
+    return Arrays.copyOf(valuesArray, dimension);
   }
 
   @Override
@@ -220,11 +219,11 @@ class RasterTileInt extends RasterTile {
   @Override
   void setValues(int tileRow, int tileColumn, float[] input) {
     int index = tileRow * nCols + tileColumn;
-    for (int iRank = 0; iRank < rank; iRank++) {
-      if (Float.isNaN(input[iRank])) {
-        valuesArray[iRank][index] = NULL_DATA_CODE;
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      if (Float.isNaN(input[iVariable])) {
+        valuesArray[iVariable][index] = NULL_DATA_CODE;
       } else {
-        valuesArray[iRank][index] = (int) Math.floor((input[iRank] - valueOffset) * valueScale + 0.5);
+        valuesArray[iVariable][index] = (int) Math.floor((input[iVariable] - valueOffset) * valueScale + 0.5);
       }
     }
     writingRequired = true;
@@ -233,12 +232,12 @@ class RasterTileInt extends RasterTile {
   @Override
   void getValues(int tileRow, int tileColumn, float[] output) {
     int index = tileRow * nCols + tileColumn;
-    for (int iRank = 0; iRank < rank; iRank++) {
-      int v = valuesArray[iRank][index];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      int v = valuesArray[iVariable][index];
       if (v == NULL_DATA_CODE) {
-        output[iRank] = Float.NaN;
+        output[iVariable] = Float.NaN;
       } else {
-        output[iRank] = v / valueScale + valueOffset;
+        output[iVariable] = v / valueScale + valueOffset;
       }
     }
   }
