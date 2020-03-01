@@ -76,7 +76,7 @@ The G93 data compression reduces the size of this data set down to about 17.2 pe
 its original size &#40;see [G93 Performance](https://github.com/gwlucastrig/gridfour/wiki/G93-Performance)
 for more details &#41;. Future work may bring about more improvements.
 
-![Gridfour rendering of Hokkaido, Japan](doc/images/hokkaido_800_720_60_scaled.jpg "Gridfour/GEBCO_2019 rendering of Hokkaido, Japan")
+![Gridfour rendering of Hokkaido, Japan](doc/images/hokkaido_800_720_70_steep_10.jpg "Gridfour/GEBCO_2019 rendering of Hokkaido, Japan")
 
 
 ## References

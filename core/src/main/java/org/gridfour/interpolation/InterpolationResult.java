@@ -137,4 +137,16 @@ public class InterpolationResult {
     }
     return null;
   }
+  
+  public void nullify(){
+    this.z = Double.NaN;
+     this.zx = Double.NaN;
+      this.zy = Double.NaN;
+       this.zxx = Double.NaN;
+       this.zxy = Double.NaN;
+       this.zyx = Double.NaN;
+       this.zyy = Double.NaN;
+       this.firstDerivativesSet = false;
+       this.secondDerivativesSet = false;
+  }
 }

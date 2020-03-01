@@ -45,6 +45,9 @@
 package org.gridfour.g93;
 
 import java.io.IOException;
+import org.gridfour.interpolation.InterpolationResult;
+import org.gridfour.interpolation.InterpolationTarget;
+import org.gridfour.interpolation.InterpolatorBSpline;
 
 /**
  * Performs interpolations over a G93 raster file using the classic B-Spline
@@ -74,9 +77,18 @@ public class G93InterpolatorBSpline {
   private final boolean geoCoordinates;
   private final boolean geoWrapsLongitude;
   private final boolean geoBracketsLongitude;
+  
+  private final InterpolatorBSpline bSpline;
 
   private double u;  // parameter for interpolation point, x-axis direction
   private double v;  // parameter for interpolation point, y-axis direction
+  private double du;
+  private double dv;
+  
+  /**
+   * Radius of a sphere of same surface area as Earth
+   */
+  private static final double rEarth = 6371007.2;
 
   /**
    * Constructs an instance that will operate over the specified G93 File.
@@ -100,9 +112,13 @@ public class G93InterpolatorBSpline {
     if (geoCoordinates) {
       geoWrapsLongitude = spec.doGeographicCoordinatesWrapLongitude();
       geoBracketsLongitude = spec.doGeographicCoordinatesBracketLongitude();
+      du = rEarth * Math.toRadians(spec.cellSizeX);
+      dv = rEarth * Math.toRadians(spec.cellSizeY);
     } else {
       geoWrapsLongitude = false;
       geoBracketsLongitude = false;
+      du = spec.cellSizeX;
+      dv = spec.cellSizeY;
     }
     // The standard-handling parameters specify the range 
     // in which the interpolation can be performed without any special checks
@@ -117,6 +133,7 @@ public class G93InterpolatorBSpline {
       nColsForWrap = nColsInRaster;
     }
 
+    bSpline = new InterpolatorBSpline();
   }
 
   /**
@@ -153,11 +170,19 @@ public class G93InterpolatorBSpline {
    * otherwise, populated with NaN.
    * @throws IOException in the event of an IO error
    */
-  public double[] zNormal(double x, double y) throws IOException {
-    double[] result = new double[4];
+  public InterpolationResult zNormal(double x, double y) throws IOException {
+  
     double[] g;
+    
+    double dx = du;
+    double dy = dv;
     if (geoCoordinates) {
       g = g93.mapGeographicToGrid(y, x);
+      double s = Math.cos(Math.toRadians(y));
+      dx = s*du;
+      if(dx<1){
+        dx = 1;
+      }
     } else {
       g = g93.mapCartesianToGrid(x, y);
     }
@@ -166,72 +191,12 @@ public class G93InterpolatorBSpline {
 
     float z[] = loadSamples(row, col);
     if (z == null) {
-      result[0] = Double.NaN;
-      result[1] = Double.NaN;
-      result[2] = Double.NaN;
-      result[3] = Double.NaN;
+        InterpolationResult result = new InterpolationResult();
+        result.nullify();
       return result;
     }
-
-    // compute basis weighting factors b(u) in direction of x axis
-    double um1 = 1.0 - u;
-    double bu0 = um1 * um1 * um1 / 6.0;
-    double bu1 = (3 * u * u * (u - 2) + 4) / 6.0;
-    double bu2 = (3 * u * (1 + u - u * u) + 1) / 6.0;
-    double bu3 = u * u * u / 6.0;
-
-    // combine sample points z[] using the basis weighting functions
-    // and create four partial results, one for each row of data.
-    double s0 = z[0] * bu0 + z[1] * bu1 + z[2] * bu2 + z[3] * bu3;
-    double s1 = z[4] * bu0 + z[5] * bu1 + z[6] * bu2 + z[7] * bu3;
-    double s2 = z[8] * bu0 + z[9] * bu1 + z[10] * bu2 + z[11] * bu3;
-    double s3 = z[12] * bu0 + z[13] * bu1 + z[14] * bu2 + z[15] * bu3;
-
-    // comnpute basis weighting factors b(v) in direction of y axis
-    double vm1 = 1.0 - v;
-    double bv0 = vm1 * vm1 * vm1 / 6.0;
-    double bv1 = (3 * v * v * (v - 2) + 4) / 6.0;
-    double bv2 = (3 * v * (1 + v - v * v) + 1) / 6.0;
-    double bv3 = v * v * v / 6.0;
-
-    // combine the 4 partial results, computing in the y direction
-    result[0] = bv0 * s0 + bv1 * s1 + bv2 * s2 + bv3 * s3;
-
-    // compute derivatives of basis functions b(u)
-    double du0 = -um1 * um1 / 2.0;
-    double du1 = (3.0 * u / 2.0 - 2.0) * u;
-    double du2 = -(3.0 * u / 2.0 - 1.0) * u + 0.5;
-    double du3 = u * u / 2.0;
-
-    // combine sample points z[] using the derivatives of the basis weighting 
-    // functions and create four partial results, one for each row of data.
-    s0 = z[0] * du0 + z[1] * du1 + z[2] * du2 + z[3] * du3;
-    s1 = z[4] * du0 + z[5] * du1 + z[6] * du2 + z[7] * du3;
-    s2 = z[8] * du0 + z[9] * du1 + z[10] * du2 + z[11] * du3;
-    s3 = z[12] * du0 + z[13] * du1 + z[14] * du2 + z[15] * du3;
-
-    // combine the partial results to compute partial derivative dz/dx
-    double dzdx = bv0 * s0 + bv1 * s1 + bv2 * s2 + bv3 * s3;
-
-    double dv0 = -vm1 * vm1 / 2.0;
-    double dv1 = (3.0 * v / 2.0 - 2.0) * v;
-    double dv2 = -(3.0 * v / 2.0 - 1.0) * v + 0.5;
-    double dv3 = v * v / 2.0;
-
-    // combine sample points z[] using the derivatives of the basis weighting 
-    // functions  and create four partial results, one for each COLUMN of data.
-    s0 = z[0] * dv0 + z[4] * dv1 + z[8] * dv2 + z[12] * dv3;
-    s1 = z[1] * dv0 + z[5] * dv1 + z[9] * dv2 + z[13] * dv3;
-    s2 = z[2] * dv0 + z[6] * dv1 + z[10] * dv2 + z[14] * dv3;
-    s3 = z[3] * dv0 + z[7] * dv1 + z[11] * dv2 + z[15] * dv3;
-
-    double dzdy = bu0 * s0 + bu1 * s1 + bu2 * s2 + bu3 * s3;
-    double d = Math.sqrt(1.0 + dzdx * dzdx + dzdy * dzdy);
-    result[1] = -dzdx / d;
-    result[2] = -dzdy / d;
-    result[3] = 1 / d;
-
-    return result;
+ 
+    return bSpline.interpolate(1.0+v, 1.0+u, 4,4, z, dy, dx, InterpolationTarget.FirstDerivatives, null);
   }
 
   private int blockLimit(int i, int n) {
@@ -252,25 +217,9 @@ public class G93InterpolatorBSpline {
       // for convenience, copy the data down to the start of the array
       System.arraycopy(z, index * 16, z, 0, 16);
     }
-
-    double tm1 = 1.0 - u;
-    double b0 = tm1 * tm1 * tm1 / 6.0;
-    double b1 = (3 * u * u * (u - 2) + 4) / 6.0;
-    double b2 = (3 * u * (1 + u - u * u) + 1) / 6.0;
-    double b3 = u * u * u / 6.0;
-
-    double s0 = z[0] * b0 + z[1] * b1 + z[2] * b2 + z[3] * b3;
-    double s1 = z[4] * b0 + z[5] * b1 + z[6] * b2 + z[7] * b3;
-    double s2 = z[8] * b0 + z[9] * b1 + z[10] * b2 + z[11] * b3;
-    double s3 = z[12] * b0 + z[13] * b1 + z[14] * b2 + z[15] * b3;
-
-    double sm1 = 1.0 - v;
-    b0 = sm1 * sm1 * sm1 / 6.0;
-    b1 = (3 * v * v * (v - 2) + 4) / 6.0;
-    b2 = (3 * v * (1 + v - v * v) + 1) / 6.0;
-    b3 = v * v * v / 6.0;
-
-    return b0 * s0 + b1 * s1 + b2 * s2 + b3 * s3;
+ 
+    return bSpline.interpolateValue(1.0+v, 1.0+u, 4,4, z);
+    
   }
 
   /**
