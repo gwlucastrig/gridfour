@@ -61,6 +61,15 @@ package org.gridfour.interpolation;
  * instance which is returned to the calling method. This approach avoids the
  * overhead of constructing multiple objects.
  * <p>
+ * At this time, however, there is some question about how significant
+ * this savings may be.  In repeated tests performing 1 million interpolations
+ * over a 1000-by-1000 grid, the interpolator required 30 milliseconds when
+ * creating new result object for each operation and 20 milliseconds when
+ * reusing the result object. So in practice, the savings may be of limited
+ * value. However, the testing was not performed on systems in which the
+ * JVM was operating under conditions of heavy memory use. In cases where the
+ * heap memory grows large, reusing result objects may become important.
+ * <p>
  * <strong>Row and Column Scale Factors</strong>
  * <p>
  * In order to produce meaningful computations for derivatives and surface
