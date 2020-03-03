@@ -10,7 +10,7 @@ data compression, contouring, surface analysis, and other operations aimed
 at analyzing and understanding data stored in raster form.
 
 ## Our Inspiration
-![Gridfour hillshade rendering of Oahu, Hawaii](doc/images/oahu_250_70_steep_10.jpg "Gridfour/GEBCO 2018 hillshade rendering of Oahu") Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
+<img> src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2018 hillshade rendering of Oahu" height="275" width="250"> Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
 undertaking aims to map 100 percent of the ocean floor by 2030.  To put that in perspective,
 the project organizers estimate that, today, only about 20 percent of the world's oceans are fully
 mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;.  So there's a lot of work to be done
