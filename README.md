@@ -2,13 +2,13 @@
 Tools for raster data including scientific and geophysical applications.
 
 ## Background
-Although there many tools for image processing and gridded-data applications,
+<img src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2018 hillshade rendering of Oahu" height="275" width="250" align="left"/><p>Although there many tools for image processing and gridded-data applications,
 the Gridfour Project believes that there is still
 a need for general-purpose software utilities for the processing of raster (grid)
 products. Potential applications in these areas run the gamut from rendering,
 data compression, contouring, surface analysis, and other operations aimed
 at analyzing and understanding data stored in raster form.
-
+<div>
 ## Our Inspiration
 Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
 undertaking aims to map 100 percent of the ocean floor by 2030.  To put that in perspective,
@@ -23,7 +23,7 @@ the processing of that data. In particular, we see a need for more efficient tec
 and data compression for grid data.  That need inspired us to create Gridfour.
 
 ## An Old Idea Made New
-<img src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2018 hillshade rendering of Oahu" height="275" width="250" align="left"/><p>The first module created for the Gridfour Software Project is the G93 grid-based data
+The first module created for the Gridfour Software Project is the G93 grid-based data
 compression and file management module.  Gridfour's G93 API helps Java applications
 manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
