@@ -8,7 +8,8 @@ a need for general-purpose software utilities for the processing of raster (grid
 products. Potential applications in these areas run the gamut from rendering,
 data compression, contouring, surface analysis, and other operations aimed
 at analyzing and understanding data stored in raster form.
-<div>
+
+
 
 ## Our Inspiration
 Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
