@@ -264,8 +264,8 @@ public class PackageData {
           // Loop on each column, obtain the data from the NetCDF file
           // and store it in the G93 file.
           for (int iCol = 0; iCol < nCols; iCol++) {
-            double sample = array.getDouble(iCol);
-            g93.storeValue(iRow, iCol, (float) sample);
+            float sample = array.getFloat(iCol);
+            g93.storeValue(iRow, iCol, sample);
             stats.addSample(sample);
           }
         } catch (InvalidRangeException irex) {

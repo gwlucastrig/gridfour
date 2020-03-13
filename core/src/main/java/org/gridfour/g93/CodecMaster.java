@@ -53,20 +53,28 @@ class CodecMaster {
   int seed;
 
   private final List<IG93CompressorCodec> codecs = new ArrayList<>();
+  
+  private boolean implementsFloats;
 
   CodecMaster() {
     codecs.add(new CodecHuffman());
     codecs.add(new CodecDeflate());
+    implementsFloats = false;
   }
 
   void setCodecs(List<G93SpecificationForCodec> csList) throws IOException {
     codecs.clear();
+    implementsFloats = false;
     for (G93SpecificationForCodec csSpec : csList) {
       Class<?> c = csSpec.getCodec();
       try {
         Constructor<?> constructor = c.getConstructor();
         Object obj = constructor.newInstance();
-        codecs.add((IG93CompressorCodec) obj);
+        IG93CompressorCodec q = (IG93CompressorCodec)obj;
+        codecs.add(q);
+        if(q.implementsFloatEncoding()){
+          implementsFloats = true;
+        }
       } catch (NoSuchMethodException ex) {
         throw new IOException("Missing no-argument constructor for codec " + csSpec.getIdentification());
       } catch (SecurityException ex) {
@@ -117,5 +125,65 @@ class CodecMaster {
       codec.clearAnalysisData();
     }
   }
+  
+  
+  
+  /**
+   * Encodes the specified tile data in a compressed form.
+   *
+   * @param nRows a value of 1 or greater giving the number of rows in the tile
+   * @param nCols a value of 1 or greater giving the number of columns in the
+   * tile
+   * @param values the values of the tile in row-major order
+   * @return if successful, an array of bytes of length greater than 1; if
+   * unsuccessful, a null.
+   */
+  byte[] encodeFloats(int nRows, int nCols, float[] values) {
+    byte[] result = null;
+    int resultLength = Integer.MAX_VALUE;
+    int k = 0;
+    for (IG93CompressorCodec codec : codecs) {
+      if (codec.implementsFloatEncoding()) {
+        byte[] test = codec.encodeFloats(k, nRows, nCols, values);
+        if (test != null && test.length < resultLength) {
+          result = test;
+          resultLength = test.length;
+        }
+      }
+      k++;
+    }
+    return result;
+  }
+
+    
+  /**
+   * Decodes the content of the packing and populates an
+   * integer array to store the data.
+   * @param nRows a value of 1 or greater giving the number of rows in the tile
+   * @param nColumns a value of 1 or greater giving the number of columns in the
+   * @param packing an array of bytes containing the encoded data to be decompressed
+   * @return if successful, a valid integer array giving content for the
+   * tile in row-major order
+   * @throws IOException in the event of an incompatible packing
+   */
+  float[] decodeFloats(int nRows, int nColumns, byte[] packing) throws IOException {
+    int index = packing[0] & 0xff;
+    if (index > codecs.size()) {
+      throw new IOException("Invalid compression-type code " + index);
+    }
+    IG93CompressorCodec codec = codecs.get(index);
+    return codec.decodeFloats(nRows, nColumns, packing);
+  }
+  
+  
+  /**
+   * Indicates whether at least one of the codecs registerd with this instance
+   * supports direct encoding of floating point formats
+   * @return true is direct encoding of floats is supported, otherwise false.
+   */
+  boolean implementsFloatEncoding(){
+    return implementsFloats;
+  }
+  
 
 }

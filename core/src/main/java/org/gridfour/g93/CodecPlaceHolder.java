@@ -68,5 +68,20 @@ class CodecPlaceHolder implements IG93CompressorCodec {
   public void clearAnalysisData() {
 
   }
+  
+    @Override
+  public byte[] encodeFloats(int codecIndex, int nRows, int nCols, float[] values) {
+    return null;
+  }
+
+  @Override
+  public float[] decodeFloats(int nRows, int nColumns, byte[] packing) throws IOException {
+    return null;
+  }
+
+  @Override
+  public boolean implementsFloatEncoding() {
+   return false;
+  }
 
 }

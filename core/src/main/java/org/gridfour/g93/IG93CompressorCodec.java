@@ -105,4 +105,39 @@ public interface IG93CompressorCodec {
   void clearAnalysisData();
   
   
+  
+   /**
+   * Encodes the specified tile data in a compressed form.
+   *
+   * @param codecIndex the index assigned by the application to
+   * associate a codec with an entry in the raster file.
+   * @param nRows a value of 1 or greater giving the number of rows in the tile
+   * @param nCols a value of 1 or greater giving the number of columns in the
+   * tile
+   * @param values the values of the tile in row-major order
+   * @return if successful, an array of bytes of length greater than 1;
+   * if unsuccessful, a null.
+   */
+  byte[] encodeFloats(int codecIndex, int nRows, int nCols, float[] values);
+  
+    
+  /**
+   * Decodes the content of the packing and populates an
+   * integer array to store the data.
+   * @param nRows a value of 1 or greater giving the number of rows in the tile
+   * @param nColumns a value of 1 or greater giving the number of columns in the
+   * @param packing an array of bytes containing the encoded data to be decompressed
+   * @return if successful, a valid integer array giving content for the
+   * tile in row-major order
+   * @throws IOException in the event of an incompatible packing
+   */
+  float[] decodeFloats(int nRows, int nColumns, byte[] packing) throws IOException;
+  
+  
+  /**
+   * Indicates whether the codec can directly encode floating-point values
+   * @return true is direct encoding of floats is supported, otherwise false.
+   */
+  boolean implementsFloatEncoding();
+  
 }

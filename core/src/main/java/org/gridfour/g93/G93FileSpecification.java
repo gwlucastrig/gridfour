@@ -647,9 +647,9 @@ public class G93FileSpecification {
     int nCompressionSpecifications = braf.leReadInt();
     if (nCompressionSpecifications > 0) {
       this.dataCompressionEnabled = true;
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < nCompressionSpecifications; i++) {
         String codecID = braf.readASCII(16);
-        this.addCompressionCodec(codecID, CodecPlaceHolder.class);
+        addCompressionCodec(codecID, CodecPlaceHolder.class);
       }
     }
 

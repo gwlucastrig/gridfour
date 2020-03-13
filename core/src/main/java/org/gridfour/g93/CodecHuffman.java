@@ -236,4 +236,20 @@ public class CodecHuffman implements IG93CompressorCodec {
   public void clearAnalysisData() {
     codecStats = null;
   }
+  
+  
+    @Override
+  public byte[] encodeFloats(int codecIndex, int nRows, int nCols, float[] values) {
+    return null;
+  }
+
+  @Override
+  public float[] decodeFloats(int nRows, int nColumns, byte[] packing) throws IOException {
+    return null;
+  }
+
+  @Override
+  public boolean implementsFloatEncoding() {
+   return false;
+  }
 }

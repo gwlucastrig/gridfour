@@ -127,8 +127,9 @@ class RasterTileFloat extends RasterTile {
 
   @Override
   void readCompressedFormat(CodecMaster codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException {
+
     byte[] packing = new byte[payloadSize];
-    for (int iRank = 0; iRank < dimension; iRank++) {
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
       braf.readFully(packing, 0, 4);
       int a = packing[0] & 0xff;
       int b = packing[1] & 0xff;
@@ -136,10 +137,15 @@ class RasterTileFloat extends RasterTile {
       int d = packing[3] & 0xff;
       int n = (((((d << 8) | c) << 8) | b) << 8) | a;
       braf.readFully(packing, 0, n);
-      int[] v = codec.decode(nRows, nCols, packing);
-      float[] f = valuesArray[iRank];
-      for (int i = 0; i < values.length; i++) {
-        f[i] = v[i] / valueScale + valueOffset;
+      if (codec.implementsFloatEncoding()) {
+        float []v = codec.decodeFloats(nRows, nCols, packing);
+        System.arraycopy(v, 0, valuesArray[iVariable], 0, values.length);
+      } else {
+        int[] v = codec.decode(nRows, nCols, packing);
+        float[] f = valuesArray[iVariable];
+        for (int i = 0; i < values.length; i++) {
+          f[i] = v[i] / valueScale + valueOffset;
+        }
       }
     }
 
@@ -251,4 +257,33 @@ class RasterTileFloat extends RasterTile {
     }
   }
 
+  
+  @Override
+  byte[] getCompressedPacking(CodecMaster codec) throws IOException {
+    if(!codec.implementsFloatEncoding()){
+      return super.getCompressedPacking(codec);
+    }
+    byte[][] results = new byte[dimension][];
+    int nBytesTotal = 0;
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      results[iVariable] = codec.encodeFloats(nRows, nCols, valuesArray[iVariable]);
+      if (results[iVariable] == null) {
+        return null;
+      }
+      nBytesTotal += results[iVariable].length;
+    }
+
+    int k = 0;
+    byte b[] = new byte[nBytesTotal + dimension * 4];
+    for (int iVariable = 0; iVariable < dimension; iVariable++) {
+      int n = results[iVariable].length;
+      b[k++] = (byte) ((n & 0xff));
+      b[k++] = (byte) ((n >> 8) & 0xff);
+      b[k++] = (byte) ((n >> 16) & 0xff);
+      b[k++] = (byte) ((n >> 24) & 0xff);
+      System.arraycopy(results[iVariable], 0, b, k, n);
+      k += n;
+    }
+    return b;
+  }
 }
