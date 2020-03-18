@@ -174,7 +174,7 @@ public class CodecFloat implements IG93CompressorCodec {
     }
   }
 
-  void encodeDeltas(byte[] scratch, int nRows, int nColumns) {;
+  void encodeDeltas(byte[] scratch, int nRows, int nColumns) {
     int prior0 = 0;
     int test;
     int k = 0;
@@ -338,4 +338,8 @@ public class CodecFloat implements IG93CompressorCodec {
     return true;
   }
 
+  @Override
+  public boolean implementsIntegerEncoding() {
+    return false;
+  }
 }

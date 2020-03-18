@@ -252,4 +252,10 @@ public class CodecHuffman implements IG93CompressorCodec {
   public boolean implementsFloatEncoding() {
    return false;
   }
+  
+  
+  @Override
+  public boolean implementsIntegerEncoding() {
+    return true;
+  }
 }

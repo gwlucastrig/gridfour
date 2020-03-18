@@ -136,8 +136,15 @@ public interface IG93CompressorCodec {
   
   /**
    * Indicates whether the codec can directly encode floating-point values
-   * @return true is direct encoding of floats is supported, otherwise false.
+   * @return true if direct encoding of floats is supported, otherwise false.
    */
   boolean implementsFloatEncoding();
   
+    
+  /**
+   * Indicates whether the codec can encode integral data types
+   * @return true if the encoding of integral data types is supported, 
+   * otherwise false.
+   */
+  boolean implementsIntegerEncoding();
 }

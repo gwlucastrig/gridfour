@@ -231,8 +231,8 @@ class CodecDeflate implements IG93CompressorCodec {
       ps.format("   Tiles Compressed:  0%n");
       return;
     }
-  ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy%n");
- 
+    ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy%n");
+
     for (CodecStats stats : codecStats) {
       String label = stats.getLabel();
       if (label.equalsIgnoreCase("None")) {
@@ -240,19 +240,18 @@ class CodecDeflate implements IG93CompressorCodec {
       }
       long tileCount = stats.getTileCount();
       double bitsPerSymbol = stats.getBitsPerSymbol();
-      double avgBitsInText = stats.getAverageLength()*8;
+      double avgBitsInText = stats.getAverageLength() * 8;
       double avgUniqueSymbols = stats.getAverageObservedMCodes();
       double avgMCodeLength = stats.getAverageMCodeLength();
       double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
       double entropy = stats.getEntropy();
       ps.format("   %-20.20s %8d (%4.1f %%)      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f%n",
-              label, tileCount, percentTiles, 
+              label, tileCount, percentTiles,
               bitsPerSymbol, avgBitsInText,
-              avgMCodeLength, 
-               avgUniqueSymbols,
+              avgMCodeLength,
+              avgUniqueSymbols,
               entropy);
     }
-
 
   }
 
@@ -273,7 +272,11 @@ class CodecDeflate implements IG93CompressorCodec {
 
   @Override
   public boolean implementsFloatEncoding() {
-   return false;
+    return false;
   }
 
+  @Override
+  public boolean implementsIntegerEncoding() {
+    return true;
+  }
 }

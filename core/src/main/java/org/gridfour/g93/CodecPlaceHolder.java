@@ -84,4 +84,9 @@ class CodecPlaceHolder implements IG93CompressorCodec {
    return false;
   }
 
+    
+  @Override
+  public boolean implementsIntegerEncoding() {
+    return false;
+  }
 }
