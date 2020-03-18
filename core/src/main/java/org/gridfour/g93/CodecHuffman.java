@@ -202,7 +202,7 @@ public class CodecHuffman implements IG93CompressorCodec {
   public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
     ps.println("Codec G93_Huffman");
     if (codecStats == null || nTilesInRaster == 0) {
-      ps.format("   Tiles Compressed:  0");
+      ps.format("   Tiles Compressed:  0%n");
       return;
     }
 

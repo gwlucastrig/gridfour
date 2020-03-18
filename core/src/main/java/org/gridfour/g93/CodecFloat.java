@@ -99,14 +99,15 @@ public class CodecFloat implements IG93CompressorCodec {
 
   @Override
   public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-    ps.format("Average bytes per tile, by element");
-    ps.format("Sign bits       %12.2f%n", sSignBit.getAvgCount());
-    ps.format("Exp byte        %12.2f%n", sExp.getAvgCount());
-    ps.format("M1 delta        %12.2f%n", sM1Delta.getAvgCount());
-    ps.format("M2 delta        %12.2f%n", sM2Delta.getAvgCount());
-    ps.format("M3 delta        %12.2f%n", sM3Delta.getAvgCount());
-    ps.format("Total           %12.2f%n", sTotal.getAvgCount());
-    ps.format("Bits/Sample     %12.2f%n", sTotal.getAvgCount() * 8.0 / nCellsInTile);
+    ps.println("Codec G93_Float");
+    ps.format("   Average bytes per tile, by element%n");
+    ps.format("     Sign bits       %12.2f%n", sSignBit.getAvgCount());
+    ps.format("     Exp byte        %12.2f%n", sExp.getAvgCount());
+    ps.format("     M1 delta        %12.2f%n", sM1Delta.getAvgCount());
+    ps.format("     M2 delta        %12.2f%n", sM2Delta.getAvgCount());
+    ps.format("     M3 delta        %12.2f%n", sM3Delta.getAvgCount());
+    ps.format("     Total           %12.2f%n", sTotal.getAvgCount());
+    ps.format("     Bits/Sample     %12.2f%n", sTotal.getAvgCount() * 8.0 / nCellsInTile);
   }
 
   @Override
@@ -151,6 +152,7 @@ public class CodecFloat implements IG93CompressorCodec {
     deflater.finish();
     byte[] resultB = new byte[input.length + 128];
     int dB = deflater.deflate(resultB, 0, resultB.length, Deflater.FULL_FLUSH);
+    stats.addCount(dB);
     if (dB <= 0) {
       // deflate failed
       throw new RuntimeException("Deflate failed");

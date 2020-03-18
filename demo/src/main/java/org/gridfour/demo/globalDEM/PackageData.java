@@ -70,7 +70,12 @@ public class PackageData {
     "   -zScale <value>  apply a scale factor for data compression",
     "   -tileSize <###x###> width and height of tile (i.e. 90x90)",
     "   -compress (-nocompress)  apply compression to file (default: false)",
-    "   -verify (-noconfirm)     test file to verify that it is correct (default: false)",};
+    "   -verify (-noconfirm)     test file to verify that it is correct (default: false)",
+    "Note: the zScale option instructs the packager to use the",
+    "      integer-scaled-float data type when storing values.",
+    "      If it is not specified, the data type will be selected",
+    "      based on the data-type specification of the original data",
+    };
 
   private static void printUsageAndExit() {
     for (String s : usage) {
@@ -235,6 +240,8 @@ public class PackageData {
         return;
       }
     }
+    
+    
     try (G93File g93 = new G93File(outputFile, spec)) {
       g93.setTileCacheSize(G93CacheSize.Large);
       g93.setIndexCreationEnabled(true);

@@ -228,7 +228,7 @@ class CodecDeflate implements IG93CompressorCodec {
   public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
     ps.println("Codec G93_Deflate");
     if (codecStats == null || nTilesInRaster == 0) {
-      ps.format("   Tiles Compressed:  0");
+      ps.format("   Tiles Compressed:  0%n");
       return;
     }
   ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy%n");
