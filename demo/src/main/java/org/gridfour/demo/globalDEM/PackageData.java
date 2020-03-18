@@ -45,6 +45,7 @@ import java.util.Date;
 import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.g93.G93CacheSize;
+import org.gridfour.g93.G93DataType;
 import org.gridfour.g93.G93File;
 import org.gridfour.g93.G93FileSpecification;
 import org.gridfour.io.FastByteArrayOutputStream;
@@ -130,15 +131,6 @@ public class PackageData {
     ps.format("Input file:  %s%n", inputPath);
     ps.format("Output file: %s%n", outputFile.getPath());
 
-    if (outputFile.exists()) {
-      ps.println("Output file exists. Removing old file");
-      boolean status = outputFile.delete();
-      if (!status) {
-        ps.println("Removal attempt failed");
-        return;
-      }
-    }
-
     // Open the NetCDF file -----------------------------------
     ps.println("Opening NetCDF input file");
     NetcdfFile ncfile = NetcdfFile.open(inputPath);
@@ -187,22 +179,38 @@ public class PackageData {
     int nRowsInTile = tileSize[0];
     int nColsInTile = tileSize[1];
 
-    // Initialize the specification used to initialize the G93 file.
-    float zScale = (float) options.getZScale();
-    boolean compressionEnabled = options.isCompressionEnabled();
-    
-
+    // Initialize the specification used to initialize the G93 file -------
     G93FileSpecification spec
             = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setIdentification(identification);
-    
-    spec.setDataCompressionEnabled(compressionEnabled);
-    DataType zType = z.getDataType();
-    if (zType.isIntegral()) {
+
+    // Initialize the data type.  If a zScale option was specified,
+    // use integer-coded floats.  Otherwise, pick the data type
+    // based on whether the NetCDF file gives integral or floating point
+    // data.
+    boolean isZScaleSpecified = options.isZScaleSpecified();
+    float zScale = (float) options.getZScale();
+    float zOffset = (float) options.getZOffset();
+    DataType sourceDataType = z.getDataType();  // data type from NetCDF file
+    G93DataType g93DataType;
+    if (isZScaleSpecified) {
+      // the options define our data type
+      g93DataType = G93DataType.IntegerCodedFloat;
+      spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
+    } else if (sourceDataType.isIntegral()) {
+      g93DataType = G93DataType.IntegerFormat;
       spec.setDataModelInt(1);
     } else {
-      spec.setDataModelFloat(1, zScale, 0f);
+      g93DataType = G93DataType.FloatFormat;
+      spec.setDataModelFloat(1);
     }
+    ps.println("Source date type "+sourceDataType+", stored as "+g93DataType);
+    ps.println("");
+
+    // Determine whether data compression is used -------------------
+    boolean compressionEnabled = options.isCompressionEnabled();
+    spec.setDataCompressionEnabled(compressionEnabled);
+
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
 
     spec.setGeographicCoordinates(
@@ -210,13 +218,23 @@ public class PackageData {
             geoCoords[1],
             geoCoords[2],
             geoCoords[3]);
-    
+
     // Check to verify that the geographic coordinates and grid coordinate
     // are correctly implemented. This test is not truly part of the packaging
     // process (since it should always work), but is included here as a
     // diagnostic.
     extractionCoords.checkSpecificationTransform(ps, spec);
 
+    // ---------------------------------------------------------
+    // Create the output file and store the content from the input file.
+    if (outputFile.exists()) {
+      ps.println("Output file exists. Removing old file");
+      boolean status = outputFile.delete();
+      if (!status) {
+        ps.println("Removal attempt failed");
+        return;
+      }
+    }
     try (G93File g93 = new G93File(outputFile, spec)) {
       g93.setTileCacheSize(G93CacheSize.Large);
       g93.setIndexCreationEnabled(true);
@@ -263,10 +281,23 @@ public class PackageData {
           Array array = z.read(readOrigin, readShape);
           // Loop on each column, obtain the data from the NetCDF file
           // and store it in the G93 file.
-          for (int iCol = 0; iCol < nCols; iCol++) {
-            float sample = array.getFloat(iCol);
-            g93.storeValue(iRow, iCol, sample);
-            stats.addSample(sample);
+          switch (g93DataType) {
+            case IntegerFormat:
+              for (int iCol = 0; iCol < nCols; iCol++) {
+                int sample = array.getInt(iCol);
+                g93.storeIntValue(iRow, iCol, sample);
+                stats.addSample(sample);
+              }
+              break;
+            case IntegerCodedFloat:
+            case FloatFormat:
+            default:
+              for (int iCol = 0; iCol < nCols; iCol++) {
+                float sample = array.getFloat(iCol);
+                g93.storeValue(iRow, iCol, sample);
+                stats.addSample(sample);
+              }
+
           }
         } catch (InvalidRangeException irex) {
           throw new IOException(irex.getMessage(), irex);
@@ -323,14 +354,38 @@ public class PackageData {
           readShape[1] = nCols;
           try {
             Array array = z.read(readOrigin, readShape);
-            for (int iCol = 0; iCol < nCols; iCol++) {
-              double sample = array.getDouble(iCol);
-              int sTest = (int) Math.floor(sample * zScale + 0.5);
-              int test = g93.readIntValue(iRow, iCol);
-              if (sTest != test) {
-                ps.println("Failure at " + iRow + ", " + iCol);
-                System.exit(-1);
-              }
+            switch (g93DataType) {
+              case IntegerFormat:
+                for (int iCol = 0; iCol < nCols; iCol++) {
+                  int sample = array.getInt(iCol);
+                  int test = g93.readIntValue(iRow, iCol);
+                  if (sample != test) {
+                    ps.println("Failure at " + iRow + ", " + iCol);
+                    System.exit(-1);
+                  }
+                }
+                break;
+              case IntegerCodedFloat:
+                for (int iCol = 0; iCol < nCols; iCol++) {
+                  double sample = array.getDouble(iCol);
+                  int sTest = (int) Math.floor(sample * zScale + 0.5);
+                  int test = g93.readIntValue(iRow, iCol);
+                  if (sTest != test) {
+                    ps.println("Failure at " + iRow + ", " + iCol);
+                    System.exit(-1);
+                  }
+                }
+                break;
+              case FloatFormat:
+              default:
+                for (int iCol = 0; iCol < nCols; iCol++) {
+                  float sample = array.getFloat(iCol);
+                  float test = g93.readValue(iRow, iCol);
+                  if (sample != test) {
+                    ps.println("Failure at " + iRow + ", " + iCol);
+                    System.exit(-1);
+                  }
+                }
             }
           } catch (InvalidRangeException irex) {
             throw new IOException(irex.getMessage(), irex);

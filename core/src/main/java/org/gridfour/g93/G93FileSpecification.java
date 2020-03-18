@@ -199,7 +199,7 @@ public class G93FileSpecification {
           int nColumnsInTile) {
     rasterCodecMap.put(CodecType.G93_Huffman.toString(), CodecHuffman.class);
     rasterCodecMap.put(CodecType.G93_Deflate.toString(), CodecDeflate.class);
-
+      rasterCodecMap.put(CodecType.G93_Float.toString(), CodecFloat.class);
     uuid = UUID.randomUUID();
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
@@ -312,14 +312,13 @@ public class G93FileSpecification {
   }
 
   /**
-   * Sets the data model to float with the specified dimension.
+   * Sets the data model to be an integer scaled float with the specified 
+   * dimension.
    * <p>
    * This method provides the associated scale and offset parameters to be used
-   * to convert floating-point data to integer values when integer-based data
-   * compression is used. Because the data-compression techniques currently
-   * implemented in G93File operate over integer representations of data, it is
-   * necessary to convert floating point values to integers by scaling them and
-   * potentially adding an offset factor.
+   * to convert floating-point data to integer values when the data is stored
+   * and back to floating-point data when it is retrieved. This data representation
+   * is subject to a loss of precision, but delivers good compression ratios.
    * <pre>
    * intValue = (floatValue-offset)*scale.
    * floatValue = (intValue/scale)+offset;
@@ -333,7 +332,7 @@ public class G93FileSpecification {
    * @param scale non-zero value for scaling data
    * @param offset an offset factor (or zero if desired
    */
-  public void setDataModelFloat(int dimension, float scale, float offset) {
+  public void setDataModelIntegerScaledFloat(int dimension, float scale, float offset) {
     if (scale == 0 || Float.isNaN(scale)) {
       throw new IllegalArgumentException(
               "A scale value of zero or Float.NaN is not supported");
@@ -347,7 +346,7 @@ public class G93FileSpecification {
               "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.FloatFormat;
+    dataType = G93DataType.IntegerCodedFloat;
     valueScale = scale;
     valueOffset = offset;
     variableName = "Variables";
@@ -377,6 +376,7 @@ public class G93FileSpecification {
     dataType = G93DataType.IntegerFormat;
     valueScale = 1.0F;
     valueOffset = 0.0F;
+    variableName = "Variables";
     standardTileSizeInBytes
             = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
     variableSpecifications.clear();
@@ -389,6 +389,37 @@ public class G93FileSpecification {
     }
   }
 
+  
+  /**
+   * Sets the data model to integer with the specified dimension.
+   * 
+   * @param dimension the dimension of the dependent variables for the raster.
+   */
+  public void setDataModelFloat(int dimension) {
+    if (dimension < 1) {
+      throw new IllegalArgumentException(
+              "Zero or negative dimension value not supported");
+    }
+    this.dimension = dimension;
+    dataType = G93DataType.FloatFormat;
+    valueScale = 1.0F;
+    valueOffset = 0.0F;
+    variableName = "Variables";
+    standardTileSizeInBytes
+            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+    variableSpecifications.clear();
+    for (int i = 0; i < dimension; i++) {
+      variableSpecifications.add(
+              new G93VariableSpecification(dataType,
+                      valueScale,
+                      valueOffset,
+                      "Variable: " + i));
+    }
+  }
+  
+  
+  
+  
   /**
    * Gets the standard size of the data when stored in non-compressed format.
    * This size is the product of dimension, number of rows and columns, and the size

@@ -66,7 +66,6 @@ class RasterTileCache {
   private long nTilesWritten;
   private long nTilesDiscarded;
   private long nTileFirst;
- 
 
   RasterTileCache(G93FileSpecification spec, G93TileStore tileStore) {
     tileCacheSize = DEFAULT_TILE_CACHE_SIZE;
@@ -139,28 +138,35 @@ class RasterTileCache {
     // file and add it to the cache.
     int tileRow = tileIndex / spec.nColsOfTiles;
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
-    if (spec.dataType == G93DataType.IntegerFormat) {
-      tile = new RasterTileInt(
-              tileIndex,
-              tileRow,
-              tileCol,
-              spec.nRowsInTile,
-              spec.nColsInTile,
-              spec.dimension,
-              spec.valueScale,
-              spec.valueOffset,
-              false);
-    } else {
-      tile = new RasterTileFloat(
-              tileIndex,
-              tileRow,
-              tileCol,
-              spec.nRowsInTile,
-              spec.nColsInTile,
-              spec.dimension,
-              spec.valueScale,
-              spec.valueOffset,
-              false);
+    switch (spec.dataType) {
+      case IntegerFormat:
+      case IntegerCodedFloat:
+        tile = new RasterTileInt(
+                tileIndex,
+                tileRow,
+                tileCol,
+                spec.nRowsInTile,
+                spec.nColsInTile,
+                spec.dimension,
+                spec.valueScale,
+                spec.valueOffset,
+                false);
+        break;
+      case FloatFormat:
+        tile = new RasterTileFloat(
+                tileIndex,
+                tileRow,
+                tileCol,
+                spec.nRowsInTile,
+                spec.nColsInTile,
+                spec.dimension,
+                spec.valueScale,
+                spec.valueOffset,
+                false);
+        break;
+      default:
+        throw new IOException(
+                "Incorrectly specified data format " + spec.dataType);
     }
 
     nTileRead++;
@@ -192,28 +198,36 @@ class RasterTileCache {
 
     int tileRow = tileIndex / spec.nColsOfTiles;
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
-    if (spec.dataType == G93DataType.IntegerFormat) {
-      tile = new RasterTileInt(
-              tileIndex,
-              tileRow,
-              tileCol,
-              spec.nRowsInTile,
-              spec.nColsInTile,
-              spec.dimension,
-              spec.valueScale,
-              spec.valueOffset,
-              true);
-    } else {
-      tile = new RasterTileFloat(
-              tileIndex,
-              tileRow,
-              tileCol,
-              spec.nRowsInTile,
-              spec.nColsInTile,
-              spec.dimension,
-              spec.valueScale,
-              spec.valueOffset,
-              true);
+
+    switch (spec.dataType) {
+      case IntegerFormat:
+      case IntegerCodedFloat:
+        tile = new RasterTileInt(
+                tileIndex,
+                tileRow,
+                tileCol,
+                spec.nRowsInTile,
+                spec.nColsInTile,
+                spec.dimension,
+                spec.valueScale,
+                spec.valueOffset,
+                true);
+        break;
+      case FloatFormat:
+        tile = new RasterTileFloat(
+                tileIndex,
+                tileRow,
+                tileCol,
+                spec.nRowsInTile,
+                spec.nColsInTile,
+                spec.dimension,
+                spec.valueScale,
+                spec.valueOffset,
+                true);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid data format specification "
+                + spec.dataType);
     }
 
     if (nTilesInCache == tileCacheSize) {
@@ -287,14 +301,14 @@ class RasterTileCache {
 
   void summarize(PrintStream ps) {
     double percentFirst = 0;
-    if(nTileFoundInCache>0){
-      percentFirst = 100.0*((double)nTileFirst/(double)nTileFoundInCache);
+    if (nTileFoundInCache > 0) {
+      percentFirst = 100.0 * ((double) nTileFirst / (double) nTileFoundInCache);
     }
     double percentInCache = 0;
-    if(nTileGets>0){
-      percentInCache = 100.0*((double)nTileFoundInCache/(double)nTileGets);
+    if (nTileGets > 0) {
+      percentInCache = 100.0 * ((double) nTileFoundInCache / (double) nTileGets);
       // make sure it never says 100 percent.
-      if(percentInCache>99.91){
+      if (percentInCache > 99.91) {
         percentInCache = 99.91;
       }
     }

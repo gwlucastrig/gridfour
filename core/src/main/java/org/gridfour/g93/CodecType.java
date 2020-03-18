@@ -49,4 +49,9 @@ public enum CodecType {
    * The Deflate (GZIP) compression algorithm is used.  
    */
   G93_Deflate,
+  
+  /**
+   * A non-lossy float format
+   */
+  G93_Float
 }

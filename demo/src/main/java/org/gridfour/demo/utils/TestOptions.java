@@ -72,6 +72,7 @@ public class TestOptions {
   boolean compress;
   boolean verify;
   boolean bigAddressSpace;
+  boolean isZScaleSet = false;
   double zScale = 1;
   double zOffset = 0;
 
@@ -266,6 +267,24 @@ public class TestOptions {
 
     return defaultValue;
   }
+  
+  /**
+   * Indicates whether the specified option is given in the args array.
+   *
+   * @param args a valid array of command-line arguments
+   * @param option the target option
+   * @return true is the option is specified; otherwise, false.
+   */
+  boolean isOptionSpecified(String[] args, String option) {
+    if (option != null) {
+      for (String arg : args) {
+        if (option.equalsIgnoreCase(arg)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   /**
    * Search the arguments for the specified option followed by a string, marking
@@ -429,8 +448,11 @@ public class TestOptions {
     compress
             = scanBooleanOption(args, "-compress", matched, compress);
 
+    
+    
+    isZScaleSet = isOptionSpecified(args, "-zScale");
     zScale = scanDoubleOption(args, "-zScale", matched, zScale);
-    zOffset = scanDoubleOption(args, "-zScale", matched, zOffset);
+    zOffset = scanDoubleOption(args, "-zOffset", matched, zOffset);
 
     tileSize = scanSizeOption(args, "-tileSize", matched);
     checkOptions();
@@ -579,4 +601,7 @@ public class TestOptions {
     return zOffset;
   }
 
+  public boolean isZScaleSpecified(){
+    return isZScaleSet;
+  }
 }
