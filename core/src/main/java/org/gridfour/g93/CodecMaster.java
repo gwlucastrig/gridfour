@@ -91,12 +91,12 @@ class CodecMaster {
     int resultLength = Integer.MAX_VALUE;
     int k = 0;
     for (IG93CompressorCodec codec : codecs) {
-      if(!codec.implementsFloatEncoding()){
-      byte[] test = codec.encode(k, nRows, nCols, values);
-      if (test != null && test.length < resultLength) {
-        result = test;
-        resultLength = test.length;
-      }
+      if (codec.implementsIntegerEncoding()) {
+        byte[] test = codec.encode(k, nRows, nCols, values);
+        if (test != null && test.length < resultLength) {
+          result = test;
+          resultLength = test.length;
+        }
       }
       k++;
     }
