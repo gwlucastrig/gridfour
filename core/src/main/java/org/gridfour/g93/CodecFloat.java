@@ -29,14 +29,12 @@
  */
 package org.gridfour.g93;
 
-import test.floater.*;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-import org.gridfour.g93.IG93CompressorCodec;
 import org.gridfour.io.BitInputStore;
 import org.gridfour.io.BitOutputStore;
 
