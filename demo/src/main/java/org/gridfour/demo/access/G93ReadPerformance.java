@@ -103,7 +103,7 @@ public class G93ReadPerformance {
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.IntegerFormat) {
+      if (dType == G93DataType.Int4) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
@@ -145,7 +145,7 @@ public class G93ReadPerformance {
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.IntegerFormat) {
+      if (dType == G93DataType.Int4) {
         long sum = 0;
         for (int iCol = 0; iCol < nColsInRaster; iCol++) {
           for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
@@ -188,7 +188,7 @@ public class G93ReadPerformance {
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.IntegerFormat) {
+      if (dType == G93DataType.Int4) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           float []block = g93.readBlock(iRow, 0, 1, nColsInRaster);

@@ -139,7 +139,7 @@ class RasterTileCache {
     int tileRow = tileIndex / spec.nColsOfTiles;
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
     switch (spec.dataType) {
-      case IntegerFormat:
+      case Int4:
       case IntegerCodedFloat:
         tile = new RasterTileInt(
                 tileIndex,
@@ -152,7 +152,7 @@ class RasterTileCache {
                 spec.valueOffset,
                 false);
         break;
-      case FloatFormat:
+      case Float4:
         tile = new RasterTileFloat(
                 tileIndex,
                 tileRow,
@@ -200,7 +200,7 @@ class RasterTileCache {
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
 
     switch (spec.dataType) {
-      case IntegerFormat:
+      case Int4:
       case IntegerCodedFloat:
         tile = new RasterTileInt(
                 tileIndex,
@@ -213,7 +213,7 @@ class RasterTileCache {
                 spec.valueOffset,
                 true);
         break;
-      case FloatFormat:
+      case Float4:
         tile = new RasterTileFloat(
                 tileIndex,
                 tileRow,

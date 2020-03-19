@@ -46,16 +46,17 @@ public enum G93DataType {
   /**
    * Data is stored using the Java 4-byte integer data type.
    */
-  IntegerFormat(0, 4),
+  Int4(0, 4),
     /**
-   * Data is stored using the Java 4-byte integer data type.
+   * Floating point values are multiplied by a scaling factor and
+   * stored as a Java 4-byte integer data type.
    */
   IntegerCodedFloat(1, 4),
   /**
    * Data is stored using the Java 4-byte float data type, the IEEE-754
    * single-precision floating point format.
    */
-  FloatFormat(2, 4);
+  Float4(2, 4);
 
   final int codeValue;
   final int bytesPerSample;
@@ -88,13 +89,13 @@ public enum G93DataType {
   static G93DataType valueOf(int codeValue) {
     switch(codeValue){
       case 0:
-        return IntegerFormat;
+        return Int4;
       case 1:
         return IntegerCodedFloat;
       case 2:
-        return FloatFormat;
+        return Float4;
       default:
-        return IntegerFormat;
+        return Int4;
     }
  
   }

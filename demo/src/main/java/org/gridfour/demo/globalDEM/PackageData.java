@@ -203,10 +203,10 @@ public class PackageData {
       g93DataType = G93DataType.IntegerCodedFloat;
       spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
     } else if (sourceDataType.isIntegral()) {
-      g93DataType = G93DataType.IntegerFormat;
+      g93DataType = G93DataType.Int4;
       spec.setDataModelInt(1);
     } else {
-      g93DataType = G93DataType.FloatFormat;
+      g93DataType = G93DataType.Float4;
       spec.setDataModelFloat(1);
     }
     ps.println("Source date type "+sourceDataType+", stored as "+g93DataType);
@@ -289,7 +289,7 @@ public class PackageData {
           // Loop on each column, obtain the data from the NetCDF file
           // and store it in the G93 file.
           switch (g93DataType) {
-            case IntegerFormat:
+            case Int4:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 int sample = array.getInt(iCol);
                 g93.storeIntValue(iRow, iCol, sample);
@@ -297,7 +297,7 @@ public class PackageData {
               }
               break;
             case IntegerCodedFloat:
-            case FloatFormat:
+            case Float4:
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
@@ -362,7 +362,7 @@ public class PackageData {
           try {
             Array array = z.read(readOrigin, readShape);
             switch (g93DataType) {
-              case IntegerFormat:
+              case Int4:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   int sample = array.getInt(iCol);
                   int test = g93.readIntValue(iRow, iCol);
@@ -383,7 +383,7 @@ public class PackageData {
                   }
                 }
                 break;
-              case FloatFormat:
+              case Float4:
               default:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   float sample = array.getFloat(iCol);

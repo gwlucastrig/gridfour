@@ -153,7 +153,7 @@ public class G93FileSpecification {
   // are here to supportthe transition from the earlier version of the code
   // and are subject to change moving forward.
   int dimension = 1;
-  G93DataType dataType = G93DataType.IntegerFormat;
+  G93DataType dataType = G93DataType.Int4;
   float valueScale = 1;
   float valueOffset = 0;
   String variableName = "Variable:0";
@@ -373,7 +373,7 @@ public class G93FileSpecification {
               "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.IntegerFormat;
+    dataType = G93DataType.Int4;
     valueScale = 1.0F;
     valueOffset = 0.0F;
     variableName = "Variables";
@@ -401,7 +401,7 @@ public class G93FileSpecification {
               "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.FloatFormat;
+    dataType = G93DataType.Float4;
     valueScale = 1.0F;
     valueOffset = 0.0F;
     variableName = "Variables";
@@ -719,7 +719,7 @@ public class G93FileSpecification {
       braf.writeFully(codeValue, 0, codeValue.length);
       braf.leWriteFloat(valueScale);
       braf.leWriteFloat(valueOffset);
-      if (dataType == G93DataType.FloatFormat) {
+      if (dataType == G93DataType.Float4) {
         braf.leWriteFloat(Float.NaN);
       } else {
         braf.leWriteInt(Integer.MIN_VALUE);
