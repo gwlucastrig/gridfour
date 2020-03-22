@@ -68,7 +68,7 @@ In the meantime, you are welcome to visit our companion Tinfour Software Project
 
 Finally, we end with a picture that was created using G93 and a set of elevation
 and bathymetry data taken from the GEBCO_2019 global data set.  The picture
-shows a view of the Island of Hokkaido, Japan. 
+shows a hillshade rendering of the Island of Hokkaido, Japan. 
 GEBCO_2019 was one of the data sets used for the G93 pilot project and a good example of the
 potential of systems like it.  Color-coding was based on elevation obtained from a G93 file
 and shading was computed using the surface normal obtained with Gridfour's B-Spline raster interpolation class.
@@ -76,7 +76,7 @@ The G93 data compression reduces the size of this data set down to about 17.2 pe
 its original size &#40;see [G93 Performance](https://github.com/gwlucastrig/gridfour/wiki/G93-Performance)
 for more details &#41;. Future work may bring about more improvements.
 
-![Gridfour rendering of Hokkaido, Japan](doc/images/hokkaido_800_720_70_steep_10.jpg "Gridfour/GEBCO_2019 rendering of Hokkaido, Japan")
+![Gridfour hillshade rendering of Hokkaido, Japan](doc/images/hokkaido_hillshade_800_720_70_steep_10.jpg "Gridfour/GEBCO_2019 hillshade rendering of Hokkaido, Japan")
 
 
 ## References
