@@ -67,9 +67,11 @@ public class G93FileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 1;
+  static final byte SUB_VERSION = 2;
 
   private static final int IDENTIFICATION_SIZE = 64;
+  private static final int COPYRIGHT_SIZE = 96;
+  private static final int DOCUMENT_CONTROL_SIZE = 64;
 
   /**
    * Time of construction for the specification
@@ -146,6 +148,17 @@ public class G93FileSpecification {
    * An arbitrary, application-assigned identification string.
    */
   String identification;
+  
+  /**
+   * An optional, application-assigned copyright notification.
+   */
+  String copyright;
+  
+  /**
+   * An arbitrary, application-assigned notification indicating
+   * the appropriate handling of the data set.
+   */
+  String documentControl;
 
   //   At this time, I am wrestling with the idea of whether to support
   // heterogeneous data types.  Doing so would add useful functionality
@@ -274,6 +287,8 @@ public class G93FileSpecification {
     nCellsInTile = s.nCellsInTile;
 
     identification = s.identification;
+    copyright = s.copyright;
+    documentControl = s.documentControl;
 
     dimension = s.dimension;
     dataType = s.dataType;
@@ -562,6 +577,77 @@ public class G93FileSpecification {
       throw new IllegalArgumentException(ex.getMessage());
     }
   }
+  
+  
+    /**
+   * Set an optional and arbitrary identification string for the raster.
+   * <p>
+   * The Gridfour software package is available for use free-of-charge and does
+   * not claim any copyright or control over data stored using this API.
+   * Organizations and individuals using this API are free to specify copyright
+   * based on their own requirements and obligations.
+   * <p>
+   * The copyright may be a string of characters in UTF-8 encoding of up to 96
+   * bytes in length. For most European alphabets, this size equates to 96
+   * characters.
+   *
+   * @param copyright an arbitrary string of up to 96 bytes.
+   */
+  public void setCopyright(String copyright) {
+    this.copyright = copyright;
+
+    try {
+      byte[] b = copyright.getBytes("UTF-8");
+      if (b.length > COPYRIGHT_SIZE) {
+        throw new IllegalArgumentException(
+                "Copyright string exceeds 96 byte limit "
+                + "when encoded in UTF-8 character set (size="
+                + b.length + ")");
+      }
+    } catch (UnsupportedEncodingException ex) {
+      throw new IllegalArgumentException(ex.getMessage());
+    }
+  }
+
+  
+   
+  /**
+   * Set an arbitrary document-control notification string for the raster. 
+   * <p>
+   * The document control notification string is intended to allow
+   * data issuing authorities to advise users on how the data is to be
+   * handled. For example, it is common for maritime and aviation data sources
+   * to advise users that a product is "NOT APPROVED FOR NAVIGATION".
+   * Some government agencies may advise users that a product is
+   * for official use only; some authorities may identify a document
+   * as "preliminary release" or "final release", etc.
+   * <p>
+   * The specification may be a string of characters in UTF-8 encoding
+   * of up to 64 bytes in length. For most European alphabets, this size
+   * equates to 64 characters.
+   *
+   * @param documentControl the documentControl string
+   */
+  public void setDocumentControl(String documentControl) {
+    this.documentControl = documentControl;
+
+    try {
+      byte[] b = documentControl.getBytes("UTF-8");
+      if (b.length > DOCUMENT_CONTROL_SIZE) {
+        throw new IllegalArgumentException(
+                "Document Control Notification string exceeds 64 byte limit "
+                + "when encoded in UTF-8 character set (size="
+                + b.length + ")");
+      }
+    } catch (UnsupportedEncodingException ex) {
+      throw new IllegalArgumentException(ex.getMessage());
+    }
+  }
+  
+  
+  
+  
+  
 
   /**
    * Gets array of bytes of length 64, intended for writing a g93 Raster file.
@@ -569,14 +655,18 @@ public class G93FileSpecification {
    * @return a valid array of length 64, potentially all zeros if empty.
    */
   public byte[] getIdentificationBytes() {
-    byte[] output = new byte[IDENTIFICATION_SIZE];
-    if (identification != null && !identification.isEmpty()) {
+    return getUtfBytes(identification, IDENTIFICATION_SIZE);
+  }
+
+  private byte [] getUtfBytes(String subject, int fixedLength){
+        byte[] output = new byte[fixedLength];
+    if (subject != null && !subject.isEmpty()) {
       try {
-        byte[] b = identification.getBytes("UTF-8");
+        byte[] b = subject.getBytes("UTF-8");
         System.arraycopy(b, 0, output, 0, b.length);
       } catch (UnsupportedEncodingException ex) {
         String s = "Unsupported Encoding";
-        output = new byte[IDENTIFICATION_SIZE];
+        output = new byte[fixedLength];
         for (int i = 0; i < s.length(); i++) {
           output[i] = (byte) s.charAt(i);
         }
@@ -584,7 +674,8 @@ public class G93FileSpecification {
     }
     return output;
   }
-
+  
+  
   /**
    * Gets the identification string associated with this specification and the
    * G93File that is created from it. The identification is supplied by the
@@ -615,7 +706,18 @@ public class G93FileSpecification {
     if (b[0] != 0) {
       identification = new String(b, "UTF-8");
     }
+    b = new byte[COPYRIGHT_SIZE];
+    braf.readFully(b);
+    if (b[0] != 0) {
+      copyright = new String(b, "UTF-8");
+    }
+    b = new byte[DOCUMENT_CONTROL_SIZE];
+    braf.readFully(b);
+    if (b[0] != 0) {
+      documentControl = new String(b, "UTF-8");
+    }
 
+    
     nRowsInRaster = braf.leReadInt();
     nColsInRaster = braf.leReadInt();
     nRowsInTile = braf.leReadInt();
@@ -700,8 +802,12 @@ public class G93FileSpecification {
   void write(BufferedRandomAccessFile braf) throws IOException {
     braf.leWriteLong(uuid.getLeastSignificantBits());
     braf.leWriteLong(uuid.getMostSignificantBits());
-    braf.write(getIdentificationBytes());  // 64 bytes
-
+    
+    
+    braf.write(getUtfBytes(identification, IDENTIFICATION_SIZE));  // 64 bytes
+    braf.write(getUtfBytes(copyright,       COPYRIGHT_SIZE));  // 96 bytes
+    braf.write(getUtfBytes(documentControl, DOCUMENT_CONTROL_SIZE));  // 64 bytes
+    
     braf.leWriteInt(nRowsInRaster);
     braf.leWriteInt(nColsInRaster);
     braf.leWriteInt(nRowsInTile);
@@ -1236,6 +1342,17 @@ public class G93FileSpecification {
     ps.format("Identification:    %s%n",
             identification == null || identification.isEmpty()
             ? "Not Specified" : identification);
+
+    ps.format("Copyright:         %s%n",
+            copyright == null || copyright.isEmpty()
+            ? "Not Specified" : copyright);
+
+    ps.format("Document Control:  %s%n",
+            documentControl == null || documentControl.isEmpty()
+            ? "Not Specified" : documentControl);
+
+    
+    
     ps.format("UUID:              %s%n", uuid.toString());
     long cellsInRaster = (long) nRowsInRaster * (long) nColsInRaster;
 

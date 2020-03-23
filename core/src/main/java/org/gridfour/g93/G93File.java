@@ -226,7 +226,11 @@ public class G93File implements Closeable, AutoCloseable {
     braf.skipBytes(2); // unused, reserved bytes
     if (version != G93FileSpecification.VERSION
             || subversion != G93FileSpecification.SUB_VERSION) {
-      throw new IOException("Incompatible version " + version + "." + subversion);
+      throw new IOException("Incompatible version " + version + "." + subversion
+              + ".  Expected "
+              + G93FileSpecification.VERSION
+              + "."
+              + G93FileSpecification.SUB_VERSION);
     }
 
     timeModified = braf.leReadLong(); // time modified from old file

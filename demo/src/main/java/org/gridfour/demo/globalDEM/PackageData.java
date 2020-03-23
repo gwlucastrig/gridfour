@@ -188,6 +188,8 @@ public class PackageData {
     G93FileSpecification spec
             = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setIdentification(identification);
+    spec.setCopyright("This data is in the public domain and may be used free of charge");
+    spec.setDocumentControl("This data should not be used for navigation");
 
     // Initialize the data type.  If a zScale option was specified,
     // use integer-coded floats.  Otherwise, pick the data type
