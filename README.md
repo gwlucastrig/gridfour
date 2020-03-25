@@ -2,7 +2,7 @@
 Tools for raster data including scientific and geophysical applications.
 
 ## Background
-Although there many tools for image processing and gridded-data applications,
+Although there are many tools for image processing and gridded-data applications,
 the Gridfour Project believes that there is still
 a need for general-purpose software utilities for the processing of raster (grid)
 products. Potential applications in these areas run the gamut from rendering,
