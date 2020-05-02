@@ -21,7 +21,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 03/2020  G. Lucas     Created  
+ * 03/2020  G. Lucas     Created
  *
  * Notes:
  *
@@ -43,17 +43,17 @@ import org.gridfour.io.BitOutputStore;
  * values. Integer values are not supported.
  */
 public class CodecFloat implements IG93CompressorCodec {
-  
+
   private static class  SimpleStats {
 
   int nSum;
   long sum;
-  
+
  void addCount(int counts){
     sum+=counts;
     nSum++;
   }
-  
+
    double getAvgCount(){
     if(nSum==0){
       return 0;
@@ -67,9 +67,10 @@ public class CodecFloat implements IG93CompressorCodec {
    }
 
   }
-  
+
 
   int nCellsInTile;
+  boolean wasDataEncoded;
 
   SimpleStats sTotal = new SimpleStats();
   SimpleStats sSignBit = new SimpleStats();
@@ -97,15 +98,20 @@ public class CodecFloat implements IG93CompressorCodec {
 
   @Override
   public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-    ps.println("Codec G93_Float");
-    ps.format("   Average bytes per tile, by element%n");
-    ps.format("     Sign bits       %12.2f%n", sSignBit.getAvgCount());
-    ps.format("     Exp byte        %12.2f%n", sExp.getAvgCount());
-    ps.format("     M1 delta        %12.2f%n", sM1Delta.getAvgCount());
-    ps.format("     M2 delta        %12.2f%n", sM2Delta.getAvgCount());
-    ps.format("     M3 delta        %12.2f%n", sM3Delta.getAvgCount());
-    ps.format("     Total           %12.2f%n", sTotal.getAvgCount());
-    ps.format("     Bits/Sample     %12.2f%n", sTotal.getAvgCount() * 8.0 / nCellsInTile);
+    if (wasDataEncoded) {
+      ps.println("Codec G93_Float");
+      ps.format("   Average bytes per tile, by element%n");
+      ps.format("     Sign bits       %12.2f%n", sSignBit.getAvgCount());
+      ps.format("     Exp byte        %12.2f%n", sExp.getAvgCount());
+      ps.format("     M1 delta        %12.2f%n", sM1Delta.getAvgCount());
+      ps.format("     M2 delta        %12.2f%n", sM2Delta.getAvgCount());
+      ps.format("     M3 delta        %12.2f%n", sM3Delta.getAvgCount());
+      ps.format("     Total           %12.2f%n", sTotal.getAvgCount());
+      double avgBitsPerSample = sTotal.getAvgCount() * 8.0 / nCellsInTile;
+      ps.format("     Bits/Sample     %12.2f%n", avgBitsPerSample);
+    } else {
+      ps.println("Codec G93_Float (not used)");
+    }
   }
 
   @Override
@@ -204,6 +210,7 @@ public class CodecFloat implements IG93CompressorCodec {
   @Override
   public byte[] encodeFloats(int codecIndex, int nRows, int nColumns, float[] values) {
     nCellsInTile = nRows * nColumns;
+    wasDataEncoded = true;
 
     int[] c = new int[values.length];
     for (int i = 0; i < values.length; i++) {
@@ -293,7 +300,7 @@ public class CodecFloat implements IG93CompressorCodec {
     offset += 4;
     doInflate(packing, offset, n, scratch, nCellsInTile);
     for (int i = 0; i < nCellsInTile; i++) {
-      rawInt[i] |= ((scratch[i] & 0xff) << 23);
+      rawInt[i] |= (scratch[i] & 0xff) << 23;
     }
     offset += n;
 
@@ -302,7 +309,7 @@ public class CodecFloat implements IG93CompressorCodec {
     doInflate(packing, offset, n, scratch, nCellsInTile);
     decodeDeltas(scratch, nRows, nColumns);
     for (int i = 0; i < nCellsInTile; i++) {
-      rawInt[i] |= ((scratch[i] & 0x7f) << 16);
+      rawInt[i] |= (scratch[i] & 0x7f) << 16;
     }
     offset += n;
 
@@ -311,7 +318,7 @@ public class CodecFloat implements IG93CompressorCodec {
     doInflate(packing, offset, n, scratch, nCellsInTile);
     decodeDeltas(scratch, nRows, nColumns);
     for (int i = 0; i < nCellsInTile; i++) {
-      rawInt[i] |= ((scratch[i] & 0xff) << 8);
+      rawInt[i] |= (scratch[i] & 0xff) << 8;
     }
     offset += n;
 
@@ -320,7 +327,7 @@ public class CodecFloat implements IG93CompressorCodec {
     doInflate(packing, offset, n, scratch, nCellsInTile);
     decodeDeltas(scratch, nRows, nColumns);
     for (int i = 0; i < nCellsInTile; i++) {
-      rawInt[i] |= (scratch[i] & 0xff);
+      rawInt[i] |= scratch[i] & 0xff;
     }
     offset += n;
 

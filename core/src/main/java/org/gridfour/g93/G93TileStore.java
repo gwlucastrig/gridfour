@@ -30,14 +30,14 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *   At this time, the file space alloc and dealloc has serious shortcomings
- * in handling the case of variable size blocks of file space. Typically, 
+ * in handling the case of variable size blocks of file space. Typically,
  * this happens when handling compressed data.  When the file-space
  * management is unable to fullfil an allocation using free-nodes,
- * it leaves behind a small block of unused space. Over time, these 
+ * it leaves behind a small block of unused space. Over time, these
  * can accumulate until the file is mostly unused space.
  *  It appears that some mechanism is needed for consolating sections
  * of free space to create blocks large enough to store data.
@@ -225,7 +225,7 @@ class G93TileStore {
 
     // we will insert the file-space management information for the
     // existing record located at position filePos into the free list.
-    // the free list is organized in order of file position.  so we must 
+    // the free list is organized in order of file position.  so we must
     // traverse the list to find the appropriate place for this free node.
     // when we do, it may turn out that the file-space we are freeing is
     // adjacent to a previously freed block.  If so, we can merge the two
@@ -288,7 +288,7 @@ class G93TileStore {
     // the payload includes  nValues integers giving the content.
     // the size-to-store value is the record header size, plus the
     // payload size.  because all records must start on file position
-    // which is a multiple of 8, we round the sizeToStore up to the 
+    // which is a multiple of 8, we round the sizeToStore up to the
     // nearset multiple of 8 (if necessary).
     int tileIndex = tile.tileIndex;
     int payloadSize = standardTileSizeInBytes;
@@ -428,7 +428,7 @@ class G93TileStore {
         int tileIndex = braf.leReadInt();
         if (tileIndex < 0) {
           // negative tile indexes are used to introduce non-tile
-          // records.  
+          // records.
           if (tileIndex != -1) {
             throw new IOException("Undefined record code " + (-tileIndex));
           }
@@ -614,7 +614,7 @@ class G93TileStore {
     braf.leWriteInt(0);  // 4 spare bytes for header
     braf.leWriteInt(0);  // 4 spare bytes to put it on a multiple-of-8
 
-    // just in case we can't trust the application code to 
+    // just in case we can't trust the application code to
     // fully write its content, we write a set of zeroes to the file.
     // while this action has a small performance cost, the assumption
     // is that non-tile records are only a small part of the over all
@@ -677,4 +677,20 @@ class G93TileStore {
     codecMaster.reportAndClearAnalysisData(ps, spec.nRowsOfTiles * spec.nColsOfTiles);
   }
 
+    /**
+     * Gets a count of the number of tiles that have been populated with values
+     * at some point during the life span of the file. Note that even a tile
+     * that is populated with null values is considered "populated".
+     *
+     * @return a positive integer.
+     */
+    int getCountOfPopulatedTiles() {
+        int k = 0;
+        for (int i = 0; i < tilePositions.length; i++) {
+            if (tilePositions[i] != 0) {
+                k++;
+            }
+        }
+        return k;
+    }
 }

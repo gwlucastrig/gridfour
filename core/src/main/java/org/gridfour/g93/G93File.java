@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -88,7 +88,7 @@ public class G93File implements Closeable, AutoCloseable {
         throw new IOException("Row out of bounds " + row);
       }
       if (col < 0 || col >= spec.nColsInRaster) {
-        throw new IOException("Row out of bounds " + row);
+        throw new IOException("Column out of bounds " + col);
       }
 
       tileRow = row / spec.nRowsInTile;
@@ -141,8 +141,8 @@ public class G93File implements Closeable, AutoCloseable {
     braf.writeASCII(RasterFileType.G93raster.getIdentifier(), 12);
     braf.writeByte(G93FileSpecification.VERSION);
     braf.writeByte(G93FileSpecification.SUB_VERSION);
-    braf.writeByte(0); // reserved  
-    braf.writeByte(0); // reserved 
+    braf.writeByte(0); // reserved
+    braf.writeByte(0); // reserved
 
     braf.leWriteLong(timeModified);  // time modified
     braf.leWriteLong(timeModified);    // time opened
@@ -371,7 +371,19 @@ public class G93File implements Closeable, AutoCloseable {
       } catch (IOException ioex) {
         ps.format("IOException encountered during analysis: " + ioex.getMessage());
       }
-    }
+      }
+
+      if (!braf.isClosed()) {
+          long fileSize = braf.getFileSize();
+          long n = tileStore.getCountOfPopulatedTiles();
+          double avgBitsPerSample = 0;
+          if (n > 0) {
+              long nSamples = n * spec.getNumberOfCellsInTile();
+              avgBitsPerSample = fileSize * 8.0 / nSamples;
+          }
+          ps.format("Average bits per sample (estimated): %6.4f%n",
+              avgBitsPerSample);
+      }
   }
 
   /**
@@ -514,7 +526,7 @@ public class G93File implements Closeable, AutoCloseable {
     if (tile == null) {
       tile = tileCache.allocateNewTile(accessElements.tileIndex);
     }
- 
+
     tile.setValues(accessElements.rowInTile, accessElements.colInTile, values);
   }
 
@@ -648,8 +660,8 @@ public class G93File implements Closeable, AutoCloseable {
     idxraf.writeASCII(RasterFileType.G93index.getIdentifier(), 12);
     idxraf.writeByte(G93FileSpecification.VERSION);
     idxraf.writeByte(G93FileSpecification.SUB_VERSION);
-    idxraf.writeByte(0); // reserved  
-    idxraf.writeByte(0); // reserved 
+    idxraf.writeByte(0); // reserved
+    idxraf.writeByte(0); // reserved
 
     idxraf.leWriteLong(closingTime);  // time modified
     idxraf.leWriteLong(spec.uuid.getLeastSignificantBits());
@@ -683,7 +695,7 @@ public class G93File implements Closeable, AutoCloseable {
               || subVersion != G93FileSpecification.SUB_VERSION) {
         return false;
       }
-      idxraf.skipBytes(2); // reserved   
+      idxraf.skipBytes(2); // reserved
       long indexModificationTime = idxraf.leReadLong();
       if (indexModificationTime != timeLastModified) {
         // the index does not date from the same modification time as
@@ -941,7 +953,7 @@ public class G93File implements Closeable, AutoCloseable {
    * <p>
    * Accessing data in a block is often more efficient that accessing data
    * one grid-value-at-a-time.
-   * 
+   *
    * @param row the grid row index for the starting row of the block
    * @param column the grid column index for the starting column of the block
    * @param nRows the number of rows in the block to be retrieved
@@ -959,7 +971,7 @@ public class G93File implements Closeable, AutoCloseable {
     //      b  block (result) coordinates; br, bc are the row and column
     //            within the result block.
     //      g  grid (main raster) coordinates; gr, gc  grid row and column
-    //    
+    //
     //   tr will always be in the range 0 <= tr < spec.nRowsInTile
     //   tc will always be in the range 0 <= tc < spec.nColsInTile.
     //   tr0 is the first row of interest in the tile.

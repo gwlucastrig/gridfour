@@ -27,7 +27,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 11/2019  G. Lucas     Created  
+ * 11/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -62,7 +62,8 @@ public class TestOptions {
     "-verify",
     "-big",
     "-zScale",
-    "-zOffset"
+    "-zOffset",
+    "-showProgress"
   };
 
   File inputFile;
@@ -75,6 +76,7 @@ public class TestOptions {
   boolean isZScaleSet = false;
   double zScale = 1;
   double zOffset = 0;
+  boolean showProgress = true;
 
   /**
    * Indicates whether the specified string matches the pattern of a
@@ -267,7 +269,7 @@ public class TestOptions {
 
     return defaultValue;
   }
-  
+
   /**
    * Indicates whether the specified option is given in the args array.
    *
@@ -448,11 +450,14 @@ public class TestOptions {
     compress
             = scanBooleanOption(args, "-compress", matched, compress);
 
-    
-    
+
+
     isZScaleSet = isOptionSpecified(args, "-zScale");
     zScale = scanDoubleOption(args, "-zScale", matched, zScale);
     zOffset = scanDoubleOption(args, "-zOffset", matched, zOffset);
+
+    showProgress = scanBooleanOption(
+        args, "-showProgress", matched, showProgress);
 
     tileSize = scanSizeOption(args, "-tileSize", matched);
     checkOptions();
@@ -563,6 +568,17 @@ public class TestOptions {
    */
   public boolean isVerificationEnabled() {
     return verify;
+  }
+
+  /**
+   * Indicates whether the application should print progress messages during
+   * lengthy processing operations.
+   *
+   * @return true if the application should print progress messages; otherwise,
+   * false.
+   */
+  public boolean isShowProgressEnabled() {
+    return showProgress;
   }
 
   /**

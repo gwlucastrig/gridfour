@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -85,7 +85,7 @@ public enum G93DataType {
   public int getBytesPerSample(){
     return bytesPerSample;
   }
-  
+
   static G93DataType valueOf(int codeValue) {
     switch(codeValue){
       case 0:
@@ -97,6 +97,6 @@ public enum G93DataType {
       default:
         return Int4;
     }
- 
   }
+
 }

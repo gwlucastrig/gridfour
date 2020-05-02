@@ -27,11 +27,11 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 12/2019  G. Lucas     Created  
+ * 12/2019  G. Lucas     Created
  *
  * Notes:
  *
- *  
+ *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.demo.globalDEM;
@@ -118,18 +118,18 @@ public class PackageData {
     //    1.  Define the fixed metadata about the file (it's dimensions,
     //        data type, tile organization, etc.) using a G93FileSpecification
     //        object.
-    //    
+    //
     //    2.  Open a new G93File object using the settings created in step 1.
     //        Adjust any run-time parameters (such as the tile-cache size)
     //        according to the needs of the application.
-    //  
+    //
     //    3.  Extract the data from its source and store in the G93 file.
     //
     ps.format("%nG93 Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
     SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
-    ps.format("Data of Execution: %s%n", sdFormat.format(date));
+    ps.format("Date of Execution: %s%n", sdFormat.format(date));
 
     String inputPath = options.getInputFile().getPath();
     File outputFile = options.getOutputFile();
@@ -142,7 +142,7 @@ public class PackageData {
 
     // Identify which Variable instances carry information about the
     // geographic (latitude/longitude) coordinate system and also which
-    // carry information for elevation and bathymetry.  
+    // carry information for elevation and bathymetry.
     Variable lat;   // the Variable that carries row-latitude information
     Variable lon;   // the Variable that carries column-longitude information
     Variable z;     // the variable that carries elevation and bathymetry
@@ -242,8 +242,8 @@ public class PackageData {
         return;
       }
     }
-    
-    
+
+
     try (G93File g93 = new G93File(outputFile, spec)) {
       g93.setTileCacheSize(G93CacheSize.Large);
       g93.setIndexCreationEnabled(true);
@@ -261,6 +261,7 @@ public class PackageData {
       int[] readOrigin = new int[rank];
       int[] readShape = new int[rank];
 
+      double maxErr = 0;
       // -----------------------------------------------------------------
       // Package the data
       long time0 = System.currentTimeMillis();
@@ -303,6 +304,13 @@ public class PackageData {
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
+                int iSam = spec.mapValueToInt(sample);
+                float fSam = spec.mapIntToValue(iSam);
+                double delta = Math.abs(fSam - sample);
+                if (delta > maxErr) {
+                  maxErr = delta;
+                  System.out.println("maxError: " + maxErr);
+                }
                 g93.storeValue(iRow, iCol, sample);
                 stats.addSample(sample);
               }
@@ -312,7 +320,7 @@ public class PackageData {
           throw new IOException(irex.getMessage(), irex);
         }
       }
-
+      System.out.println("maxError: " + maxErr);
       g93.flush();
       long time1 = System.currentTimeMillis();
       double timeToProcess = (time1 - time0) / 1000.0;
