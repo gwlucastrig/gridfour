@@ -190,7 +190,7 @@ public class EntropyTabulator {
       }
       time0 = System.currentTimeMillis();
       for (int iTileRow = 0; iTileRow < nRowsOfTilesInSource; iTileRow++) {
-        if (showProgress && iTileRow > 0) {
+        if (showProgress) {
           long time1 = System.currentTimeMillis();
           double deltaT = time1 - time0;
           double rate = (iTileRow + 1) / deltaT;  // rows per millis
@@ -198,7 +198,7 @@ public class EntropyTabulator {
           long remainingT = (long) (nRemaining / rate);
           Date d = new Date(time1 + remainingT);
           ps.format("Surveyed %d rows, %4.1f%% of total, est completion at %s%n",
-              iTileRow * nRowsInTile,
+              iTileRow + 1,
               100.0 * (double) iTileRow / (nRowsOfTilesInSource - 1.0), d);
           ps.flush();
         }
@@ -217,14 +217,12 @@ public class EntropyTabulator {
           for (int iRow = row0; iRow < row1; iRow++) {
             for (int iCol = col0; iCol < col1; iCol++) {
               int bits;
-//              if (dataType == G93DataType.Float4) {
-//                float sample = source.readValue(iRow, iCol);
-//                bits = Float.floatToRawIntBits(sample);
-//              } else {
-//                bits = source.readIntValue(iRow, iCol);
-//              }
-                              float sample = source.readValue(iRow, iCol);
-              bits = Float.floatToRawIntBits(sample);
+              if (dataType == G93DataType.Float4) {
+                float sample = source.readValue(iRow, iCol);
+                bits = Float.floatToRawIntBits(sample);
+              } else {
+                bits = source.readIntValue(iRow, iCol);
+              }
               long longIndex = ((long) bits) & 0x00ffffffffL;
               long longRow = longIndex / 65536L;
               long longCol = longIndex - longRow * 65536L;
@@ -285,9 +283,7 @@ public class EntropyTabulator {
           }
         }
       }
-      // get sum of entropy calculations, and them apply
-      // adjustment for base 2.
-      entropy = ks.getSum() / Math.log(2.0);
+      entropy = ks.getSum();
 
       time1 = System.currentTimeMillis();
       double timeToTabulate = (time1 - time0) / 1000.0;

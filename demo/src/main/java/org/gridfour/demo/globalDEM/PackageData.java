@@ -261,6 +261,7 @@ public class PackageData {
       int[] readOrigin = new int[rank];
       int[] readShape = new int[rank];
 
+      double maxErr = 0;
       // -----------------------------------------------------------------
       // Package the data
       long time0 = System.currentTimeMillis();
@@ -303,6 +304,13 @@ public class PackageData {
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
+                int iSam = spec.mapValueToInt(sample);
+                float fSam = spec.mapIntToValue(iSam);
+                double delta = Math.abs(fSam - sample);
+                if (delta > maxErr) {
+                  maxErr = delta;
+                  System.out.println("maxError: " + maxErr);
+                }
                 g93.storeValue(iRow, iCol, sample);
                 stats.addSample(sample);
               }
@@ -312,7 +320,7 @@ public class PackageData {
           throw new IOException(irex.getMessage(), irex);
         }
       }
-
+      System.out.println("maxError: " + maxErr);
       g93.flush();
       long time1 = System.currentTimeMillis();
       double timeToProcess = (time1 - time0) / 1000.0;
