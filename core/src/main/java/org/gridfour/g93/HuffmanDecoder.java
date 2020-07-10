@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -43,7 +43,7 @@ import org.gridfour.io.BitInputStore;
 /**
  * Implements method and elements for encoding data using Huffman's algorithm.
  */
-class HuffmanDecoder {
+public class HuffmanDecoder {
 
   private static class SymbolNode {
 
@@ -172,4 +172,7 @@ class HuffmanDecoder {
     return true;
   }
 
+    public int getBitsInTreeCount() {
+        return this.nBitsInTree;
+    }
 }

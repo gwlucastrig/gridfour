@@ -190,7 +190,7 @@ public class EntropyTabulator {
       }
       time0 = System.currentTimeMillis();
       for (int iTileRow = 0; iTileRow < nRowsOfTilesInSource; iTileRow++) {
-        if (showProgress) {
+          if (showProgress && iTileRow > 0) {
           long time1 = System.currentTimeMillis();
           double deltaT = time1 - time0;
           double rate = (iTileRow + 1) / deltaT;  // rows per millis
@@ -198,7 +198,7 @@ public class EntropyTabulator {
           long remainingT = (long) (nRemaining / rate);
           Date d = new Date(time1 + remainingT);
           ps.format("Surveyed %d rows, %4.1f%% of total, est completion at %s%n",
-              iTileRow + 1,
+              iTileRow * nRowsInTile,
               100.0 * (double) iTileRow / (nRowsOfTilesInSource - 1.0), d);
           ps.flush();
         }
@@ -282,8 +282,9 @@ public class EntropyTabulator {
             }
           }
         }
-      }
-      entropy = ks.getSum();
+        }
+        // get the syn if entropy calculations, then convert to log base 2
+        entropy = ks.getSum() / Math.log(2.0);
 
       time1 = System.currentTimeMillis();
       double timeToTabulate = (time1 - time0) / 1000.0;

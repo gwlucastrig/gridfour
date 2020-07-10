@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -44,7 +44,7 @@ import org.gridfour.io.BitOutputStore;
 /**
  * Implements method and elements for encoding data using Huffman's algorithm.
  */
-class HuffmanEncoder {
+public class HuffmanEncoder {
 
   private static class SymbolNode implements Comparable<SymbolNode> {
 
@@ -236,7 +236,7 @@ class HuffmanEncoder {
     // large. So we manage the stack the hard way.
     // The maximum depth of the tree is one less than the number of symbols
     // This would occur only for an unusual combination of nodes with
-    // counts resembling the Fibonacci sequence.  
+    // counts resembling the Fibonacci sequence.
 
     // Store the number of leaf nodes.  This value could be as hight as 256,
     // which would ordinarily require 9 bits of storage. But since zero
@@ -254,13 +254,13 @@ class HuffmanEncoder {
 //      System.out.format("depth, branch, count %2d, %2d, %10d,  %s%n", depth, pBranch, pNode.count,
 //              pNode.isLeaf ? "L-" + Integer.toString(pNode.symbol) : "Branch");
       // pBranch is set as follows:
-      //    0  we've just arrived at the node and have not yet 
-      //       identified whether it is a branch or a leaf.  
+      //    0  we've just arrived at the node and have not yet
+      //       identified whether it is a branch or a leaf.
       //       we have not yet traversed any of its children
-      //    
-      //    1  we traversed down the left branch and need to traverse 
+      //
+      //    1  we traversed down the left branch and need to traverse
       //       down the right
-      //  
+      //
       //    2  we have traversed both branches and are on our way up
 
       switch (pBranch) {
