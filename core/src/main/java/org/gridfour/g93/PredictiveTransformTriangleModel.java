@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 gwluc.
+ * Copyright 2019 Gary W. Lucas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *   the first row and then the first column are pre-populated using
@@ -62,13 +62,13 @@ public class PredictiveTransformTriangleModel implements IPredictiveTransform {
 
   @Override
   public void decode(
-          int seed,
-          int nRows,
-          int nColumns,
-          byte[] encoding,
-          int offset,
-          int length,
-          int[] output) {
+    int seed,
+    int nRows,
+    int nColumns,
+    byte[] encoding,
+    int offset,
+    int length,
+    int[] output) {
     CodecM32 mCodec = new CodecM32(encoding, offset, length);
 
     // The zeroeth row and column are populated using simple differences.
@@ -100,10 +100,10 @@ public class PredictiveTransformTriangleModel implements IPredictiveTransform {
 
   @Override
   public int encode(
-          int nRows,
-          int nColumns,
-          int[] values,
-          byte[] encoding) {
+    int nRows,
+    int nColumns,
+    int[] values,
+    byte[] encoding) {
 
     if (nRows < 2 || nColumns < 2) {
       return -1;
@@ -142,7 +142,7 @@ public class PredictiveTransformTriangleModel implements IPredictiveTransform {
         long za = values[k0++];
         long zb = values[k1++];
         long zc = values[k0];
-        long zs = values[k1];  // the source value 
+        long zs = values[k1];  // the source value
         long delta = zs - (zc + zb - za);
         if (isDeltaOutOfBounds(delta)) {
           return -1;

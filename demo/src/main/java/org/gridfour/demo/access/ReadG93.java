@@ -27,7 +27,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 11/2019  G. Lucas     Created  
+ * 11/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -61,7 +61,7 @@ public class ReadG93 {
     }
     File file = new File(args[0]);
     System.out.println("Reading file " + file.getPath());
-    boolean oneTestPerTile = args.length>1;
+    boolean oneTestPerTile = args.length > 1;
 
     // Open the file.  The time required to open the file depends, in part,
     // on whether a supplemental index file (.g93) is available.  To test the
@@ -75,11 +75,11 @@ public class ReadG93 {
 
     // G93File implements a method that allows an application to obtain
     // a safe copy of the specification that was used to create the
-    // original G93 file.  The specification element is the primary 
+    // original G93 file.  The specification element is the primary
     // method for obtaining descriptive metadata about the organization
     // of the file.   The example that follows demonstrates the use of
     // the specification to get some descriptive data.
-    //    Of course, if an application just wants to print that 
+    //    Of course, if an application just wants to print that
     // metadata, the summarize function is the most efficient way of
     // doing so.
     G93FileSpecification spec = g93.getSpecification();
@@ -104,10 +104,10 @@ public class ReadG93 {
     for (VariableLengthRecord vlr : vlrList) {
       ps.println("------------------------------------------------");
       ps.format("VLR: %-16.16s  %6d:  %d bytes  %s%n",
-              vlr.getUserId(),
-              vlr.getRecordId(),
-              vlr.getPayloadSize(),
-              vlr.hasTextPayload() ? "Text" : "Binary");
+        vlr.getUserId(),
+        vlr.getRecordId(),
+        vlr.getPayloadSize(),
+        vlr.hasTextPayload() ? "Text" : "Binary");
       if (vlr.hasTextPayload()) {
         String payloadText = vlr.readPayloadText();
         ps.println(payloadText);
@@ -118,24 +118,24 @@ public class ReadG93 {
 
     // we collect a sum of the samples.  we don't really care about
     // this value, but we collect it to ensure that Java doesn't optimize
-    // away the actions inside the loop by telling it that we want a 
+    // away the actions inside the loop by telling it that we want a
     // computed value.
     int nTest = 4;
     double sumSample = 0;
     long nSample = 0;
     int rowStep = 1;
     int colStep = 1;
-    if(oneTestPerTile){
-       rowStep = spec.getRowsInTile();
-       colStep = spec.getColumnsInTile();
+    if (oneTestPerTile) {
+      rowStep = spec.getRowsInTile();
+      colStep = spec.getColumnsInTile();
 
     }
     for (int iTest = 0; iTest < nTest; iTest++) {
       time0 = System.nanoTime();
       g93 = new G93File(file, "r");
       g93.setTileCacheSize(G93CacheSize.Large);
-      for (int iRow = 0; iRow < nRows; iRow+=rowStep) {
-        for (int iCol = 0; iCol < nCols; iCol+=colStep) {
+      for (int iRow = 0; iRow < nRows; iRow += rowStep) {
+        for (int iCol = 0; iCol < nCols; iCol += colStep) {
           double sample = g93.readValue(iRow, iCol);
           sumSample += sample;
           nSample++;
@@ -144,17 +144,17 @@ public class ReadG93 {
       time1 = System.nanoTime();
       double timeForReadingFile = (time1 - time0) / 1.0e+6;
       System.out.format("Time to read all tiles        %10.1f ms%n",
-              timeForReadingFile);
+        timeForReadingFile);
 
       if (iTest == nTest - 1) {
-        // on the last test, summarize 
+        // on the last test, summarize
         g93.summarize(ps, false);
       }
       g93.close();
 
     }
 
-    ps.println("Avg Samples " + (double) sumSample / (double) nSample);
+    ps.println("Avg Samples " + sumSample / (double) nSample);
 
   }
 

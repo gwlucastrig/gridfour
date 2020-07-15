@@ -2,7 +2,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -27,7 +27,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 09/2019  G. Lucas     Created  
+ * 09/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -85,13 +85,13 @@ class ExtractionCoordinates {
     // of rank 2 has rows and columns, and is essentially a matrix.
     // Higher rank variables are not uncommon.
     // In ETOPO1 and GEBCO_2019, the latitude/longitude variables have rank of 1.
-    // 
+    //
     // The "shape" element tells you the number of values in the variable.
     // The getShape() method returns an array of integers dimensioned to
     // the rank.  Since the latitude and longitude variables are of rank
     // one, the getShape() method will return one-dimension integer arrays
     // for both varibles.  And shape[0] tells us how many values there
-    // are in those arrays.  
+    // are in those arrays.
     //     For example, ETOPO1 has 1 minute spacing.  There are 60 minutes
     // in a degree, and 180 degrees from south to north (90 degrees in
     // both hemispheres).  So the shape[0] returned for the latitude
@@ -159,18 +159,18 @@ class ExtractionCoordinates {
   }
 
   private void coord(
-          PrintStream ps,
-          String label,
-          String variableName,
-          double vMin, double vMax, double vSpacing) {
+    PrintStream ps,
+    String label,
+    String variableName,
+    double vMin, double vMax, double vSpacing) {
 
     String s = label + " (" + variableName + ")";
     double m = rEquatorial * Math.toRadians(vSpacing);
     ps.format(
-            "%-18s: %12.6f to %12.6f --- "
-            + "Spacing %5.3f minutes or %5.3f seconds"
-            + ", %6.3f km at the equator%n",
-            s, vMin, vMax, vSpacing * 60, vSpacing * 3600, m);
+      "%-18s: %12.6f to %12.6f --- "
+      + "Spacing %5.3f minutes or %5.3f seconds"
+      + ", %6.3f km at the equator%n",
+      s, vMin, vMax, vSpacing * 60, vSpacing * 3600, m);
   }
 
   /**

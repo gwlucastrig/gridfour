@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 gwluc.
+ * Copyright 2019 Gary W. Lucas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,12 +28,12 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *   The first two columns are pre-populated using simple differences,
  * then the remainder of the data is filled in using the linear-predictor.
- * 
+ *
  *
  * -----------------------------------------------------------------------
  */
@@ -58,14 +58,13 @@ public class PredictiveTransformLinearModel implements IPredictiveTransform {
 
   @Override
   public void decode(
-          int seed, 
-          int nRows, 
-          int nColumns,
-          byte[] encoding, 
-          int offset, 
-          int length, 
-          int[] output)
-  {
+    int seed,
+    int nRows,
+    int nColumns,
+    byte[] encoding,
+    int offset,
+    int length,
+    int[] output) {
     CodecM32 mCodec = new CodecM32(encoding, offset, length);
     long prior = seed;
     output[0] = seed;
@@ -96,10 +95,10 @@ public class PredictiveTransformLinearModel implements IPredictiveTransform {
 
   @Override
   public int encode(
-          int nRows,
-          int nColumns,
-          int[] values,
-          byte[] encoding) {
+    int nRows,
+    int nColumns,
+    int[] values,
+    byte[] encoding) {
     CodecM32 mCodec = new CodecM32(encoding, 0, encoding.length);
     encodedSeed = values[0];
 

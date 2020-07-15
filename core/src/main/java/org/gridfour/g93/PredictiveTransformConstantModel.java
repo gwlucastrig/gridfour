@@ -3,7 +3,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *  The original inspiration for the constant-value predictor
@@ -68,10 +68,10 @@ public class PredictiveTransformConstantModel implements IPredictiveTransform {
 
   @Override
   public int encode(
-          int nRows,
-          int nColumns,
-          int[] values,
-          byte[] output) {
+    int nRows,
+    int nColumns,
+    int[] values,
+    byte[] output) {
     CodecM32 mCodec = new CodecM32(output, 0, output.length);
     encodedSeed = values[0];
     long prior = encodedSeed;
@@ -115,11 +115,11 @@ public class PredictiveTransformConstantModel implements IPredictiveTransform {
 
   @Override
   public void decode(
-          int seed,
-          int nRows,
-          int nColumns,
-          byte[] encoding, int offset, int length,
-          int[] output) {
+    int seed,
+    int nRows,
+    int nColumns,
+    byte[] encoding, int offset, int length,
+    int[] output) {
     CodecM32 mCodec = new CodecM32(encoding, offset, length);
     output[0] = seed;
     int prior = seed;

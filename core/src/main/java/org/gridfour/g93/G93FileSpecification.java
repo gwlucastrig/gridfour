@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -42,16 +42,13 @@ import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import org.gridfour.util.Angle;
-
 import static java.lang.Double.isFinite;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import org.gridfour.io.BufferedRandomAccessFile;
 import static org.gridfour.g93.G93FileConstants.NULL_DATA_CODE;
+import org.gridfour.io.BufferedRandomAccessFile;
+import org.gridfour.util.Angle;
 
 /**
  * Provides a specification for creating G93File instances.
@@ -67,7 +64,7 @@ public class G93FileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 2;
+  static final byte SUB_VERSION = 3;
 
   private static final int IDENTIFICATION_SIZE = 64;
   private static final int COPYRIGHT_SIZE = 96;
@@ -148,12 +145,12 @@ public class G93FileSpecification {
    * An arbitrary, application-assigned identification string.
    */
   String identification;
-  
+
   /**
    * An optional, application-assigned copyright notification.
    */
   String copyright;
-  
+
   /**
    * An arbitrary, application-assigned notification indicating
    * the appropriate handling of the data set.
@@ -162,22 +159,83 @@ public class G93FileSpecification {
 
   //   At this time, I am wrestling with the idea of whether to support
   // heterogeneous data types.  Doing so would add useful functionality
-  // to the library, but would complicate the API. All of the following elements 
+  // to the library, but would complicate the API. All of the following elements
   // are here to supportthe transition from the earlier version of the code
   // and are subject to change moving forward.
   int dimension = 1;
-  G93DataType dataType = G93DataType.Int4;
+  G93DataType dataType = G93DataType.INTEGER;
   float valueScale = 1;
   float valueOffset = 0;
   String variableName = "Variable:0";
   int standardTileSizeInBytes;
 
   G93GeometryType geometryType
-          = G93GeometryType.Unspecified;
+    = G93GeometryType.Unspecified;
 
-  LinkedHashMap<String, Class<?>> rasterCodecMap = new LinkedHashMap<>();
+  List<CodecHolder> codecList = new ArrayList<>();
+  List<String> codecIdentificationList = new ArrayList<>();
 
   List<G93VariableSpecification> variableSpecifications = new ArrayList<>();
+
+  private void addCodecSpec(String key, Class<?> codec) {
+    CodecHolder spec
+      = new CodecHolder(key, codec, codec);
+    codecList.add(spec);
+  }
+
+  private void initDefaultCodecList() {
+    addCodecSpec(CodecType.G93_Huffman.toString(), CodecHuffman.class);
+    addCodecSpec(CodecType.G93_Deflate.toString(), CodecDeflate.class);
+    addCodecSpec(CodecType.G93_Float.toString(), CodecFloat.class);
+  }
+
+  /**
+   * Updates the codec list based on information read during the file-opening
+   * operation. This includes the list of specification identifiers that
+   * is used to correlate a integer compression index read from a tile
+   * with the actual codec. It also includes an optional list of
+   * CodecSpecification elements that were read from the file.
+   * CodecSpecfication elements are just a set of strings giving Java
+   * class names and will be populated only if the file being read
+   * was a Java file.
+   *
+   * @param specList a valid, potentially empty list of codec specification
+   * identifiers and class-name elements.
+   * @throws IOException in the event that a class matching a specified
+   * class name cannot be resolved.
+   */
+  void integrateCodecSpecificationsFromFile(
+    List<CodecSpecification> specList) throws IOException {
+
+    List<CodecHolder> resultList = new ArrayList<>();
+    for (String s : codecIdentificationList) {
+      CodecHolder result;
+      CodecHolder registeredHolder = null;
+      for (CodecHolder holder : codecList) {
+        if (s.equals(holder.getIdentification())) {
+          registeredHolder = holder;
+          break;
+        }
+      }
+      result = registeredHolder;
+      boolean mandatory = registeredHolder == null;
+      for (CodecSpecification test : specList) {
+        if (s.equals(test.getIdentification())) {
+          CodecHolder candidate = test.getHolder(mandatory);
+          if (candidate != null) {
+            result = candidate;
+          }
+        }
+      }
+
+      resultList.add(result);
+    }
+
+    // replace the current codec list with the results.
+    // the current list will usually be the default list.
+    codecList.clear();
+    codecList.addAll(resultList);
+  }
 
   /**
    * Construct a specification for creating a G93 raster with the indicated
@@ -189,15 +247,19 @@ public class G93FileSpecification {
    * <p>
    * Due to internal implementation limits, the maximum number of tiles is the
    * maximum size of a 4-byte signed integer(2147483647). This condition could
-   * occur given a very large raster grid combined with an insufficiently large
+   * occur given a very large raster grid combined with an insufficiently
+   * large
    * tile size.
    * <p>
-   * For example, if an application were using geographic coordinates wait a one
+   * For example, if an application were using geographic coordinates wait a
+   * one
    * second of arc cell spacing for a grid, it would require a grid of
-   * dimensions 1296000 by 648000. A tile size of 60-by-60 would ensure that the
+   * dimensions 1296000 by 648000. A tile size of 60-by-60 would ensure that
+   * the
    * maximum number of tiles was just over 233 million, and well within the
    * limits imposed by this implementation. However, a tile size of 10-by-10
-   * would product a maximum number of tiles of over 8 billion, and would exceed
+   * would product a maximum number of tiles of over 8 billion, and would
+   * exceed
    * the limits of the implementation.
    *
    * @param nRowsInRaster the number of rows in the raster
@@ -206,13 +268,13 @@ public class G93FileSpecification {
    * @param nColumnsInTile the number of columns in the tiling scheme
    */
   public G93FileSpecification(
-          int nRowsInRaster,
-          int nColumnsInRaster,
-          int nRowsInTile,
-          int nColumnsInTile) {
-    rasterCodecMap.put(CodecType.G93_Huffman.toString(), CodecHuffman.class);
-    rasterCodecMap.put(CodecType.G93_Deflate.toString(), CodecDeflate.class);
-      rasterCodecMap.put(CodecType.G93_Float.toString(), CodecFloat.class);
+    int nRowsInRaster,
+    int nColumnsInRaster,
+    int nRowsInTile,
+    int nColumnsInTile) {
+
+    initDefaultCodecList();
+
     uuid = UUID.randomUUID();
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
@@ -227,21 +289,21 @@ public class G93FileSpecification {
 
     if (nRowsInRaster <= 0 || nColumnsInRaster <= 0) {
       throw new IllegalArgumentException(
-              "Invalid dimensions for raster "
-              + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
+        "Invalid dimensions for raster "
+        + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
     }
     if (nRowsInTile <= 0 || nColumnsInTile <= 0) {
       throw new IllegalArgumentException(
-              "Invalid dimensions for raster "
-              + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
+        "Invalid dimensions for raster "
+        + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
     }
 
     if (nRowsInTile > nRowsInRaster || nColumnsInTile > nColumnsInRaster) {
       throw new IllegalArgumentException(
-              "Dimensions of tile "
-              + "(" + nRowsInTile + "," + nColumnsInTile + ")"
-              + " exceed those of overall raster ("
-              + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
+        "Dimensions of tile "
+        + "(" + nRowsInTile + "," + nColumnsInTile + ")"
+        + " exceed those of overall raster ("
+        + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
     }
 
     nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
@@ -250,8 +312,8 @@ public class G93FileSpecification {
     long nTiles = (long) nRowsOfTiles * (long) nColsOfTiles;
     if (nTiles > Integer.MAX_VALUE) {
       throw new IllegalArgumentException(
-              "The number of potential tiles exceeds "
-              + "the size of a signed integer (2147483647)");
+        "The number of potential tiles exceeds "
+        + "the size of a signed integer (2147483647)");
     }
     x0 = 0;
     y0 = 0;
@@ -264,10 +326,10 @@ public class G93FileSpecification {
 
     standardTileSizeInBytes = dimension * nCellsInTile * dataType.getBytesPerSample();
     variableSpecifications.add(
-            new G93VariableSpecification(dataType,
-                    valueScale,
-                    valueOffset,
-                    variableName));
+      new G93VariableSpecification(dataType,
+        valueScale,
+        valueOffset,
+        variableName));
   }
 
   /**
@@ -312,9 +374,8 @@ public class G93FileSpecification {
     isExtendedFileSizeEnabled = s.isExtendedFileSizeEnabled;
     geometryType = s.geometryType;
     dataCompressionEnabled = s.dataCompressionEnabled;
-    List<G93SpecificationForCodec> sList = s.getCompressionCodecs();
-    for (G93SpecificationForCodec srcs : sList) {
-      rasterCodecMap.put(srcs.getIdentification(), srcs.getCodec());
+    for (CodecHolder holder : s.codecList) {
+      codecList.add(new CodecHolder(holder));
     }
 
     variableSpecifications.addAll(s.variableSpecifications);
@@ -327,12 +388,14 @@ public class G93FileSpecification {
   }
 
   /**
-   * Sets the data model to be an integer scaled float with the specified 
+   * Sets the data model to be an integer scaled float with the specified
    * dimension.
    * <p>
-   * This method provides the associated scale and offset parameters to be used
+   * This method provides the associated scale and offset parameters to be
+   * used
    * to convert floating-point data to integer values when the data is stored
-   * and back to floating-point data when it is retrieved. This data representation
+   * and back to floating-point data when it is retrieved. This data
+   * representation
    * is subject to a loss of precision, but delivers good compression ratios.
    * <pre>
    * intValue = (floatValue-offset)*scale.
@@ -350,94 +413,91 @@ public class G93FileSpecification {
   public void setDataModelIntegerScaledFloat(int dimension, float scale, float offset) {
     if (scale == 0 || Float.isNaN(scale)) {
       throw new IllegalArgumentException(
-              "A scale value of zero or Float.NaN is not supported");
+        "A scale value of zero or Float.NaN is not supported");
     }
     if (Float.isNaN(offset)) {
       throw new IllegalArgumentException(
-              "An offset value of Float.NaN is not supported");
+        "An offset value of Float.NaN is not supported");
     }
     if (dimension < 1) {
       throw new IllegalArgumentException(
-              "Zero or negative dimension value not supported");
+        "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.IntegerCodedFloat;
+    dataType = G93DataType.INETGER_CODED_FLOAT;
     valueScale = scale;
     valueOffset = offset;
     variableName = "Variables";
     standardTileSizeInBytes
-            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+      = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
     variableSpecifications.clear();
     for (int i = 0; i < dimension; i++) {
       variableSpecifications.add(
-              new G93VariableSpecification(dataType,
-                      valueScale,
-                      valueOffset,
-                      "Variable: " + i));
+        new G93VariableSpecification(dataType,
+          valueScale,
+          valueOffset,
+          "Variable: " + i));
     }
   }
 
   /**
    * Sets the data model to integer with the specified dimension.
-   * 
+   *
    * @param dimension the dimension of the dependent variables for the raster.
    */
   public void setDataModelInt(int dimension) {
     if (dimension < 1) {
       throw new IllegalArgumentException(
-              "Zero or negative dimension value not supported");
+        "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.Int4;
+    dataType = G93DataType.INTEGER;
     valueScale = 1.0F;
     valueOffset = 0.0F;
     variableName = "Variables";
     standardTileSizeInBytes
-            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+      = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
     variableSpecifications.clear();
     for (int i = 0; i < dimension; i++) {
       variableSpecifications.add(
-              new G93VariableSpecification(dataType,
-                      valueScale,
-                      valueOffset,
-                      "Variable: " + i));
+        new G93VariableSpecification(dataType,
+          valueScale,
+          valueOffset,
+          "Variable: " + i));
     }
   }
 
-  
   /**
    * Sets the data model to integer with the specified dimension.
-   * 
+   *
    * @param dimension the dimension of the dependent variables for the raster.
    */
   public void setDataModelFloat(int dimension) {
     if (dimension < 1) {
       throw new IllegalArgumentException(
-              "Zero or negative dimension value not supported");
+        "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.Float4;
+    dataType = G93DataType.FLOAT;
     valueScale = 1.0F;
     valueOffset = 0.0F;
     variableName = "Variables";
     standardTileSizeInBytes
-            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+      = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
     variableSpecifications.clear();
     for (int i = 0; i < dimension; i++) {
       variableSpecifications.add(
-              new G93VariableSpecification(dataType,
-                      valueScale,
-                      valueOffset,
-                      "Variable: " + i));
+        new G93VariableSpecification(dataType,
+          valueScale,
+          valueOffset,
+          "Variable: " + i));
     }
   }
-  
-  
-  
-  
+
   /**
    * Gets the standard size of the data when stored in non-compressed format.
-   * This size is the product of dimension, number of rows and columns, and the size
+   * This size is the product of dimension, number of rows and columns, and
+   * the size
    * of the data element (usually 4 for integers or floats).
    *
    * @return a positive value greater than or equal to 1.
@@ -448,20 +508,24 @@ public class G93FileSpecification {
 
   /**
    * Set a geographic coordinate system to be used for interpreting the data.
-   * Note that this setting is mutually exclusive with the Cartesian coordinate
+   * Note that this setting is mutually exclusive with the Cartesian
+   * coordinate
    * system setting. The last setting applied replaces any earlier settings.
    * <p>
    * Various data sources take different approaches in terms of how they order
    * their raster data in relationship to latitude. Some start with the
    * northernmost latitude and work their way south, some start with the
-   * southernmost latitude and work their way north. Thus the arguments for this
-   * method are based on the ordering of the raster. The first pair of arguments
+   * southernmost latitude and work their way north. Thus the arguments for
+   * this
+   * method are based on the ordering of the raster. The first pair of
+   * arguments
    * give the coordinates for the first row and column in the grid. The second
    * pair of arguments give the coordinates for the last.
    * <p>
    * Unfortunately, the possibility of longitude wrapping around the
    * International Date line limits the flexibility for longitude
-   * specifications. This implementation assumes that the raster is organized so
+   * specifications. This implementation assumes that the raster is organized
+   * so
    * that the longitudes progress from west to east (longitude increases with
    * increasing grid index). Thus, if a longitude of -90 to 90 were specified,
    * it would assume that the raster columns went from 90 west to 90 east. But
@@ -469,18 +533,19 @@ public class G93FileSpecification {
    * from 90 east, across the International Date Line, to 90 west.
    *
    * @param latRow0 the latitude of the first row in the grid
-   * @param lonCol0 the longitude of the first column of the raster (column 0).
+   * @param lonCol0 the longitude of the first column of the raster (column
+   * 0).
    * @param latRowLast the latitude of the last row of the raster.
    * @param lonColLast the longitude of the the last column of the raster.
    */
   public void setGeographicCoordinates(
-          double latRow0, double lonCol0, double latRowLast, double lonColLast) {
+    double latRow0, double lonCol0, double latRowLast, double lonColLast) {
     this.isGeographicCoordinateSystemSet = true;
     this.isCartesianCoordinateSystemSet = false;
     if (!isFinite(latRow0)
-            || !isFinite(lonCol0)
-            || !isFinite(latRowLast)
-            || !isFinite(lonColLast)) {
+      || !isFinite(lonCol0)
+      || !isFinite(latRowLast)
+      || !isFinite(lonColLast)) {
       throw new IllegalArgumentException("Invalid floating-point value");
     }
 
@@ -519,16 +584,19 @@ public class G93FileSpecification {
 
   /**
    * Set a Cartesian coordinate system to be used for interpreting the data.
-   * Note that this setting is mutually exclusive with the geographic coordinate
+   * Note that this setting is mutually exclusive with the geographic
+   * coordinate
    * system setting. The last setting applied replaces any earlier settings
    *
    * @param x0 the X coordinate of the lower-left corner of the raster and the
    * first column of the raster (column 0).
    * @param y0 the Y coordinate of the lower-left corner of the raster and the
    * first row of the raster (row 0).
-   * @param x1 the X coordinate of the upper-right corner of the raster and the
+   * @param x1 the X coordinate of the upper-right corner of the raster and
+   * the
    * last column of the raster.
-   * @param y1 the Y coordinate of the upper-right corner of the raster and the
+   * @param y1 the Y coordinate of the upper-right corner of the raster and
+   * the
    * last row of the raster.
    */
   public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
@@ -540,11 +608,11 @@ public class G93FileSpecification {
     }
     if (x0 == x1) {
       throw new IllegalArgumentException(
-              "Cartesian coordinate x0 must not equal x1");
+        "Cartesian coordinate x0 must not equal x1");
     }
     if (y0 == y1) {
       throw new IllegalArgumentException(
-              "Cartesian coordinate y0 must not equal y1");
+        "Cartesian coordinate y0 must not equal y1");
     }
 
     this.x0 = x0;
@@ -569,22 +637,23 @@ public class G93FileSpecification {
       byte[] b = identification.getBytes("UTF-8");
       if (b.length > IDENTIFICATION_SIZE) {
         throw new IllegalArgumentException(
-                "Identification string exceeds 64 byte limit "
-                + "when encoded in UTF-8 character set (size="
-                + b.length + ")");
+          "Identification string exceeds 64 byte limit "
+          + "when encoded in UTF-8 character set (size="
+          + b.length + ")");
       }
     } catch (UnsupportedEncodingException ex) {
       throw new IllegalArgumentException(ex.getMessage());
     }
   }
-  
-  
-    /**
+
+  /**
    * Set an optional and arbitrary identification string for the raster.
    * <p>
-   * The Gridfour software package is available for use free-of-charge and does
+   * The Gridfour software package is available for use free-of-charge and
+   * does
    * not claim any copyright or control over data stored using this API.
-   * Organizations and individuals using this API are free to specify copyright
+   * Organizations and individuals using this API are free to specify
+   * copyright
    * based on their own requirements and obligations.
    * <p>
    * The copyright may be a string of characters in UTF-8 encoding of up to 96
@@ -600,19 +669,17 @@ public class G93FileSpecification {
       byte[] b = copyright.getBytes("UTF-8");
       if (b.length > COPYRIGHT_SIZE) {
         throw new IllegalArgumentException(
-                "Copyright string exceeds 96 byte limit "
-                + "when encoded in UTF-8 character set (size="
-                + b.length + ")");
+          "Copyright string exceeds 96 byte limit "
+          + "when encoded in UTF-8 character set (size="
+          + b.length + ")");
       }
     } catch (UnsupportedEncodingException ex) {
       throw new IllegalArgumentException(ex.getMessage());
     }
   }
 
-  
-   
   /**
-   * Set an arbitrary document-control notification string for the raster. 
+   * Set an arbitrary document-control notification string for the raster.
    * <p>
    * The document control notification string is intended to allow
    * data issuing authorities to advise users on how the data is to be
@@ -635,19 +702,14 @@ public class G93FileSpecification {
       byte[] b = documentControl.getBytes("UTF-8");
       if (b.length > DOCUMENT_CONTROL_SIZE) {
         throw new IllegalArgumentException(
-                "Document Control Notification string exceeds 64 byte limit "
-                + "when encoded in UTF-8 character set (size="
-                + b.length + ")");
+          "Document Control Notification string exceeds 64 byte limit "
+          + "when encoded in UTF-8 character set (size="
+          + b.length + ")");
       }
     } catch (UnsupportedEncodingException ex) {
       throw new IllegalArgumentException(ex.getMessage());
     }
   }
-  
-  
-  
-  
-  
 
   /**
    * Gets array of bytes of length 64, intended for writing a g93 Raster file.
@@ -658,8 +720,8 @@ public class G93FileSpecification {
     return getUtfBytes(identification, IDENTIFICATION_SIZE);
   }
 
-  private byte [] getUtfBytes(String subject, int fixedLength){
-        byte[] output = new byte[fixedLength];
+  private byte[] getUtfBytes(String subject, int fixedLength) {
+    byte[] output = new byte[fixedLength];
     if (subject != null && !subject.isEmpty()) {
       try {
         byte[] b = subject.getBytes("UTF-8");
@@ -674,8 +736,7 @@ public class G93FileSpecification {
     }
     return output;
   }
-  
-  
+
   /**
    * Gets the identification string associated with this specification and the
    * G93File that is created from it. The identification is supplied by the
@@ -695,6 +756,8 @@ public class G93FileSpecification {
    * @throws IOException in the event of an unrecoverable I/O error
    */
   public G93FileSpecification(BufferedRandomAccessFile braf) throws IOException {
+    initDefaultCodecList();
+
     timeCreated = System.currentTimeMillis();
 
     long uuidLow = braf.leReadLong();
@@ -717,7 +780,6 @@ public class G93FileSpecification {
       documentControl = new String(b, "UTF-8");
     }
 
-    
     nRowsInRaster = braf.leReadInt();
     nColsInRaster = braf.leReadInt();
     nRowsInTile = braf.leReadInt();
@@ -777,17 +839,25 @@ public class G93FileSpecification {
       checkGeographicCoverage();
     }
 
+    // The source file may supply keys for compression encoder types.
+    // Some keys are part of the G93 specification, but others may
+    // have been created by other applications.  If these applications
+    // were written in Java, there may be a reference to a variable
+    // length record of type G93_Java_Codecs which may have given
+    // classpath strings that can be used for loading codecs.  If the
+    // data was created by a non-Java application, there G93_Java_Codecs
+    // element will probably not be supplied.
     int nCompressionSpecifications = braf.leReadInt();
     if (nCompressionSpecifications > 0) {
       this.dataCompressionEnabled = true;
       for (int i = 0; i < nCompressionSpecifications; i++) {
         String codecID = braf.readASCII(16);
-        addCompressionCodec(codecID, CodecPlaceHolder.class);
+        codecIdentificationList.add(codecID);
       }
     }
 
     standardTileSizeInBytes
-            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+      = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
   }
 
   /**
@@ -802,12 +872,11 @@ public class G93FileSpecification {
   void write(BufferedRandomAccessFile braf) throws IOException {
     braf.leWriteLong(uuid.getLeastSignificantBits());
     braf.leWriteLong(uuid.getMostSignificantBits());
-    
-    
+
     braf.write(getUtfBytes(identification, IDENTIFICATION_SIZE));  // 64 bytes
-    braf.write(getUtfBytes(copyright,       COPYRIGHT_SIZE));  // 96 bytes
+    braf.write(getUtfBytes(copyright, COPYRIGHT_SIZE));  // 96 bytes
     braf.write(getUtfBytes(documentControl, DOCUMENT_CONTROL_SIZE));  // 64 bytes
-    
+
     braf.leWriteInt(nRowsInRaster);
     braf.leWriteInt(nColsInRaster);
     braf.leWriteInt(nRowsInTile);
@@ -825,7 +894,7 @@ public class G93FileSpecification {
       braf.writeFully(codeValue, 0, codeValue.length);
       braf.leWriteFloat(valueScale);
       braf.leWriteFloat(valueOffset);
-      if (dataType == G93DataType.Float4) {
+      if (dataType == G93DataType.FLOAT) {
         braf.leWriteFloat(Float.NaN);
       } else {
         braf.leWriteInt(Integer.MIN_VALUE);
@@ -850,9 +919,9 @@ public class G93FileSpecification {
     braf.leWriteDouble(y1);
 
     if (isDataCompressionEnabled()) {
-      List<G93SpecificationForCodec> sList = getCompressionCodecs();
+      List<CodecHolder> sList = getCompressionCodecs();
       braf.leWriteInt(sList.size());
-      for (G93SpecificationForCodec srcs : sList) {
+      for (CodecHolder srcs : sList) {
         braf.writeASCII(srcs.getIdentification(), 16);
       }
     } else {
@@ -909,8 +978,10 @@ public class G93FileSpecification {
   }
 
   /**
-   * Get the number of columns of tiles. This value is computed as the number of
-   * columns in the grid divided by the number of columns in a tile, rounded up.
+   * Get the number of columns of tiles. This value is computed as the number
+   * of
+   * columns in the grid divided by the number of columns in a tile, rounded
+   * up.
    *
    * @return a value of 1 or greater.
    */
@@ -948,7 +1019,8 @@ public class G93FileSpecification {
   }
 
   /**
-   * Indicates whether the extended file size option is enabled. If the extended
+   * Indicates whether the extended file size option is enabled. If the
+   * extended
    * file size option is not enabled, the maximum size of a file is 32
    * gigabytes. Larger files may be specified using this option, but doing so
    * will increase the amount of internal memory used to process the files.
@@ -960,12 +1032,14 @@ public class G93FileSpecification {
   }
 
   /**
-   * Indicates whether the extended file size option is enabled. If the extended
+   * Indicates whether the extended file size option is enabled. If the
+   * extended
    * file size option is not enabled, the maximum size of a file is 32
    * gigabytes. Larger files may be specified using this option, but doing so
    * will increase the amount of internal memory used to process the files.
    * <p>
-   * <strong>Warning:</strong>At this time the extended file size option is not
+   * <strong>Warning:</strong>At this time the extended file size option is
+   * not
    * implemented by the G93File class.
    *
    * @param extendedFileSizeEnabled true if extended file sizes are enabled;
@@ -976,14 +1050,18 @@ public class G93FileSpecification {
   }
 
   /**
-   * Maps the specified floating point value to the integer value that would be
+   * Maps the specified floating point value to the integer value that would
+   * be
    * used for the internal representation of data when storing integral data.
-   * Normally, the G93File will convert floating point values to integers if the
-   * file is defined with an integer data type or if the data is being stored in
+   * Normally, the G93File will convert floating point values to integers if
+   * the
+   * file is defined with an integer data type or if the data is being stored
+   * in
    * compressed form.
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through the setValueTransform() method when the associated file
+   * established through the setValueTransform() method when the associated
+   * file
    * was created.
    *
    * @param value a valid floating point value or Float.NaN
@@ -997,11 +1075,13 @@ public class G93FileSpecification {
   }
 
   /**
-   * Maps the specified integer value to the equivalent floating point value as
+   * Maps the specified integer value to the equivalent floating point value
+   * as
    * defined for the G93File.
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through the setValueTransform() method when the associated file
+   * established through the setValueTransform() method when the associated
+   * file
    * was created.
    *
    * @param value an integer value
@@ -1015,9 +1095,11 @@ public class G93FileSpecification {
   }
 
   /**
-   * Map Cartesian coordinates to grid coordinates storing the row and column in
+   * Map Cartesian coordinates to grid coordinates storing the row and column
+   * in
    * an array in that order. If the x or y coordinate is outside the ranges
-   * defined for these parameters, the resulting rows and columns may be outside
+   * defined for these parameters, the resulting rows and columns may be
+   * outside
    * the range of the valid grid coordinates.
    * <p>
    * The transformation performed by this method is based on the parameters
@@ -1036,7 +1118,8 @@ public class G93FileSpecification {
   }
 
   /**
-   * Map grid coordinates to Cartesian coordinates storing the resulting x and y
+   * Map grid coordinates to Cartesian coordinates storing the resulting x and
+   * y
    * values in an array in that order. If the row or column values are outside
    * the ranges defined for those parameters, the resulting x and y values may
    * be outside the bounds of the standard Cartesian coordinates.
@@ -1059,7 +1142,8 @@ public class G93FileSpecification {
   /**
    * Map geographic coordinates to grid coordinates storing the row and column
    * in an array in that order. If the latitude or longitude is outside the
-   * ranges defined for these parameters, the resulting rows and columns may be
+   * ranges defined for these parameters, the resulting rows and columns may
+   * be
    * outside the range of the valid grid coordinates
    * <p>
    * The transformation performed by this method is based on the parameters
@@ -1082,8 +1166,10 @@ public class G93FileSpecification {
   }
 
   /**
-   * Map grid coordinates to Geographic coordinates storing the resulting x and
-   * y values in an array in that order. If the row or column values are outside
+   * Map grid coordinates to Geographic coordinates storing the resulting x
+   * and
+   * y values in an array in that order. If the row or column values are
+   * outside
    * the ranges defined for those parameters, the resulting x and y values may
    * be outside the bounds of the standard Geographic coordinates.
    * <p>
@@ -1116,20 +1202,25 @@ public class G93FileSpecification {
    * Indicates whether a geographic coordinate system covers the full range of
    * longitude but crosses a 360 degree boundary between grid points. For
    * example, a grid with a geographic coordinate system ranging from -180 to
-   * +180 by increments of 1 would include 361 columns. A grid with a geographic
+   * +180 by increments of 1 would include 361 columns. A grid with a
+   * geographic
    * coordinate system ranging from -179.5 to +179.5 by increments of 1 would
    * include 360 columns. The first case does not cross a longitude boundary.
-   * The second case crosses a longitude boundary in the middle of a grid cell.
+   * The second case crosses a longitude boundary in the middle of a grid
+   * cell.
    * <p>
    * In the first case, we say that the coordinate system "brackets" the
-   * longitude range. The first and last grid point in each row are actually at
+   * longitude range. The first and last grid point in each row are actually
+   * at
    * the same coordinates (and should have the same values if properly
-   * populated). In the second case, we say that the coordinate system "crosses"
+   * populated). In the second case, we say that the coordinate system
+   * "crosses"
    * the longitude boundary. But, in both cases, the coordinate system does
    * offer a full 360-degrees of coverage.
    * <p>
    * This setting is useful for data queries and interpolation operations
-   * applied over a geographic coordinate system that covers the entire range of
+   * applied over a geographic coordinate system that covers the entire range
+   * of
    * longitudes. In the "bracket" case, mapping a longitude to a column can be
    * accomplished using simple arithmetic. But in the second case, more
    * complicated logic may be required to select columns for interpolation.
@@ -1143,7 +1234,8 @@ public class G93FileSpecification {
 
   /**
    * Indicates whether a geographic coordinate system covers the full range of
-   * longitude with redundant grid points at the beginning and end of each row.
+   * longitude with redundant grid points at the beginning and end of each
+   * row.
    * See the explanation for doGeographicCoordinatesWrapLongitude() for more
    * detail.
    *
@@ -1168,14 +1260,17 @@ public class G93FileSpecification {
   }
 
   /**
-   * Sets the geometry type associated with the row and column positions in the
+   * Sets the geometry type associated with the row and column positions in
+   * the
    * raster. If the geometry type is Point, the value at a row and column is
    * intended to represent the value at a particular point on the surface
    * described by the raster. If the geometry type is Area, the value at a row
    * and column is intended to represent the value for an entire cell centered
-   * at the coordinates associated with the row and column. In either case, G93
+   * at the coordinates associated with the row and column. In either case,
+   * G93
    * treats real-valued coordinates (Cartesian or geographic) as giving the
-   * position at which the data value for a grid point exactly matches the value
+   * position at which the data value for a grid point exactly matches the
+   * value
    * at the surface that is represented by the data.
    *
    * @param geometryType a valid instance of the enumeration.
@@ -1198,7 +1293,8 @@ public class G93FileSpecification {
    * specification. These sizes are the distances measured along the x and y
    * axes in the coordinate system specified for this instance.
    *
-   * @return a valid array of dimension 2 giving, respectively, the x and y cell
+   * @return a valid array of dimension 2 giving, respectively, the x and y
+   * cell
    * sizes.
    */
   public double[] getCellSizes() {
@@ -1231,7 +1327,7 @@ public class G93FileSpecification {
    * specification.
    */
   public void removeAllCompressionCodecs() {
-    this.rasterCodecMap.clear();
+    this.codecList.clear();
   }
 
   /**
@@ -1244,66 +1340,181 @@ public class G93FileSpecification {
    * was removed; otherwise, false.
    */
   public boolean removeCompressionCodec(String codecID) {
-    if (codecID != null && rasterCodecMap.containsKey(codecID)) {
-      rasterCodecMap.remove(codecID);
-      return true;
+    if (codecID == null || codecID.isEmpty()) {
+      throw new NullPointerException("Missing name or codec class");
     }
+    for (int i = 0; i < codecList.size(); i++) {
+      if (codecID.equals(codecList.get(i).getIdentification())) {
+        codecList.remove(i);
+        return true;
+      }
+    }
+
     return false;
   }
 
   /**
    * Adds a data compression Codec to the specification. The specification
    * allows a maximum of 256 codecs.
+   * Any existing codecs with the same codecID will be replaced.
+   * <p>
+   * The codec class must implement both the interfaces IG93Encoder
+   * and IG93Decoder. It must also include an coder/decoder (e.g. a "codec")
+   * that has a no-argument constructor that can be successfully invoked
+   * by the G93 classes..
    *
    * @param codecID a unique identification following the syntax of Java
    * identifier strings, 16 character maximum.
    * @param codec a valid class reference.
    */
   public final void addCompressionCodec(String codecID, Class<?> codec) {
-    if (rasterCodecMap.size() >= 255) {
+    if (codecList.size() >= 255) {
       throw new IllegalArgumentException(
-              "Maximum number of compression codecs (255) exceeded");
+        "Maximum number of compression codecs (255) exceeded");
     }
     if (codecID == null || codecID.isEmpty() || codec == null) {
       throw new NullPointerException("Missing name or codec class");
     }
 
     if (codec.getCanonicalName() == null) {
-      throw new IllegalArgumentException("Input class must have a canonical name for " + codecID);
+      throw new IllegalArgumentException(
+        "Input class must have a canonical name for " + codecID);
     }
+
+    removeCompressionCodec(codecID);
 
     for (int i = 0; i < codecID.length(); i++) {
       char c = codecID.charAt(i);
       if (!Character.isJavaIdentifierPart(c)) {
         throw new IllegalArgumentException(
-                "Compression codec identification is not a valid"
-                + " identifier string, unable to process \""
-                + codecID + "\"");
+          "Compression codec identification is not a valid"
+          + " identifier string, unable to process \""
+          + codecID + "\"");
       }
     }
     if (codecID.length() > 16) {
       throw new IllegalArgumentException(
-              "Maximum identification length is 16 characters: " + codecID);
+        "Maximum identification length is 16 characters: " + codecID);
     }
 
-    boolean interfaceConfirmed = false;
-    Class[] interfaces = codec.getInterfaces();
-    for (Class c : interfaces) {
-      if (c.equals(IG93CompressorCodec.class)) {
-        interfaceConfirmed = true;
-        break;
+    boolean encoderInterfaceConfiirmed = false;
+    boolean decoderInterfaceConfiirmed = false;
+    Class<?>[] interfaces = codec.getInterfaces();
+    for (Class<?> c : interfaces) {
+      if (c.equals(IG93Encoder.class)) {
+        encoderInterfaceConfiirmed = true;
+      }
+      if (c.equals(IG93Decoder.class)) {
+        decoderInterfaceConfiirmed = true;
       }
     }
-    if (!interfaceConfirmed) {
+
+    if (!encoderInterfaceConfiirmed) {
       throw new IllegalArgumentException(
-              "Codec " + codecID + "does not implement ISimpleRasterCodec");
-    }
-    if (rasterCodecMap.containsKey(codecID)) {
-      throw new IllegalArgumentException(
-              "Attempt to add pre-existing codec " + codecID);
+        "Codec " + codecID + "does not implement encoder interface");
     }
 
-    rasterCodecMap.put(codecID, codec);
+    if (!decoderInterfaceConfiirmed) {
+      throw new IllegalArgumentException(
+        "Codec " + codecID + "does not implement decoder interface");
+    }
+
+    CodecHolder spec
+      = new CodecHolder(codecID, codec, codec);
+    codecList.add(spec);
+  }
+
+  /**
+   * Adds a data compression coder and decoder (a "codec") to the
+   * specification. The specification allows a maximum of 256 codecs.
+   * Any existing codecs with the same codecID will be replaced.
+   * <p>
+   * The encoder class must implement the interfaces IG93Encoder
+   * interface. The decoder class must implement the IG93Decoder
+   * interface. Both classes must also include a no-argument constructor
+   * that can be successfully invoked by the G93 classes.
+   * <p>
+   * The rationale for specifying separate classes for the encoder and
+   * decoder is that in some cases, the encoder may include substantially
+   * more complexity (and library dependencies) than the decoder.
+   * In such cases, it may be desirable to have some applications that
+   * can access compressed G93 files on a read-only basis. Such applications
+   * may be able to operate correctly even though they do not include
+   * all the libraries required for the encoding.
+   *
+   * @param codecID a unique identification following the syntax of Java
+   * identifier strings, 16 character maximum.
+   * @param encoder a valid reference to a class that implements IG93Encoder.
+   * @param decoder a valid reference to a class that implements IG93Decoder.
+   */
+  public final void addCompressionCodec(
+    String codecID, Class<?> encoder, Class<?> decoder) {
+    if (codecList.size() >= 255) {
+      throw new IllegalArgumentException(
+        "Maximum number of compression codecs (255) exceeded");
+    }
+    if (codecID == null || codecID.isEmpty() || encoder == null || decoder == null) {
+      throw new NullPointerException(
+        "Missing name, encoder, or decoder class");
+    }
+
+    if (encoder.getCanonicalName() == null) {
+      throw new IllegalArgumentException(
+        "Encoder class must have a canonical name for " + codecID);
+    }
+
+    if (decoder.getCanonicalName() == null) {
+      throw new IllegalArgumentException(
+        "Decoder class must have a canonical name for " + codecID);
+    }
+    removeCompressionCodec(codecID);
+
+    for (int i = 0; i < codecID.length(); i++) {
+      char c = codecID.charAt(i);
+      if (!Character.isJavaIdentifierPart(c)) {
+        throw new IllegalArgumentException(
+          "Compression codec identification is not a valid"
+          + " identifier string, unable to process \""
+          + codecID + "\"");
+      }
+    }
+    if (codecID.length() > 16) {
+      throw new IllegalArgumentException(
+        "Maximum identification length is 16 characters: " + codecID);
+    }
+
+    boolean encoderInterfaceConfiirmed = false;
+    boolean decoderInterfaceConfiirmed = false;
+    Class<?>[] interfaces = encoder.getInterfaces();
+    for (Class<?> c : interfaces) {
+      if (c.equals(IG93Encoder.class)) {
+        encoderInterfaceConfiirmed = true;
+      }
+      if (c.equals(IG93Decoder.class)) {
+        decoderInterfaceConfiirmed = true;
+      }
+    }
+
+    if (!encoderInterfaceConfiirmed) {
+      throw new IllegalArgumentException(
+        "Codec " + codecID + "does not implement encoder interface");
+    }
+
+    interfaces = decoder.getInterfaces();
+    for (Class<?> c : interfaces) {
+      if (c.equals(IG93Decoder.class)) {
+        decoderInterfaceConfiirmed = true;
+      }
+    }
+
+    if (!decoderInterfaceConfiirmed) {
+      throw new IllegalArgumentException(
+        "Decoder for " + codecID + "does not implement decoder interface");
+    }
+
+    CodecHolder spec
+      = new CodecHolder(codecID, encoder, decoder);
+    codecList.add(spec);
   }
 
   /**
@@ -1311,14 +1522,9 @@ public class G93FileSpecification {
    *
    * @return a valid list of specifications, potentially empty.
    */
-  public List<G93SpecificationForCodec> getCompressionCodecs() {
-    Set<String> keySet = rasterCodecMap.keySet();
-    List<G93SpecificationForCodec> list = new ArrayList<>();
-    int k = 0;
-    for (String key : keySet) {
-      Class c = rasterCodecMap.get(key);
-      list.add(new G93SpecificationForCodec(key, c, k++));
-    }
+  public List<CodecHolder> getCompressionCodecs() {
+    List<CodecHolder> list = new ArrayList<>();
+    list.addAll(codecList);
     return list;
   }
 
@@ -1340,19 +1546,17 @@ public class G93FileSpecification {
    */
   public void summarize(PrintStream ps) {
     ps.format("Identification:    %s%n",
-            identification == null || identification.isEmpty()
-            ? "Not Specified" : identification);
+      identification == null || identification.isEmpty()
+      ? "Not Specified" : identification);
 
     ps.format("Copyright:         %s%n",
-            copyright == null || copyright.isEmpty()
-            ? "Not Specified" : copyright);
+      copyright == null || copyright.isEmpty()
+      ? "Not Specified" : copyright);
 
     ps.format("Document Control:  %s%n",
-            documentControl == null || documentControl.isEmpty()
-            ? "Not Specified" : documentControl);
+      documentControl == null || documentControl.isEmpty()
+      ? "Not Specified" : documentControl);
 
-    
-    
     ps.format("UUID:              %s%n", uuid.toString());
     long cellsInRaster = (long) nRowsInRaster * (long) nColsInRaster;
 
@@ -1370,7 +1574,7 @@ public class G93FileSpecification {
     ps.format("Value scale factor:  %11.6f%n", valueScale);
     ps.format("Value offset factor: %11.6f%n", valueOffset);
     ps.format("Data compression:       %s%n",
-            isDataCompressionEnabled() ? "enabled" : "disabled");
+      isDataCompressionEnabled() ? "enabled" : "disabled");
   }
 
   /**
@@ -1386,12 +1590,14 @@ public class G93FileSpecification {
    * Gets the UUID assigned to this specification (and any G93 files derived
    * from it). The UUID is an arbitrary value automatically assigned to the
    * specification. Its intended use it to allow G93 to correlate files of
-   * different types (such as the main G93 file and its associated index file).
+   * different types (such as the main G93 file and its associated index
+   * file).
    * <p>
    * Once established, the UUID is never modified.
    * <p>
    * Internally, the UUID is an arbitary set of 16 bytes. Non-Java language
-   * implementations in languages/environments that do not have built-in support
+   * implementations in languages/environments that do not have built-in
+   * support
    * for UUIDs are free to implement this feature as they see fit.
    *
    * @return a valid string.

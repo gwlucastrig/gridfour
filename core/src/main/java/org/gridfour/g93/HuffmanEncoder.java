@@ -145,7 +145,7 @@ public class HuffmanEncoder {
       sortNodes[i] = symbolNodes[i];
     }
     for (int i = 0; i < nSymbols; i++) {
-      symbolNodes[(int) (symbols[i] & 0xff)].count++;
+      symbolNodes[(symbols[i] & 0xff)].count++;
     }
     Arrays.sort(sortNodes);
 

@@ -3,7 +3,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -76,7 +76,7 @@ class RasterTileCache {
   void setTileCacheSize(int tileCacheSize) throws IOException {
     if (tileCacheSize < 0) {
       throw new IOException(
-              "Cache size less than zero is not supported");
+        "Cache size less than zero is not supported");
     }
     this.tileCacheSize = tileCacheSize;
     while (nTilesInCache > tileCacheSize) {
@@ -139,34 +139,34 @@ class RasterTileCache {
     int tileRow = tileIndex / spec.nColsOfTiles;
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
     switch (spec.dataType) {
-      case Int4:
-      case IntegerCodedFloat:
+      case INTEGER:
+      case INETGER_CODED_FLOAT:
         tile = new RasterTileInt(
-                tileIndex,
-                tileRow,
-                tileCol,
-                spec.nRowsInTile,
-                spec.nColsInTile,
-                spec.dimension,
-                spec.valueScale,
-                spec.valueOffset,
-                false);
+          tileIndex,
+          tileRow,
+          tileCol,
+          spec.nRowsInTile,
+          spec.nColsInTile,
+          spec.dimension,
+          spec.valueScale,
+          spec.valueOffset,
+          false);
         break;
-      case Float4:
+      case FLOAT:
         tile = new RasterTileFloat(
-                tileIndex,
-                tileRow,
-                tileCol,
-                spec.nRowsInTile,
-                spec.nColsInTile,
-                spec.dimension,
-                spec.valueScale,
-                spec.valueOffset,
-                false);
+          tileIndex,
+          tileRow,
+          tileCol,
+          spec.nRowsInTile,
+          spec.nColsInTile,
+          spec.dimension,
+          spec.valueScale,
+          spec.valueOffset,
+          false);
         break;
       default:
         throw new IOException(
-                "Incorrectly specified data format " + spec.dataType);
+          "Incorrectly specified data format " + spec.dataType);
     }
 
     nTileRead++;
@@ -200,34 +200,34 @@ class RasterTileCache {
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
 
     switch (spec.dataType) {
-      case Int4:
-      case IntegerCodedFloat:
+      case INTEGER:
+      case INETGER_CODED_FLOAT:
         tile = new RasterTileInt(
-                tileIndex,
-                tileRow,
-                tileCol,
-                spec.nRowsInTile,
-                spec.nColsInTile,
-                spec.dimension,
-                spec.valueScale,
-                spec.valueOffset,
-                true);
+          tileIndex,
+          tileRow,
+          tileCol,
+          spec.nRowsInTile,
+          spec.nColsInTile,
+          spec.dimension,
+          spec.valueScale,
+          spec.valueOffset,
+          true);
         break;
-      case Float4:
+      case FLOAT:
         tile = new RasterTileFloat(
-                tileIndex,
-                tileRow,
-                tileCol,
-                spec.nRowsInTile,
-                spec.nColsInTile,
-                spec.dimension,
-                spec.valueScale,
-                spec.valueOffset,
-                true);
+          tileIndex,
+          tileRow,
+          tileCol,
+          spec.nRowsInTile,
+          spec.nColsInTile,
+          spec.dimension,
+          spec.valueScale,
+          spec.valueOffset,
+          true);
         break;
       default:
         throw new IllegalArgumentException("Invalid data format specification "
-                + spec.dataType);
+          + spec.dataType);
     }
 
     if (nTilesInCache == tileCacheSize) {

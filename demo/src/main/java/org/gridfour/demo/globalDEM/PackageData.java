@@ -68,14 +68,13 @@ public class PackageData {
     "   -in     <input_file_path>",
     "   -out    <output_file_path>",
     "   -zScale <value>  apply a scale factor for data compression",
-    "   -tileSize <###x###> width and height of tile (i.e. 90x90)",
+    "   -tileSize <###x###> n_rows and n_columns of tile (i.e. 90x120)",
     "   -compress (-nocompress)  apply compression to file (default: false)",
     "   -verify (-noconfirm)     test file to verify that it is correct (default: false)",
     "Note: the zScale option instructs the packager to use the",
     "      integer-scaled-float data type when storing values.",
     "      If it is not specified, the data type will be selected",
-    "      based on the data-type specification of the original data",
-    };
+    "      based on the data-type specification of the original data",};
 
   private static void printUsageAndExit() {
     for (String s : usage) {
@@ -105,7 +104,7 @@ public class PackageData {
   }
 
   void process(PrintStream ps, TestOptions options)
-          throws IOException {
+    throws IOException {
 
     // The packaging of data in a G93 file can be thought of in terms of
     // the steps shown below.
@@ -165,7 +164,7 @@ public class PackageData {
     }
     if (lat == null || lon == null || z == null) {
       throw new IllegalArgumentException(
-              "Input does not contain valid lat,lon, and elevation Variables");
+        "Input does not contain valid lat,lon, and elevation Variables");
     }
 
     // using the variables from above, extract coordinate system
@@ -186,7 +185,7 @@ public class PackageData {
 
     // Initialize the specification used to initialize the G93 file -------
     G93FileSpecification spec
-            = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
+      = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setIdentification(identification);
     spec.setCopyright("This data is in the public domain and may be used free of charge");
     spec.setDocumentControl("This data should not be used for navigation");
@@ -202,16 +201,16 @@ public class PackageData {
     G93DataType g93DataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      g93DataType = G93DataType.IntegerCodedFloat;
+      g93DataType = G93DataType.INETGER_CODED_FLOAT;
       spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
     } else if (sourceDataType.isIntegral()) {
-      g93DataType = G93DataType.Int4;
+      g93DataType = G93DataType.INTEGER;
       spec.setDataModelInt(1);
     } else {
-      g93DataType = G93DataType.Float4;
+      g93DataType = G93DataType.FLOAT;
       spec.setDataModelFloat(1);
     }
-    ps.println("Source date type "+sourceDataType+", stored as "+g93DataType);
+    ps.println("Source date type " + sourceDataType + ", stored as " + g93DataType);
     ps.println("");
 
     // Determine whether data compression is used -------------------
@@ -221,10 +220,10 @@ public class PackageData {
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
 
     spec.setGeographicCoordinates(
-            geoCoords[0],
-            geoCoords[1],
-            geoCoords[2],
-            geoCoords[3]);
+      geoCoords[0],
+      geoCoords[1],
+      geoCoords[2],
+      geoCoords[3]);
 
     // Check to verify that the geographic coordinates and grid coordinate
     // are correctly implemented. This test is not truly part of the packaging
@@ -243,7 +242,6 @@ public class PackageData {
       }
     }
 
-
     try (G93File g93 = new G93File(outputFile, spec)) {
       g93.setTileCacheSize(G93CacheSize.Large);
       g93.setIndexCreationEnabled(true);
@@ -256,12 +254,11 @@ public class PackageData {
       // to estimate the entropy of the source data and make a realistic
       // assessment of how many bytes would be needed to store them.
       InputDataStatCollector stats
-              = new InputDataStatCollector(-11000, 8650, zScale);
+        = new InputDataStatCollector(-11000, 8650, zScale);
 
       int[] readOrigin = new int[rank];
       int[] readShape = new int[rank];
 
-      double maxErr = 0;
       // -----------------------------------------------------------------
       // Package the data
       long time0 = System.currentTimeMillis();
@@ -274,7 +271,7 @@ public class PackageData {
           long remainingT = (long) (nRemaining / rate);
           Date d = new Date(time1 + remainingT);
           ps.format("Completed %d rows, %4.1f%% of total, est completion at %s%n",
-                  iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
+            iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
           ps.flush();
         }
 
@@ -292,25 +289,18 @@ public class PackageData {
           // Loop on each column, obtain the data from the NetCDF file
           // and store it in the G93 file.
           switch (g93DataType) {
-            case Int4:
+            case INTEGER:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 int sample = array.getInt(iCol);
                 g93.storeIntValue(iRow, iCol, sample);
                 stats.addSample(sample);
               }
               break;
-            case IntegerCodedFloat:
-            case Float4:
+            case INETGER_CODED_FLOAT:
+            case FLOAT:
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
-                int iSam = spec.mapValueToInt(sample);
-                float fSam = spec.mapIntToValue(iSam);
-                double delta = Math.abs(fSam - sample);
-                if (delta > maxErr) {
-                  maxErr = delta;
-                  System.out.println("maxError: " + maxErr);
-                }
                 g93.storeValue(iRow, iCol, sample);
                 stats.addSample(sample);
               }
@@ -320,7 +310,7 @@ public class PackageData {
           throw new IOException(irex.getMessage(), irex);
         }
       }
-      System.out.println("maxError: " + maxErr);
+
       g93.flush();
       long time1 = System.currentTimeMillis();
       double timeToProcess = (time1 - time0) / 1000.0;
@@ -330,7 +320,7 @@ public class PackageData {
       long nCells = (long) nRows * (long) nCols;
       double bitsPerSymbol = 8.0 * (double) outputSize / (double) nCells;
       ps.format("Storage used (including overhead) %4.2f bits/sample%n",
-              bitsPerSymbol);
+        bitsPerSymbol);
 
       ps.format("%nSummary of file content and packaging actions------------%n");
       g93.summarize(ps, true);
@@ -359,7 +349,7 @@ public class PackageData {
             long remainingT = (long) (nRemaining / rate);
             Date d = new Date(time1 + remainingT);
             ps.format("Completed %d rows, %4.1f%% of total, est completion at %s%n",
-                    iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
+              iRow + 1, 100.0 * (double) iRow / (nRows - 1.0), d);
             ps.flush();
           }
 
@@ -372,7 +362,7 @@ public class PackageData {
           try {
             Array array = z.read(readOrigin, readShape);
             switch (g93DataType) {
-              case Int4:
+              case INTEGER:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   int sample = array.getInt(iCol);
                   int test = g93.readIntValue(iRow, iCol);
@@ -382,7 +372,7 @@ public class PackageData {
                   }
                 }
                 break;
-              case IntegerCodedFloat:
+              case INETGER_CODED_FLOAT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
                   int sTest = (int) Math.floor(sample * zScale + 0.5);
@@ -393,7 +383,7 @@ public class PackageData {
                   }
                 }
                 break;
-              case Float4:
+              case FLOAT:
               default:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   float sample = array.getFloat(iCol);
@@ -447,10 +437,10 @@ public class PackageData {
     b = fbaos.toByteArray();
 
     g93.storeVariableLengthRecord(
-            "G93_Projection",
-            2111,
-            "WKT Projection Metadata",
-            b, 0, b.length, true);
+      "G93_Projection",
+      2111,
+      "WKT Projection Metadata",
+      b, 0, b.length, true);
   }
 
 }

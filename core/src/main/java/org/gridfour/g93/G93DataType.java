@@ -3,7 +3,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -46,17 +46,17 @@ public enum G93DataType {
   /**
    * Data is stored using the Java 4-byte integer data type.
    */
-  Int4(0, 4),
-    /**
+  INTEGER(0, 4),
+  /**
    * Floating point values are multiplied by a scaling factor and
    * stored as a Java 4-byte integer data type.
    */
-  IntegerCodedFloat(1, 4),
+  INETGER_CODED_FLOAT(1, 4),
   /**
    * Data is stored using the Java 4-byte float data type, the IEEE-754
    * single-precision floating point format.
    */
-  Float4(2, 4);
+  FLOAT(2, 4);
 
   final int codeValue;
   final int bytesPerSample;
@@ -80,22 +80,23 @@ public enum G93DataType {
   /**
    * Get the number of bytes required to store a single data sample
    * of the associated type.
+   *
    * @return an integer value of one or greater.
    */
-  public int getBytesPerSample(){
+  public int getBytesPerSample() {
     return bytesPerSample;
   }
 
   static G93DataType valueOf(int codeValue) {
-    switch(codeValue){
+    switch (codeValue) {
       case 0:
-        return Int4;
+        return INTEGER;
       case 1:
-        return IntegerCodedFloat;
+        return INETGER_CODED_FLOAT;
       case 2:
-        return Float4;
+        return FLOAT;
       default:
-        return Int4;
+        return INTEGER;
     }
   }
 

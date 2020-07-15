@@ -51,7 +51,6 @@ import org.gridfour.g93.G93File;
 import org.gridfour.g93.G93FileSpecification;
 import org.gridfour.util.KahanSummation;
 
-
 /**
  * Provides a tool for obtaining an accurate value for the entropy of a G93 file
  * (within the precision of conventional floating point representations)
@@ -62,7 +61,7 @@ import org.gridfour.util.KahanSummation;
 public class EntropyTabulator {
 
   private static final String TEMP_COUNT_FILE_NAME
-      = "TabulateEntropyTemporary.g93";
+    = "TabulateEntropyTemporary.g93";
 
   private static final String[] USAGE = {
     "TabulateEntropy",
@@ -98,11 +97,11 @@ public class EntropyTabulator {
     }
     if (!inputFile.exists()) {
       throw new IllegalArgumentException("Input file does not exist: "
-          + inputFile.getPath());
+        + inputFile.getPath());
     }
     if (!inputFile.canRead()) {
       throw new IllegalArgumentException("Unable to access input file: "
-          + inputFile.getPath());
+        + inputFile.getPath());
     }
 
     EntropyTabulator tabulator = new EntropyTabulator();
@@ -148,12 +147,12 @@ public class EntropyTabulator {
 
     // Define the specs for the entropy stats file
     G93FileSpecification countsSpec
-        = new G93FileSpecification(65536, 65536, 256, 256);
+      = new G93FileSpecification(65536, 65536, 256, 256);
     countsSpec.setDataCompressionEnabled(false);
     countsSpec.setDataModelInt(1);
 
     try (G93File source = new G93File(inputFile, "r");
-        G93File counts = new G93File(countsFile, countsSpec);) {
+      G93File counts = new G93File(countsFile, countsSpec);) {
       G93FileSpecification sourceSpec = source.getSpecification();
       int nRowsInSource = sourceSpec.getRowsInGrid();
       int nColsInSource = sourceSpec.getColumnsInGrid();
@@ -173,7 +172,8 @@ public class EntropyTabulator {
       long time0 = System.currentTimeMillis();
       if (showProgress) {
         ps.format("Initializing temporary entropy tabulation file %s%n",
-            countsFile.getPath());
+          countsFile.getPath());
+        ps.flush();
       }
       for (int iRow = 0; iRow < 65536; iRow++) {
         for (int iCol = 0; iCol < 65535; iCol++) {
@@ -185,12 +185,12 @@ public class EntropyTabulator {
       // Package the data
       if (showProgress) {
         ps.format("Initialization done in %d ms%n",
-            System.currentTimeMillis() - time0);
-        ps.format("Beginning tabulation");
+          System.currentTimeMillis() - time0);
+        ps.println("Beginning tabulation");
       }
       time0 = System.currentTimeMillis();
       for (int iTileRow = 0; iTileRow < nRowsOfTilesInSource; iTileRow++) {
-          if (showProgress && iTileRow > 0) {
+        if (showProgress && iTileRow > 0) {
           long time1 = System.currentTimeMillis();
           double deltaT = time1 - time0;
           double rate = (iTileRow + 1) / deltaT;  // rows per millis
@@ -198,8 +198,8 @@ public class EntropyTabulator {
           long remainingT = (long) (nRemaining / rate);
           Date d = new Date(time1 + remainingT);
           ps.format("Surveyed %d rows, %4.1f%% of total, est completion at %s%n",
-              iTileRow * nRowsInTile,
-              100.0 * (double) iTileRow / (nRowsOfTilesInSource - 1.0), d);
+            iTileRow * nRowsInTile,
+            100.0 * (double) iTileRow / (nRowsOfTilesInSource - 1.0), d);
           ps.flush();
         }
         int row0 = iTileRow * nRowsInTile;
@@ -217,12 +217,14 @@ public class EntropyTabulator {
           for (int iRow = row0; iRow < row1; iRow++) {
             for (int iCol = col0; iCol < col1; iCol++) {
               int bits;
-              if (dataType == G93DataType.Float4) {
-                float sample = source.readValue(iRow, iCol);
-                bits = Float.floatToRawIntBits(sample);
-              } else {
-                bits = source.readIntValue(iRow, iCol);
-              }
+//              if (dataType == G93DataType.Float4) {
+//                float sample = source.readValue(iRow, iCol);
+//                bits = Float.floatToRawIntBits(sample);
+//              } else {
+//                bits = source.readIntValue(iRow, iCol);
+//              }
+              float sample = source.readValue(iRow, iCol);
+              bits = Float.floatToRawIntBits(sample);
               long longIndex = ((long) bits) & 0x00ffffffffL;
               long longRow = longIndex / 65536L;
               long longCol = longIndex - longRow * 65536L;
@@ -238,7 +240,6 @@ public class EntropyTabulator {
       }
 
       counts.flush();
-      source.close();
       long time1 = System.currentTimeMillis();
       double timeToProcess = (time1 - time0) / 1000.0;
       if (showProgress) {
@@ -263,7 +264,7 @@ public class EntropyTabulator {
           long remainingT = (long) (nRemaining / rate);
           Date d = new Date(time1 + remainingT);
           ps.format("Tabulated %d rows, %4.1f%% of total, est completion at %s%n",
-              iRow, 100.0 * (double) iRow / 65536.0, d);
+            iRow, 100.0 * (double) iRow / 65536.0, d);
           ps.flush();
         }
         for (int iCol = 0; iCol < 65536; iCol++) {
@@ -282,9 +283,10 @@ public class EntropyTabulator {
             }
           }
         }
-        }
-        // get the syn if entropy calculations, then convert to log base 2
-        entropy = ks.getSum() / Math.log(2.0);
+      }
+      // get sum of entropy calculations, and them apply
+      // adjustment for base 2.
+      entropy = ks.getSum() / Math.log(2.0);
 
       time1 = System.currentTimeMillis();
       double timeToTabulate = (time1 - time0) / 1000.0;

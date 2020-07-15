@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *  The original inspiration for the constant-value predictor
@@ -69,16 +69,16 @@ public class PredictiveTransformConstantWithNulls implements IPredictiveTransfor
 
   @Override
   public int encode(
-          int nRows,
-          int nColumns,
-          int[] values,
-          byte[] output) {
+    int nRows,
+    int nColumns,
+    int[] values,
+    byte[] output) {
     CodecM32 mCodec = new CodecM32(output, 0, output.length);
 
-    // we begin by traversing the data in the pattern of the 
+    // we begin by traversing the data in the pattern of the
     // standard predictor.  we identify each value that immediately
     // follows a null.  the average of these values will give us an
-    // optimal seed for the data.  At the beginning of this loop, 
+    // optimal seed for the data.  At the beginning of this loop,
     // we initialize nullFlag to true. That way, if the first value
     // is not null, it will contribute to the average.
     long sumStart = 0;
@@ -147,11 +147,11 @@ public class PredictiveTransformConstantWithNulls implements IPredictiveTransfor
 
   @Override
   public void decode(
-          int seed,
-          int nRows,
-          int nColumns,
-          byte[] encoding, int offset, int length,
-          int[] output) {
+    int seed,
+    int nRows,
+    int nColumns,
+    byte[] encoding, int offset, int length,
+    int[] output) {
     CodecM32 mCodec = new CodecM32(encoding, offset, length);
 
     int prior = seed; // the seed is never null
@@ -169,7 +169,7 @@ public class PredictiveTransformConstantWithNulls implements IPredictiveTransfor
             prior = seed;
           }
           prior += test;
-          output[index++] = (int) prior;
+          output[index++] = prior;
         }
       }
       prior = output[iRow * nColumns];

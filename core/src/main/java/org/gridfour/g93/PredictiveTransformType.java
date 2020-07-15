@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2019 gwluc.
+ * Copyright 2019 Gary W. Lucas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -56,7 +56,6 @@ public enum PredictiveTransformType {
    * The triangle-predictor model is applied
    */
   Triangle(3),
-
   /**
    * Used when the data includes null values.
    */

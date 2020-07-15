@@ -2,7 +2,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -119,11 +119,11 @@ public class TestOptions {
    * @return if found, a valid instance of Integer; otherwise, a null.
    */
   public Integer scanIntOption(
-          String[] args,
-          String option,
-          boolean[] matched,
-          Integer defaultValue)
-          throws IllegalArgumentException {
+    String[] args,
+    String option,
+    boolean[] matched,
+    Integer defaultValue)
+    throws IllegalArgumentException {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase(option)) {
         if (i == args.length - 1) {
@@ -137,7 +137,7 @@ public class TestOptions {
           return Integer.parseInt(args[i + 1]);
         } catch (NumberFormatException nex) {
           throw new IllegalArgumentException("Illegal integer value for "
-                  + option + ", " + nex.getMessage(), nex);
+            + option + ", " + nex.getMessage(), nex);
         }
       }
     }
@@ -155,7 +155,7 @@ public class TestOptions {
    * @return if found, a valid instance of Long; otherwise, a null.
    */
   public Long scanLongOption(String[] args, String option, boolean[] matched)
-          throws IllegalArgumentException {
+    throws IllegalArgumentException {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase(option)) {
         if (i == args.length - 1) {
@@ -169,8 +169,8 @@ public class TestOptions {
           return Long.parseLong(args[i + 1]);
         } catch (NumberFormatException nex) {
           throw new IllegalArgumentException(
-                  "Illegal integer value for " + option + ", " + nex.getMessage(),
-                  nex);
+            "Illegal integer value for " + option + ", " + nex.getMessage(),
+            nex);
         }
       }
     }
@@ -188,7 +188,7 @@ public class TestOptions {
    * @return if found, a valid instance of Double; otherwise, a null.
    */
   public Double scanDoubleOption(String[] args, String option, boolean[] matched)
-          throws IllegalArgumentException {
+    throws IllegalArgumentException {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase(option)) {
         if (i == args.length - 1) {
@@ -202,9 +202,9 @@ public class TestOptions {
           return Double.parseDouble(args[i + 1]);
         } catch (NumberFormatException nex) {
           throw new IllegalArgumentException(
-                  "Illegal floating-point value for "
-                  + option + ", " + nex.getMessage(),
-                  nex);
+            "Illegal floating-point value for "
+            + option + ", " + nex.getMessage(),
+            nex);
         }
       }
     }
@@ -224,7 +224,7 @@ public class TestOptions {
    * @return if found, a valid instance of Double; otherwise, a null.
    */
   public double scanDoubleOption(String[] args, String option, boolean[] matched, double defaultValue)
-          throws IllegalArgumentException {
+    throws IllegalArgumentException {
     Double d = scanDoubleOption(args, option, matched);
     if (d == null) {
       return defaultValue;
@@ -247,10 +247,10 @@ public class TestOptions {
    * @return if found, a valid instance of Boolean; otherwise, a null.
    */
   public Boolean scanBooleanOption(
-          String[] args,
-          String option,
-          boolean[] matched,
-          Boolean defaultValue) {
+    String[] args,
+    String option,
+    boolean[] matched,
+    Boolean defaultValue) {
     String notOption = "-no" + option.substring(1, option.length());
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase(option)) {
@@ -299,7 +299,7 @@ public class TestOptions {
    * @return if found, a valid string; otherwise, a null.
    */
   public String scanStringOption(String[] args, String option, boolean[] matched)
-          throws IllegalArgumentException {
+    throws IllegalArgumentException {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase(option)) {
         if (i == args.length - 1) {
@@ -313,8 +313,8 @@ public class TestOptions {
           return args[i + 1];
         } catch (NumberFormatException nex) {
           throw new IllegalArgumentException(
-                  "Illegal floating-point value for " + option + ", "
-                  + nex.getMessage(), nex);
+            "Illegal floating-point value for " + option + ", "
+            + nex.getMessage(), nex);
         }
       }
     }
@@ -333,7 +333,7 @@ public class TestOptions {
    * @return if found, a valid array containing positive numeric values.
    */
   public int[] scanSizeOption(String[] args, String option, boolean[] matched)
-          throws IllegalArgumentException {
+    throws IllegalArgumentException {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equalsIgnoreCase(option)) {
         if (i == args.length - 1) {
@@ -351,20 +351,21 @@ public class TestOptions {
           }
           if (index <= 1 || index == s.length() - 1) {
             throw new IllegalArgumentException(
-                    "Invalid entry where size specificaiton expected: " + s);
+              "Invalid entry where size specificaiton expected: " + s);
           }
           int[] result = new int[2];
           result[0] = Integer.parseInt(s.substring(0, index));
           result[1] = Integer.parseInt(s.substring(index + 1, s.length()));
           if (result[0] < 1 || result[1] < 1) {
             throw new IllegalArgumentException(
-                    "Invalid numeric values for size specification: " + s);
+              "Invalid numeric values for size specification: " + s);
           }
           return result;
         } catch (NumberFormatException nex) {
           throw new IllegalArgumentException(
-                  "Illegal floating-point value for " + option + ", "
-                  + nex.getMessage(), nex);
+            "Illegal integer size value for "
+            + option
+            + ", " + nex.getMessage(), nex);
         }
       }
     }
@@ -384,7 +385,7 @@ public class TestOptions {
     for (int i = 0; i < args.length; i++) {
       if (args[i] == null || args[i].length() == 0) {
         throw new IllegalArgumentException(
-                "Null or zero-length argument at index " + i);
+          "Null or zero-length argument at index " + i);
       }
     }
   }
@@ -444,20 +445,18 @@ public class TestOptions {
     }
 
     bigAddressSpace
-            = scanBooleanOption(args, "-big", matched, bigAddressSpace);
+      = scanBooleanOption(args, "-big", matched, bigAddressSpace);
     verify
-            = scanBooleanOption(args, "-verify", matched, verify);
+      = scanBooleanOption(args, "-verify", matched, verify);
     compress
-            = scanBooleanOption(args, "-compress", matched, compress);
-
-
+      = scanBooleanOption(args, "-compress", matched, compress);
 
     isZScaleSet = isOptionSpecified(args, "-zScale");
     zScale = scanDoubleOption(args, "-zScale", matched, zScale);
     zOffset = scanDoubleOption(args, "-zOffset", matched, zOffset);
 
     showProgress = scanBooleanOption(
-        args, "-showProgress", matched, showProgress);
+      args, "-showProgress", matched, showProgress);
 
     tileSize = scanSizeOption(args, "-tileSize", matched);
     checkOptions();
@@ -514,7 +513,7 @@ public class TestOptions {
     checkForValidArgsArray(args);
     if (matched == null || matched.length < args.length) {
       throw new IllegalArgumentException(
-              "Implementation error: matched array must correspond to args array");
+        "Implementation error: matched array must correspond to args array");
     }
 
     for (int i = 0; i < args.length; i++) {
@@ -600,7 +599,8 @@ public class TestOptions {
   }
 
   /**
-   * Gets the scaling factor for real-valued variables.
+   * Gets the scaling factor for converting real-valued variables
+   * to scaled integers.
    *
    * @return a valid floating-point value, by default 1.
    */
@@ -609,15 +609,21 @@ public class TestOptions {
   }
 
   /**
-   * Gets the scaling factor for real-valued variables.
+   * Gets the offset factor for converting real-valued variables
+   * to scaled integers.
    *
-   * @return a valid floating-point value, by default 1.
+   * @return a valid floating-point value, by default 0.
    */
   public double getZOffset() {
     return zOffset;
   }
 
-  public boolean isZScaleSpecified(){
+  /**
+   * Indicates whether a z-scale value was specified
+   *
+   * @return true if a scale value was specified; otherwise, false.
+   */
+  public boolean isZScaleSpecified() {
     return isZScaleSet;
   }
 }

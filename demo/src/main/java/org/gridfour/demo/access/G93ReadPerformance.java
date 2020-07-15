@@ -2,7 +2,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -27,7 +27,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 11/2019  G. Lucas     Created  
+ * 11/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -103,7 +103,7 @@ public class G93ReadPerformance {
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.Int4) {
+      if (dType == G93DataType.INTEGER) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
@@ -145,7 +145,7 @@ public class G93ReadPerformance {
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.Int4) {
+      if (dType == G93DataType.INTEGER) {
         long sum = 0;
         for (int iCol = 0; iCol < nColsInRaster; iCol++) {
           for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
@@ -179,21 +179,20 @@ public class G93ReadPerformance {
       report(ps, "Column Major", deltaT, avgValue);
     }
   }
-  
-  
-   void testRowBlockScan(PrintStream ps) throws IOException {
+
+  void testRowBlockScan(PrintStream ps) throws IOException {
     try (G93File g93 = new G93File(inputFile, "r")) {
       g93.setTileCacheSize(G93CacheSize.Large);
       G93DataType dType = spec.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.Int4) {
+      if (dType == G93DataType.INTEGER) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-          float []block = g93.readBlock(iRow, 0, 1, nColsInRaster);
+          float[] block = g93.readBlock(iRow, 0, 1, nColsInRaster);
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            float  sample = block[iCol];
+            float sample = block[iCol];
             if (!Float.isNaN(sample)) {
               sum += sample;
               nSample++;
@@ -254,8 +253,8 @@ public class G93ReadPerformance {
       report(ps, "Block Test", deltaT, avgValue);
     }
   }
-  
-    void testTileLoadTime(PrintStream ps) throws IOException {
+
+  void testTileLoadTime(PrintStream ps) throws IOException {
     try (G93File g93 = new G93File(inputFile, "r")) {
       g93.setTileCacheSize(G93CacheSize.Small);
       double avgValue = 0;
@@ -267,11 +266,11 @@ public class G93ReadPerformance {
         for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
           int row0 = iRow * nRowsInTile;
           int col0 = iCol * nColsInTile;
-          float sample = g93.readValue(row0+1, col0+1);
+          float sample = g93.readValue(row0 + 1, col0 + 1);
           if (!Float.isNaN(sample)) {
-              sum += sample;
-              nSample++;
-            }
+            sum += sample;
+            nSample++;
+          }
         }
       }
       if (nSample > 0) {
