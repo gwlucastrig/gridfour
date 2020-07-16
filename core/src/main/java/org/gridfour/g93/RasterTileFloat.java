@@ -3,7 +3,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -67,23 +67,23 @@ class RasterTileFloat extends RasterTile {
    * @param nColumns the number of columns in the tile.
    */
   RasterTileFloat(
-          int tileIndex,
-          int tileRow,
-          int tileColumn,
-          int nRows,
-          int nColumns,
-          int dimension,
-          float valueScale,
-          float valueOffset,
-          boolean initializeValues) {
+    int tileIndex,
+    int tileRow,
+    int tileColumn,
+    int nRows,
+    int nColumns,
+    int dimension,
+    float valueScale,
+    float valueOffset,
+    boolean initializeValues) {
     super(tileIndex,
-            tileRow,
-            tileColumn,
-            nRows,
-            nColumns,
-            dimension,
-            valueScale,
-            valueOffset);
+      tileRow,
+      tileColumn,
+      nRows,
+      nColumns,
+      dimension,
+      valueScale,
+      valueOffset);
 
     valuesArray = new float[dimension][nValues];
     for (int i = 0; i < dimension; i++) {
@@ -97,7 +97,8 @@ class RasterTileFloat extends RasterTile {
 
   /**
    * Gets the standard size of the data when stored in non-compressed format.
-   * This size is the product of dimension, number of rows and columns, and 4 bytes
+   * This size is the product of dimension, number of rows and columns, and 4
+   * bytes
    * for integer or float formats.
    *
    * @return a positive value.
@@ -138,7 +139,7 @@ class RasterTileFloat extends RasterTile {
       int n = (((((d << 8) | c) << 8) | b) << 8) | a;
       braf.readFully(packing, 0, n);
       if (codec.implementsFloatEncoding()) {
-        float []v = codec.decodeFloats(nRows, nCols, packing);
+        float[] v = codec.decodeFloats(nRows, nCols, packing);
         System.arraycopy(v, 0, valuesArray[iVariable], 0, values.length);
       } else {
         int[] v = codec.decode(nRows, nCols, packing);
@@ -236,8 +237,8 @@ class RasterTileFloat extends RasterTile {
   @Override
   public String toString() {
     return String.format("tile (int) %8d (%4d, %4d)%s",
-            tileIndex, tileRow, tileCol,
-            writingRequired ? " dirty" : "");
+      tileIndex, tileRow, tileCol,
+      writingRequired ? " dirty" : "");
   }
 
   @Override
@@ -257,10 +258,9 @@ class RasterTileFloat extends RasterTile {
     }
   }
 
-  
   @Override
   byte[] getCompressedPacking(CodecMaster codec) throws IOException {
-    if(!codec.implementsFloatEncoding()){
+    if (!codec.implementsFloatEncoding()) {
       return super.getCompressedPacking(codec);
     }
     byte[][] results = new byte[dimension][];

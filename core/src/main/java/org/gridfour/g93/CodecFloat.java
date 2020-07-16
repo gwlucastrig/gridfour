@@ -1,4 +1,7 @@
 /* --------------------------------------------------------------------
+ *
+ * The MIT License
+ *
  * Copyright (C) 2020  Gary W. Lucas.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,32 +45,31 @@ import org.gridfour.io.BitOutputStore;
  * Provides data compression and decompression for floating-point
  * values. Integer values are not supported.
  */
-public class CodecFloat implements IG93CompressorCodec {
+public class CodecFloat implements IG93Encoder, IG93Decoder {
 
-  private static class  SimpleStats {
+  private static class SimpleStats {
 
-  int nSum;
-  long sum;
+    int nSum;
+    long sum;
 
- void addCount(int counts){
-    sum+=counts;
-    nSum++;
-  }
-
-   double getAvgCount(){
-    if(nSum==0){
-      return 0;
+    void addCount(int counts) {
+      sum += counts;
+      nSum++;
     }
-    return sum/(double)nSum;
+
+    double getAvgCount() {
+      if (nSum == 0) {
+        return 0;
+      }
+      return sum / (double) nSum;
+    }
+
+    void clear() {
+      nSum = 0;
+      sum = 0;
+    }
+
   }
-
-   void clear(){
-     nSum = 0;
-     sum = 0;
-   }
-
-  }
-
 
   int nCellsInTile;
   boolean wasDataEncoded;
@@ -82,13 +84,13 @@ public class CodecFloat implements IG93CompressorCodec {
   @Override
   public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
     throw new IOException(
-            "Attempt to decode an integral format not supported by this CODEC");
+      "Attempt to decode an integral format not supported by this CODEC");
   }
 
   @Override
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
     throw new IllegalArgumentException(
-            "Attempt to enccode an integral format not supported by this CODEC");
+      "Attempt to enccode an integral format not supported by this CODEC");
   }
 
   @Override
@@ -142,9 +144,9 @@ public class CodecFloat implements IG93CompressorCodec {
 
   private int unpackInteger(byte[] input, int offset) {
     return (input[offset] & 0xff)
-            | ((input[offset + 1] & 0xff) << 8)
-            | ((input[offset + 2] & 0xff) << 16)
-            | ((input[offset + 3] & 0xff) << 24);
+      | ((input[offset + 1] & 0xff) << 8)
+      | ((input[offset + 2] & 0xff) << 16)
+      | ((input[offset + 3] & 0xff) << 24);
 
   }
 
@@ -252,10 +254,10 @@ public class CodecFloat implements IG93CompressorCodec {
     byte[] compM3 = doDeflate(scratch, sM3Delta);
 
     int nPacked = compSignBit.length
-            + compExp.length
-            + compM1.length
-            + compM2.length
-            + compM3.length;
+      + compExp.length
+      + compM1.length
+      + compM2.length
+      + compM3.length;
 
     byte[] packing = new byte[nPacked + 2 + 5 * 4];
     sTotal.addCount(packing.length);
@@ -341,7 +343,7 @@ public class CodecFloat implements IG93CompressorCodec {
   }
 
   @Override
-  public boolean implementsFloatEncoding() {
+  public boolean implementsFloatingPointEncoding() {
     return true;
   }
 
@@ -349,4 +351,5 @@ public class CodecFloat implements IG93CompressorCodec {
   public boolean implementsIntegerEncoding() {
     return false;
   }
+
 }

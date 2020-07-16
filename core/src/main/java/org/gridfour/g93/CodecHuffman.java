@@ -3,7 +3,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -44,12 +44,11 @@ import static org.gridfour.g93.G93FileConstants.NULL_DATA_CODE;
 import org.gridfour.io.BitInputStore;
 import org.gridfour.io.BitOutputStore;
 
-
 /**
  * Provides a codec for data compression using Huffman codes and the
  * predictive-transform models.
  */
-public class CodecHuffman implements IG93CompressorCodec {
+public class CodecHuffman implements IG93Encoder, IG93Decoder {
 
   private final IPredictiveTransform[] predictiveTransform;
 
@@ -81,7 +80,7 @@ public class CodecHuffman implements IG93CompressorCodec {
     if (!containsValidData) {
       return null;
     }
-  
+
     byte[] mCode = new byte[5 * nRows * nCols];
 
     int resultLength = Integer.MAX_VALUE;
@@ -100,10 +99,10 @@ public class CodecHuffman implements IG93CompressorCodec {
       int mCodeLength = testModel.encode(nRows, nCols, values, mCode);
       if (mCodeLength > 0) {
         BitOutputStore testStore = compress(
-                codecIndex,
-                testModel,
-                mCode,
-                mCodeLength);
+          codecIndex,
+          testModel,
+          mCode,
+          mCodeLength);
         int testLength = testStore.getEncodedTextLengthInBytes();
         if (testLength < resultLength) {
           resultLength = testLength;
@@ -134,14 +133,14 @@ public class CodecHuffman implements IG93CompressorCodec {
   public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
     IPredictiveTransform pcc = this.decodePredictorCorrector(packing[1]);
     int seed
-            = (packing[2] & 0xff)
-            | ((packing[3] & 0xff) << 8)
-            | ((packing[4] & 0xff) << 16)
-            | ((packing[5] & 0xff) << 24);
+      = (packing[2] & 0xff)
+      | ((packing[3] & 0xff) << 8)
+      | ((packing[4] & 0xff) << 16)
+      | ((packing[5] & 0xff) << 24);
     int nM32 = (packing[6] & 0xff)
-            | ((packing[7] & 0xff) << 8)
-            | ((packing[8] & 0xff) << 16)
-            | ((packing[9] & 0xff) << 24);
+      | ((packing[7] & 0xff) << 8)
+      | ((packing[8] & 0xff) << 16)
+      | ((packing[9] & 0xff) << 24);
 
     HuffmanDecoder decoder = new HuffmanDecoder();
     BitInputStore inputStore = new BitInputStore(packing, 10, packing.length - 10);
@@ -178,18 +177,16 @@ public class CodecHuffman implements IG93CompressorCodec {
         codecStats[i] = new CodecStats(pcArray[i]);
       }
     }
-        
+
     int nM32 = (packing[6] & 0xff)
-            | ((packing[7] & 0xff) << 8)
-            | ((packing[8] & 0xff) << 16)
-            | ((packing[9] & 0xff) << 24);
+      | ((packing[7] & 0xff) << 8)
+      | ((packing[8] & 0xff) << 16)
+      | ((packing[9] & 0xff) << 24);
 
     HuffmanDecoder decoder = new HuffmanDecoder();
     BitInputStore inputStore = new BitInputStore(packing, 10, packing.length - 10);
     byte[] codeM32s = new byte[nM32];
     decoder.decode(inputStore, nM32, codeM32s);
-
-
 
     CodecStats stats = codecStats[packing[1] & 0xff];
     int nValues = nRows * nColumns;
@@ -207,7 +204,7 @@ public class CodecHuffman implements IG93CompressorCodec {
     }
 
     ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy | bits in tree%n");
- 
+
     for (CodecStats stats : codecStats) {
       String label = stats.getLabel();
       if (label.equalsIgnoreCase("None")) {
@@ -216,18 +213,18 @@ public class CodecHuffman implements IG93CompressorCodec {
       long tileCount = stats.getTileCount();
       double bitsPerSymbol = stats.getBitsPerSymbol();
       double avgBitsInTree = stats.getAverageOverhead();
-      double avgBitsInText = stats.getAverageLength()*8;
+      double avgBitsInText = stats.getAverageLength() * 8;
       double avgUniqueSymbols = stats.getAverageObservedMCodes();
       double avgMCodeLength = stats.getAverageMCodeLength();
       double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
       double entropy = stats.getEntropy();
       ps.format("   %-20.20s %8d (%4.1f %%)      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f   | %6.1f/%n",
-              label, tileCount, percentTiles, 
-              bitsPerSymbol, avgBitsInText,
-              avgMCodeLength, 
-               avgUniqueSymbols,
-              entropy, 
-              avgBitsInTree);
+        label, tileCount, percentTiles,
+        bitsPerSymbol, avgBitsInText,
+        avgMCodeLength,
+        avgUniqueSymbols,
+        entropy,
+        avgBitsInTree);
     }
 
   }
@@ -236,9 +233,8 @@ public class CodecHuffman implements IG93CompressorCodec {
   public void clearAnalysisData() {
     codecStats = null;
   }
-  
-  
-    @Override
+
+  @Override
   public byte[] encodeFloats(int codecIndex, int nRows, int nCols, float[] values) {
     return null;
   }
@@ -249,11 +245,10 @@ public class CodecHuffman implements IG93CompressorCodec {
   }
 
   @Override
-  public boolean implementsFloatEncoding() {
-   return false;
+  public boolean implementsFloatingPointEncoding() {
+    return false;
   }
-  
-  
+
   @Override
   public boolean implementsIntegerEncoding() {
     return true;
