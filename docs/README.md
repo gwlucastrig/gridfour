@@ -23,7 +23,7 @@ the processing of that data. In particular, we see a need for more efficient tec
 and data compression for grid data.  That need inspired us to create Gridfour.
 
 ## An Old Idea Made New
-<img src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2018 shaded-reflief rendering of Oahu" height="275" width="250" align="left"/>The first module created for the Gridfour Software Project is the G93 grid-based data
+<img src="images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2018 shaded-reflief rendering of Oahu" height="275" width="250" align="left"/>The first module created for the Gridfour Software Project is the G93 grid-based data
 compression and file management module.  Gridfour's G93 API helps Java applications
 manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
@@ -76,7 +76,7 @@ The G93 data compression reduces the size of this data set down to about 17.2 pe
 its original size &#40;see [G93 Performance](https://github.com/gwlucastrig/gridfour/wiki/G93-Performance)
 for more details &#41;. Future work may bring about more improvements.
 
-![Gridfour shaded-relief rendering of Hokkaido, Japan](doc/images/hokkaido_hillshade_800_720_70_steep_10.jpg "Gridfour/GEBCO_2019 hillshade rendering of Hokkaido, Japan")
+![Gridfour shaded-relief rendering of Hokkaido, Japan](images/hokkaido_hillshade_800_720_70_steep_10.jpg "Gridfour/GEBCO_2019 hillshade rendering of Hokkaido, Japan")
 
 
 ## References
