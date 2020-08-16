@@ -52,7 +52,7 @@ initialized and ready for operations when initialized.
 3. The supplemental compressor must implement the interface IG93CompressorCodec.
 
 ## Does BZip2 Make Things Better?
-For this article, I implemented the CodeBZip2 class and ran it on the ETOPO1 data set that has been
+For this article, I implemented the CodecBZip2 class and ran it on the ETOPO1 data set that has been
 the subject of other "How-to" articles in this series.  The results are as follows:
 
 |   Version    |   Time to Process   |  Bits/Symbol  |  File Size  |
@@ -61,8 +61,8 @@ the subject of other "How-to" articles in this series.  The results are as follo
 | BZip2 Added  |   212 Seconds       |   4.20        |  119.7 MB   |
    
 As you can see, the saving was modest, though the additional processing for
-adding BZip2 to the processing made a substantial increase in the processing time.
-While the extra processing times is a disadvantage, it would not necessarily disqualify
+adding BZip2 to the compression logic made a substantial increase in the application's run time.
+While the extra processing time is a disadvantage, it would not necessarily disqualify
 BZip2 as an alternate solution to Deflate. In applications that use data compression,
 it is common to write data in a compressed form just once, but to read it back multiple times.
 Like many data compression techniques, BZip2 requires substantially more processing

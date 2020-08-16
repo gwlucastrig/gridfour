@@ -1,12 +1,11 @@
-**Under Construction. Corrections and additional text coming soon.**
 
 # Introduction
 The G93 library implements a data compression technique that reduces many floating-point
 raster data sets to about 50% of their uncompressed size while preserving the full
 precision of the original data. The technique is relatively simple and requires
 moderate computational resources. Because the G93 data compression technique is
-_non-lossy_, it is suitable for various applications including data archival,
-distribution, and real-time processing systems.
+_non-lossy_, it is suitable for applications that require faithful preservation of floating-point data in
+its original form. Potential uses include data archival, distribution, and real-time processing systems.
 
 This wiki article provides information about the G93 technique. It includes performance test
 data for representative data sets and provides implementation details for the data format
@@ -18,17 +17,17 @@ their own data compression logic for floating-point data.
 
 The effectiveness of the G93 floating-point data compression algorithms was tested
 using elevation and ocean bottom depth data taken from the U.S Geological Survey
-(USGS) Cloud Optimized GeoTIFF (COG) data products and the GEBCO_2019 global
-bathymetry data set. Although G93 is not limited to processing geophysical
+(USGS) Cloud Optimized GeoTIFF (COG) data products (USGS, 2019) and the GEBCO_2019 global
+bathymetry and elevation data set (GEBCO, 2019). Although G93 is not limited to processing geophysical
 applications, the availability of a large set of elevation data made these
 products a convenient source of test data. Both products provide raster data
 in grids with a uniform angular spacing (i.e fixed intervals of latitude and longitude). Each of the
 high-resolution USGS products use a 1/3 second of arc spacing and cover a
-1 degree square region. The lower-resolution GEBGO product covers the entire
-Earth (land and water) and provides a raster data with a spacing of 15 seconds of arc.
+1 degree square region. The lower-resolution GEBCO product covers the entire
+Earth (land and water) and provides a raster data with a spacing of 15 seconds of arc[&lsqb;1&rsqb;](#note1).
 
 In the table, the regions of coverage for the USGS data are indicated by named locations.
-All data values are given in bits-per-symbol (bits for elevation point)[&lsqb;1&rsqb;](#note1). The data sources
+All data values are given in bits-per-symbol (bits for elevation point)[&lsqb;2&rsqb;](#note2). The data sources
 used for this test series were taken from files in either the GeoTIFF or NetCDF data format,
 both of which implement their own techniques for
 data compression. Thus the bits-per-symbol rates for the source files were
@@ -47,13 +46,18 @@ that outperform G93. Improving the G93 data compression ratios is an area of con
 | Data Set           | Format | Entropy (bps) | Source sz (bps) | G93 Compressed (bps)|
 | ------------------ | ------ |-------------- | --------------- | ------------------- |
 | State College, PA  | TIFF   |  23.9         |   24.4          |  17.2               |
+| Ann Arbor, MI      | TIFF   |  21.7         |   21.3          |  14.9               |
+| Columbus, OH       | TIFF   |  22.6         |   24.5          |  17.7               |   
 | Mt. Washington, NH | TIFF   |  23.8         |   23.8          |  16.7               |
 | Newport News, VA   | TIFF   |  17.7         |   17.4          |  12.6               |
 | GEBCO_2019         | NetCDF |  24.7         |   25.1          |  15.4               |
 
 The table above refers to a metric called _entropy_. For purposes of this article,
+we focus on _order-zero_ entropy, which is based on the frequency with which
+specific values occur in the raster set and is computed without regard to
+observable trends or relationships between neighboring samples. In this regard,
 entropy can be thought of a measure of the amount of variability or complexity
-in a data set. Data with a lot of variability will have a high entropy value.
+in a data set.  Data grids with a lot of variability will have a high entropy value.
 Data with little variability will have a low entropy value. In practice, the
 amount of entropy in a data source is a good indicator of how well it should compress.
 It is used here because it provides an objective way of characterizing the variability
@@ -112,7 +116,8 @@ Unfortunately, differencing techniques do not work well for floating-point forma
 While they do reduce the magnitude of the data, they do not reduce the complexity
 of the mantissa part of the floating-point representations. The TIFF data format
 addresses this limitation by splitting the floating-point data into separate
-bytes and performing differencing on the components (Adobe, 2005). 
+bytes and performing differencing on the component bytes rather than the overall
+values (Adobe, 2005). 
 
 As we discuss bits and byte layouts, we will use the following conventions:
 
@@ -132,7 +137,10 @@ The TIFF differencing proceeds as follows. For each row, the set of high-order b
 order-1, and finally order-0. Within each gang, differencing is performed on a
 byte-by-byte basis. For example, let A0 be the low order byte of floating-point
 value A, A1 be the next higher order byte, A2 the one after that, and finally A3
-be the highest order byte. The TIFF floating-point differencing would encode the data as:
+be the highest order byte. The same pattern would apply for the next floating-point
+value B in the sequence, which would consist of bytes B0, B1, B2, and B3.
+We continue with values C, D, E, F, and so forth. In the TIFF format, the differencing
+factors for floating-point values would be encoded as:
 
     A3, B3-A3, C3-B3, (A2-C3), B2-A2, C2-B2, (A1-C2), etc.
     D3, E3-D3, F3-D3, (D2-F3), E2-D2, F2-E2, (F1-F2), etc.
@@ -144,7 +152,7 @@ not as optimal as they could be, the rows in actual raster data sets tend to be 
 that their overall contribution to the entropy in the encoded bytes is small.
 
 The motivation for the TIFF approach is that floating-point data formats consist of three
-parts -- the sign bit, the exponent, and the mantissa -- and each of these parts has slightly
+parts -- the sign bit, the exponent, and the mantissa -- and each of these parts has
 different statistical behavior. In general, the sign bits and exponents tend to have low
 variability, while the mantissa components have high variability. By partitioning the source data
 into separate sets of bytes, the TIFF approach arranges them in groups that have more uniform
@@ -242,8 +250,15 @@ U.S. Geological Survey [USGS] (2019). _USGS Digital Elevation Models (DEM) Switc
 Accessed April 2020 from [https://www.usgs.gov/news/usgs-digital-elevation-models-dem-switching-new-distribution-format](https://www.usgs.gov/news/usgs-digital-elevation-models-dem-switching-new-distribution-format)
 
 ## Notes
-<a name="note1">&lsqb;1&rsqb;</a>The USGS Cloud Optimized GeoTIFF files contain multiple
+<a name="note1">&lsqb;1&rsqb;</a>While the 2019 GEBCO data set featured non-integral data
+given in the form of floats, the 2020 version released 28 April 2020, uses short (2-byte) integers.
+With this change, the product now reports elevation and depth data rounded to the nearest 1 meter.
+Because the data is no longer given in floating-point form, it is appropriate to compress the GEBCO 2020
+product using the G93 integer compressor. The original 2020 data uses 16 bits per sample and has
+a computed entropy of 12.9 bits per sample. The G93 integer data compression reduced the size of this set
+down to 3.12 bits per sample.
+
+<a name="note2">&lsqb;2&rsqb;</a>The USGS Cloud Optimized GeoTIFF files contain multiple
 raster data products including a full-resolution source data set and 4 or 5 lower-resolution
 "overview" data sets.  The bit counts cited above are based solely on the full-resolution product.
-
 

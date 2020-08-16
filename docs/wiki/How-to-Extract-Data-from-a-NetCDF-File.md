@@ -1,5 +1,3 @@
-**Under construction -- Corrections and more content coming soon**
-
 # Introduction
 Many important and useful public sources of geophysical data are distributed in the
 _Network Common Data Format_ or NetCDF. NetCDF is a well supported and flexible
