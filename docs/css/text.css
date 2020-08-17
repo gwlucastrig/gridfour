@@ -102,13 +102,17 @@ li.box-list-row{
 li.box-list-row:first-of-type {
 	font-size: 17px;
 	font-weight: bold;
-		border-style:solid;
+	border-style:solid;
 	border-width:1px;
 	border-color:LightGray;
 	list-style-type:none;
-		border-top-left-radius:6px;
+	border-top-left-radius:6px;
 	border-top-right-radius:6px;
-	
+}
+
+li.box-list-row:last-of-type {
+	border-bottom-left-radius:6px;
+	border-bottom-right-radius:6px;
 }
 
 a.box-link:link{
