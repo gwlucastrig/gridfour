@@ -424,7 +424,7 @@ public class G93FileSpecification {
         "Zero or negative dimension value not supported");
     }
     this.dimension = dimension;
-    dataType = G93DataType.INETGER_CODED_FLOAT;
+    dataType = G93DataType.INTEGER_CODED_FLOAT;
     valueScale = scale;
     valueOffset = offset;
     variableName = "Variables";

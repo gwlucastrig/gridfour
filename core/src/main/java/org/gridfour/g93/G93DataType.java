@@ -51,7 +51,7 @@ public enum G93DataType {
    * Floating point values are multiplied by a scaling factor and
    * stored as a Java 4-byte integer data type.
    */
-  INETGER_CODED_FLOAT(1, 4),
+  INTEGER_CODED_FLOAT(1, 4),
   /**
    * Data is stored using the Java 4-byte float data type, the IEEE-754
    * single-precision floating point format.
@@ -87,16 +87,32 @@ public enum G93DataType {
     return bytesPerSample;
   }
 
-  static G93DataType valueOf(int codeValue) {
+  public static G93DataType valueOf(int codeValue) {
     switch (codeValue) {
       case 0:
         return INTEGER;
       case 1:
-        return INETGER_CODED_FLOAT;
+        return INTEGER_CODED_FLOAT;
       case 2:
         return FLOAT;
       default:
         return INTEGER;
+    }
+  }
+
+  /**
+   * Indicates whether this enumeration identifies an integer-based datatype
+   * for G93 data.
+   *
+   * @return true if the identified data type is integral; otherwise, false.
+   */
+  public boolean isIntegral() {
+    switch (this) {
+      case INTEGER:
+      case INTEGER_CODED_FLOAT:
+        return true;
+      default:
+        return false;
     }
   }
 

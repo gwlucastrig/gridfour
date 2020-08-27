@@ -43,6 +43,7 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import org.gridfour.demo.lsComp.LS8CodecUtility;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.g93.G93CacheSize;
 import org.gridfour.g93.G93DataType;
@@ -69,8 +70,9 @@ public class PackageData {
     "   -out    <output_file_path>",
     "   -zScale <value>  apply a scale factor for data compression",
     "   -tileSize <###x###> n_rows and n_columns of tile (i.e. 90x120)",
-    "   -compress (-nocompress)  apply compression to file (default: false)",
-    "   -verify (-noconfirm)     test file to verify that it is correct (default: false)",
+    "   -compress (-nocompress)  Apply compression to file (default: false)",
+    "   -verify (-noconfirm)     Verify that output is correct (default: false)",
+    "   -ls8 (-nols8)            Enable LS8 when compressing data (default:false)",
     "Note: the zScale option instructs the packager to use the",
     "      integer-scaled-float data type when storing values.",
     "      If it is not specified, the data type will be selected",
@@ -94,7 +96,7 @@ public class PackageData {
     PackageData extractor = new PackageData();
 
     try {
-      extractor.process(System.out, options);
+      extractor.process(System.out, options, args);
     } catch (IOException | IllegalArgumentException ex) {
       System.err.println("Error processing " + args[0] + " file " + args[1]);
       System.err.println(ex.getMessage());
@@ -103,7 +105,7 @@ public class PackageData {
 
   }
 
-  void process(PrintStream ps, TestOptions options)
+  void process(PrintStream ps, TestOptions options, String[] args)
     throws IOException {
 
     // The packaging of data in a G93 file can be thought of in terms of
@@ -134,6 +136,8 @@ public class PackageData {
     File outputFile = options.getOutputFile();
     ps.format("Input file:  %s%n", inputPath);
     ps.format("Output file: %s%n", outputFile.getPath());
+    boolean[] matched = new boolean[args.length];
+    boolean useLS8 = options.scanBooleanOption(args, "-ls8", matched, false);
 
     // Open the NetCDF file -----------------------------------
     ps.println("Opening NetCDF input file");
@@ -160,7 +164,7 @@ public class PackageData {
       identification = "ETOPO1";
     } else {
       tileSize = options.getTileSize(90, 120);
-      identification = "GEBCO 2019";
+      identification = "GEBCO";
     }
     if (lat == null || lon == null || z == null) {
       throw new IllegalArgumentException(
@@ -201,7 +205,7 @@ public class PackageData {
     G93DataType g93DataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      g93DataType = G93DataType.INETGER_CODED_FLOAT;
+      g93DataType = G93DataType.INTEGER_CODED_FLOAT;
       spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
     } else if (sourceDataType.isIntegral()) {
       g93DataType = G93DataType.INTEGER;
@@ -231,6 +235,13 @@ public class PackageData {
     // diagnostic.
     extractionCoords.checkSpecificationTransform(ps, spec);
 
+    // Add the LS8 optimal predictor codec to the specification.
+    // This enhanced compression technique will be used only if compression
+    // is enabled and the data type is integral.
+    if (useLS8) {
+      LS8CodecUtility.addLS8ToSpecification(spec);
+    }
+
     // ---------------------------------------------------------
     // Create the output file and store the content from the input file.
     if (outputFile.exists()) {
@@ -242,6 +253,10 @@ public class PackageData {
       }
     }
 
+    double zMin = Double.POSITIVE_INFINITY;
+    double zMax = Double.NEGATIVE_INFINITY;
+    double zSum = 0;
+    long nSum = 0;
     try (G93File g93 = new G93File(outputFile, spec)) {
       g93.setTileCacheSize(G93CacheSize.Large);
       g93.setIndexCreationEnabled(true);
@@ -294,15 +309,31 @@ public class PackageData {
                 int sample = array.getInt(iCol);
                 g93.storeIntValue(iRow, iCol, sample);
                 stats.addSample(sample);
+                if (sample < zMin) {
+                  zMin = sample;
+                }
+                if (sample > zMax) {
+                  zMax = sample;
+                }
+                zSum += sample;
+                nSum++;
               }
               break;
-            case INETGER_CODED_FLOAT:
+            case INTEGER_CODED_FLOAT:
             case FLOAT:
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
                 g93.storeValue(iRow, iCol, sample);
                 stats.addSample(sample);
+                if (sample < zMin) {
+                  zMin = sample;
+                }
+                if (sample > zMax) {
+                  zMax = sample;
+                }
+                zSum += sample;
+                nSum++;
               }
 
           }
@@ -324,6 +355,10 @@ public class PackageData {
 
       ps.format("%nSummary of file content and packaging actions------------%n");
       g93.summarize(ps, true);
+      ps.format("Range of z values:%n");
+      ps.format("  Min z: %8.3f%n", zMin);
+      ps.format("  Max z: %8.3f%n", zMax);
+      ps.format("  Avg z: %8.3f%n", zSum / (nSum > 0 ? nSum : 1));
     }
 
     // If the calling application desires that we do so, verify the
@@ -372,7 +407,7 @@ public class PackageData {
                   }
                 }
                 break;
-              case INETGER_CODED_FLOAT:
+              case INTEGER_CODED_FLOAT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
                   int sTest = (int) Math.floor(sample * zScale + 0.5);

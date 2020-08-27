@@ -140,7 +140,7 @@ class RasterTileCache {
     int tileCol = tileIndex - tileRow * spec.nColsOfTiles;
     switch (spec.dataType) {
       case INTEGER:
-      case INETGER_CODED_FLOAT:
+      case INTEGER_CODED_FLOAT:
         tile = new RasterTileInt(
           tileIndex,
           tileRow,
@@ -201,7 +201,7 @@ class RasterTileCache {
 
     switch (spec.dataType) {
       case INTEGER:
-      case INETGER_CODED_FLOAT:
+      case INTEGER_CODED_FLOAT:
         tile = new RasterTileInt(
           tileIndex,
           tileRow,
