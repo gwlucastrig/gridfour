@@ -28,15 +28,15 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2020  G. Lucas     Created
+ * 07/2020  G. Lucas     Created
  *
  * Notes:
- *   the first row and then the first column are pre-populated using
+ *   the first 2 rows and then the first two columns are pre-populated using
  * simple differences. After that, the remainder of the grid is populated
- * using the triangle predictor.
+ * using the Lewis and Smith Optimal Predictor
  * -----------------------------------------------------------------------
  */
-package org.gridfour.demo.lsComp;
+package org.gridfour.g93.lsop.compressor;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.DecompositionSolver;
@@ -46,17 +46,18 @@ import org.apache.commons.math3.linear.SingularMatrixException;
 import org.gridfour.util.CodecM32;
 
 /**
- * Applies the methods of Lewis and Smith (1992) using optimal predictors
+ * Applies the methods of Lewis and Smith (1994) using optimal predictors
  * for data compression.
  * <p>
- * The method used for this class is based on the published work:
- * <cite>Lewis, M. and Smith, D. H. (1992). "Optimal Predictors for the
+ * The method used for this class is based on the PDF document:
+ * <cite>Lewis, M. and Smith, D. H. (1994). "Optimal Predictors for the
  * Data Compression of Digital Elevation
  * Models using the Method of Lagrange Multipliers" </cite>
+ *
  */
-public class LS8OptimalPredictor  {
+public class LsOptimalPredictor {
 
-  LS8OptimalPredictorResult encode(
+  LsOptimalPredictorResult encode(
     int nRows,
     int nColumns,
     int[] values) {
@@ -114,6 +115,90 @@ public class LS8OptimalPredictor  {
       }
     }
 
+    // now process the samples and compute the 3x3 optimal predictor
+    double[] ud = computeCoefficients(nRows, nColumns, values);
+    if (ud == null) {
+      return null;
+    }
+
+    // although the solution is in doubles, we wish to store floats
+    // in our output.  in order to ensure correct calculations, we need to
+    // work with floats.
+    float[] u = new float[9];
+    for (int i = 0; i < ud.length; i++) {
+      u[i] = (float) ud[i];
+    }
+
+    float u0 = u[0];
+    float u1 = u[1];
+    float u2 = u[2];
+    float u3 = u[3];
+    float u4 = u[4];
+    float u5 = u[5];
+    float u6 = u[6];
+    float u7 = u[7];
+
+    // Allocate a new mCodec with storage for the interior codes
+    // use it to store the delta values.
+    n = (nRows - 2) * (nColumns - 2);
+    CodecM32 interiorCodec = new CodecM32(n);
+    for (int iRow = 2; iRow < nRows; iRow++) {
+      for (int iCol = 2; iCol < nColumns; iCol++) {
+        int index = iRow * nColumns + iCol;
+        float p
+          = u0 * values[index - 1]
+          + u1 * values[index - nColumns - 1]
+          + u2 * values[index - nColumns]
+          + u3 * values[index - 2]
+          + u4 * values[index - nColumns - 2]
+          + u5 * values[index - 2 * nColumns - 2]
+          + u6 * values[index - 2 * nColumns - 1]
+          + u7 * values[index - 2 * nColumns];
+        int delta = values[index] - (int) (p + 0.5f);
+        interiorCodec.encode(delta);
+      }
+    }
+
+    int nInitializationCodes = initializationCodec.getEncodedLength();
+    byte[] initializationEncoding = initializationCodec.getEncoding();
+    int nInteriorCodes = interiorCodec.getEncodedLength();
+    byte[] interiorEncoding = interiorCodec.getEncoding();
+
+    return new LsOptimalPredictorResult(seed, u,
+      nInitializationCodes, initializationEncoding,
+      nInteriorCodes, interiorEncoding);
+  }
+
+  private boolean isDeltaOutOfBounds(long delta) {
+    if (delta < Integer.MIN_VALUE) {
+      return true;
+    } else if (delta > Integer.MAX_VALUE) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Computes the coefficients for an optimal predictor. In the unusual case
+   * that no solution is available, or that the input data size is inadequate,
+   * a null value will be returned.
+   *
+   * The layout of the coefficients is as shown below
+   * <pre>
+   *    row i:      u3   u0   S(i,j)
+   *    row i-1:    u4   u1   u2
+   *    row i-2:    u5   u6   u7
+   * </pre>
+   *
+   * @param nRows a value of 2 or greater
+   * @param nColumns a value of 2 or greater
+   * @param values an array of values given in row-major order.
+   * @return if successful, an valid array; otherwise, null.
+   */
+  public double[] computeCoefficients(int nRows, int nColumns, int[] values) {
+    if (nRows < 4 || nColumns < 4) {
+      return null;
+    }
     // now process the samples and compute the 3x3 optimal predictor
     double[] z = new double[9];
     double[] s = new double[9];
@@ -179,53 +264,7 @@ public class LS8OptimalPredictor  {
     RealMatrix mB = new BlockRealMatrix(b);
     RealMatrix mU = cInv.multiply(mB);
 
-    double[] ud = mU.getColumn(0);
-    // although the solution is in doubles, we wish to store floats
-    // in our output.  in order to ensure correct calculations, we need to
-    // work with floats.
-    float[] u = new float[9];
-    for (int i = 0; i < ud.length; i++) {
-      u[i] = (float) ud[i];
-    }
+    return mU.getColumn(0);
 
-    // Allocate a new mCodec with storage for the interior codes
-    // use it to store the delta values.
-    n = (nRows - 2) * (nColumns - 2);
-    CodecM32 interiorCodec = new CodecM32(n);
-    for (int iRow = 2; iRow < nRows; iRow++) {
-      for (int iCol = 2; iCol < nColumns; iCol++) {
-        int index = iRow * nColumns + iCol;
-        float p
-          = u[0] * values[index - 1]
-          + u[1] * values[index - nColumns - 1]
-          + u[2] * values[index - nColumns]
-          + u[3] * values[index - 2]
-          + u[4] * values[index - nColumns - 2]
-          + u[5] * values[index - 2 * nColumns - 2]
-          + u[6] * values[index - 2 * nColumns - 1]
-          + u[7] * values[index - 2 * nColumns];
-        int delta = values[index] - (int) (p + 0.5f);
-        interiorCodec.encode(delta);
-      }
-    }
-
-    int nInitializationCodes = initializationCodec.getEncodedLength();
-    byte[] initializationEncoding = initializationCodec.getEncoding();
-    int nInteriorCodes = interiorCodec.getEncodedLength();
-    byte[] interiorEncoding = interiorCodec.getEncoding();
-
-    return new LS8OptimalPredictorResult(seed, u,
-      nInitializationCodes, initializationEncoding,
-      nInteriorCodes, interiorEncoding);
   }
-
-  private boolean isDeltaOutOfBounds(long delta) {
-    if (delta < Integer.MIN_VALUE) {
-      return true;
-    } else if (delta > Integer.MAX_VALUE) {
-      return true;
-    }
-    return false;
-  }
-
 }

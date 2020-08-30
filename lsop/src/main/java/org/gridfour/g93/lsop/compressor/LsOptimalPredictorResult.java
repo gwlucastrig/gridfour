@@ -21,38 +21,39 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 08/2020  G. Lucas     Created
+ * 07/2020  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
-
-
-
-package org.gridfour.demo.lsComp;
-
-import org.gridfour.g93.G93FileSpecification;
-import org.gridfour.g93.lsComp.LS8Decoder;
+package org.gridfour.g93.lsop.compressor;
 
 /**
- * Provides convenience methods for adding the LS8 encoder and decoder
- * to a G93 File Specification.
+ *
  */
-public class LS8CodecUtility {
+class LsOptimalPredictorResult {
 
-  /**
-   * The standard ID for the LS8 encoder and decoder pair.
-   */
-  public static final String LS8_CODEC_ID = "G93_LS8";
+  int seed;
+  float[] coefficients;
+  int nInitializerCodes;
+  byte[] initializerCodes;
+  int nInteriorCodes;
+  byte[] interiorCodes;
 
-  /**
-   * A static method to adds the LS8 encoder and decoder classes to
-   * the G93 File Specification.
-   *
-   * @param spec a valid G93 file specification
-   */
-  public static void addLS8ToSpecification(G93FileSpecification spec) {
-    spec.addCompressionCodec(LS8_CODEC_ID, LS8Encoder.class, LS8Decoder.class);
+  LsOptimalPredictorResult(
+    int seed,
+    float[] coefficients,
+    int nInitializerCodes,
+    byte[] initializerCodes,
+    int nInteriorCodes,
+    byte[] interiorCodes
+  ) {
+    this.seed = seed;
+    this.coefficients = coefficients;
+    this.nInitializerCodes = nInitializerCodes;
+    this.initializerCodes = initializerCodes;
+    this.nInteriorCodes = nInteriorCodes;
+    this.interiorCodes = interiorCodes;
   }
 }

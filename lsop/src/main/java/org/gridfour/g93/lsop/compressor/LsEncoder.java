@@ -36,7 +36,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.demo.lsComp;
+package org.gridfour.g93.lsop.compressor;
 
 import java.util.zip.Deflater;
 import org.gridfour.g93.HuffmanEncoder;
@@ -46,26 +46,26 @@ import org.gridfour.io.BitOutputStore;
 /**
  * Provides methods and data elements used to encode raster data to be
  * compressed
- * using the G93-LS8 format based on the methods of Lewis and Smith's
+ * using the G93-LS format based on the methods of Lewis and Smith's
  * Optimal Predictor.
  * <p>
- * The LS8 decoder and encoder are separated into separate packages and
+ * The LS decoder and encoder are separated into separate packages and
  * separate modules in order to manage code dependencies. The encoding
  * process requires solving a 9-variable linear system. Doing so requires
  * the use of a 3rd party Java library, so an implementation that uses the
- * LS8 format introduces an additional dependency to the code base.
+ * LS format introduces an additional dependency to the code base.
  * But the decoding process does not use any operations that would require
  * an external dependency. Thus the decoder is specified as part of the
  * Gridfour core module, but the encoder is not.
  */
-public class LS8Encoder implements IG93Encoder {
+public class LsEncoder implements IG93Encoder {
 
-  private final LS8OptimalPredictor optimalPredictor
-    = new LS8OptimalPredictor();
+  private final LsOptimalPredictor optimalPredictor
+    = new LsOptimalPredictor();
 
   @Override
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
-    LS8OptimalPredictorResult result
+    LsOptimalPredictorResult result
       = optimalPredictor.encode(nRows, nCols, values);
     if (result == null) {
       return null;
@@ -73,14 +73,16 @@ public class LS8Encoder implements IG93Encoder {
 
     // the preface is 49 bytes:
     //    1 byte     codecIndex
+    //    1 byte     number of predictors (currently 8)
     //    4 bytes    seed
-    //    9*4 bytes  coefficients
+    //    N*4 bytes  coefficients (currently, N=8)
     //    4 bytes    nInitializationCodes
     //    4 bytes    nInteriorCodes
     //    1 byte     method
-    byte[] preface = new byte[46];
+    byte[] preface = new byte[47];
     preface[0] = (byte) (codecIndex & 0xff);
-    int offset = packInteger(preface, 1, result.seed);
+    preface[1] = 8;
+    int offset = packInteger(preface, 2, result.seed);
     for (int i = 0; i < 8; i++) {
       offset = packFloat(preface, offset, result.coefficients[i]);
     }
@@ -108,11 +110,11 @@ public class LS8Encoder implements IG93Encoder {
       return null;
     }
 
-    byte[] packing = new byte[46 + initN + insideN];
+    byte[] packing = new byte[47 + initN + insideN];
 
-    System.arraycopy(preface, 0, packing, 0, 46);
-    System.arraycopy(initPack, 0, packing, 46, initN);
-    System.arraycopy(insidePack, 0, packing, 46 + initN, insideN);
+    System.arraycopy(preface, 0, packing, 0, 47);
+    System.arraycopy(initPack, 0, packing, 47, initN);
+    System.arraycopy(insidePack, 0, packing, 47 + initN, insideN);
 
     HuffmanEncoder huffman = new HuffmanEncoder();
     BitOutputStore store = new BitOutputStore();
@@ -120,11 +122,11 @@ public class LS8Encoder implements IG93Encoder {
     huffman.encode(store, result.nInteriorCodes, result.interiorCodes);
     int huffLength = store.getEncodedTextLengthInBytes();
     if (huffLength < initN + insideN) {
-      packing = new byte[46 + huffLength];
+      packing = new byte[47 + huffLength];
       byte[] huff = store.getEncodedText();
       preface[offset] = 0;
-      System.arraycopy(preface, 0, packing, 0, 46);
-      System.arraycopy(huff, 0, packing, 46, huff.length);
+      System.arraycopy(preface, 0, packing, 0, 47);
+      System.arraycopy(huff, 0, packing, 47, huff.length);
     }
 
     return packing;

@@ -27,7 +27,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93.lsComp;
+package org.gridfour.g93.lsop.decompressor;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -42,51 +42,46 @@ import org.gridfour.util.CodecM32;
 
 /**
  * Provides methods and data elements used to decode data compressed
- * using the G93-LS8 format based on the methods of Smith and Lewis'
+ * using the G93-LS format based on the methods of Smith and Lewis'
  * Optimal Predictors.
  * <p>
- * The LS8 decoder and encoder are separated into separate packages and
+ * The LS decoder and encoder are separated into separate packages and
  * separate modules in order to manage code dependencies. The encoding
  * process requires solving a 9-variable linear system. Doing so requires
  * the use of a 3rd party Java library, so an implementation that uses the
- * LS8 format introduces an additional dependency to the code base.
+ * LS format introduces an additional dependency to the code base.
  * But the decoding process does not use any operations that would require
  * an external dependency. Thus the decoder is specified as part of the
  * Gridfour core module, while the encoder is not.
  */
-public class LS8Decoder implements IG93Decoder {
+public class LsDecoder implements IG93Decoder {
 
   private CodecStats[] codecStats;
 
   @Override
   public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
-    // the preface is 49 bytes:
-    //    1 byte     codecIndex
-    //    4 bytes    seed
-    //    9*4 bytes  coefficients
-    //    4 bytes    nInitializationCodes
-    //    4 bytes    nInteriorCodes
-    //    1 byte     method
-    int seed = unpackInteger(packing, 1);
-    float[] u = new float[8];
-    for (int i = 0; i < 8; i++) {
-      u[i] = unpackFloat(packing, 5 + i * 4);
-    }
-    int nInitializerCodes = unpackInteger(packing, 37);
-    int nInteriorCodes = unpackInteger(packing, 41);
+
+    LsHeader header = new LsHeader(packing, 0);
+    int seed = header.getSeed();
+    int nInitializerCodes = header.getCodedInitializerLength();
+    int nInteriorCodes = header.getCodedInteriorLength();
+    int compressionType = header.getCompressionType();
+    int headerSize = header.getHeaderSize();
+    float[] u = header.getOptimalPredictorCoefficients();
+
     byte[] initializerCodes = new byte[nInitializerCodes];
     byte[] interiorCodes = new byte[nInteriorCodes];
-    int compressionType = packing[45];
+
     if (compressionType == 0) {
       // Huffman dencoding
-      BitInputStore inputStore = new BitInputStore(packing, 46, packing.length - 46);
+      BitInputStore inputStore = new BitInputStore(packing, headerSize, packing.length - headerSize);
       HuffmanDecoder decoder = new HuffmanDecoder();
       decoder.decode(inputStore, nInitializerCodes, initializerCodes);
       decoder.decode(inputStore, nInteriorCodes, interiorCodes);
     } else {
       try {
         Inflater inflater = new Inflater();
-        inflater.setInput(packing, 46, packing.length - 46);
+        inflater.setInput(packing, headerSize, packing.length - headerSize);
         int test = inflater.inflate(initializerCodes);
         if (test < nInitializerCodes) {
           throw new IOException("Format mismatch, unable to read initializer codes");
@@ -94,7 +89,7 @@ public class LS8Decoder implements IG93Decoder {
         long nBytesRead = inflater.getBytesRead();
         inflater.end();
         inflater = new Inflater();
-        int offset = 46 + (int) nBytesRead;
+        int offset = headerSize + (int) nBytesRead;
         inflater.setInput(packing, offset, packing.length - offset);
         test = inflater.inflate(interiorCodes);
         inflater.end();
@@ -107,7 +102,7 @@ public class LS8Decoder implements IG93Decoder {
     }
     int[] values = new int[nRows * nColumns];
     unpackInitializers(initializerCodes, seed, nRows, nColumns, values);
-    this.unpackInterior(interiorCodes, u, nRows, nColumns, values);
+    unpackInterior(interiorCodes, u, nRows, nColumns, values);
     return values;
   }
 
@@ -170,17 +165,20 @@ public class LS8Decoder implements IG93Decoder {
       codecStats[5] = new CodecStats(PredictiveTransformType.None);
     }
 
+    LsHeader header = new LsHeader(packing, 0);
+    int nInitializerCodes = header.getCodedInitializerLength();
+    int nInteriorCodes = header.getCodedInteriorLength();
+    int format = header.getCompressionType();
+    int headerSize = header.getHeaderSize();
+
     long nBytesForInitializers = 0;
     long nBytesForInterior = 0;
-    int nInitializerCodes = unpackInteger(packing, 37);
-    int nInteriorCodes = unpackInteger(packing, 41);
-    int format = packing[45];
     byte[] initializerCodes = new byte[nInitializerCodes];
     byte[] interiorCodes = new byte[nInteriorCodes];
-
     if (format == 0) {
       // Huffman encoding
-      BitInputStore inputStore = new BitInputStore(packing, 46, packing.length - 46);
+      BitInputStore inputStore
+        = new BitInputStore(packing, headerSize, packing.length - headerSize);
       HuffmanDecoder decoder = new HuffmanDecoder();
       decoder.decode(inputStore, nInitializerCodes, initializerCodes);
       int nBitsForInitializers = inputStore.getPosition();
@@ -192,7 +190,7 @@ public class LS8Decoder implements IG93Decoder {
       // Deflate encoding
       try {
         Inflater inflater = new Inflater();
-        inflater.setInput(packing, 46, packing.length - 46);
+        inflater.setInput(packing, headerSize, packing.length - headerSize);
         int test = inflater.inflate(initializerCodes);
         if (test < nInitializerCodes) {
           throw new IOException("Format mismatch, unable to read initializer codes");
@@ -200,7 +198,7 @@ public class LS8Decoder implements IG93Decoder {
         nBytesForInitializers = inflater.getBytesRead();
         inflater.end();
         inflater = new Inflater();
-        int offset = 46 + (int) nBytesForInitializers;
+        int offset = headerSize + (int) nBytesForInitializers;
         inflater.setInput(packing, offset, packing.length - offset);
         test = inflater.inflate(interiorCodes);
         nBytesForInterior = inflater.getBytesRead();
@@ -234,7 +232,7 @@ public class LS8Decoder implements IG93Decoder {
 
   @Override
   public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-    ps.println("Codec LS8_Test");
+    ps.println("Codec G93_LS");
     if (codecStats == null || nTilesInRaster == 0) {
       ps.format("   Tiles Compressed:  0%n");
       return;
@@ -299,16 +297,5 @@ public class LS8Decoder implements IG93Decoder {
     return null;
   }
 
-  private int unpackInteger(byte[] packing, int offset) {
-    return (packing[offset] & 0xff)
-      | ((packing[offset + 1] & 0xff) << 8)
-      | ((packing[offset + 2] & 0xff) << 16)
-      | ((packing[offset + 3] & 0xff) << 24);
-  }
-
-  private float unpackFloat(byte[] output, int offset) {
-    int bits = unpackInteger(output, offset);
-    return Float.intBitsToFloat(bits);
-  }
 
 }
