@@ -21,39 +21,45 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 07/2020  G. Lucas     Created
+ * 08/2020  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.demo.lsComp;
+
+
+
+package org.gridfour.g93.lsop.compressor;
+
+import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.g93.lsop.decompressor.LsDecoder;
 
 /**
- *
+ * Provides convenience methods for adding the Ls8 encoder and decoder
+ * to a G93 File Specification.
  */
-class LS8OptimalPredictorResult {
+public class LsCodecUtility {
 
-  int seed;
-  float[] coefficients;
-  int nInitializerCodes;
-  byte[] initializerCodes;
-  int nInteriorCodes;
-  byte[] interiorCodes;
+  /**
+   * The standard ID for the Smith and Lewis optimal-predictor based encoder and decoder pair.
+   */
+  public static final String LSOP_CODEC_ID = "G93_LSOP";
 
-  LS8OptimalPredictorResult(
-    int seed,
-    float[] coefficients,
-    int nInitializerCodes,
-    byte[] initializerCodes,
-    int nInteriorCodes,
-    byte[] interiorCodes
-  ) {
-    this.seed = seed;
-    this.coefficients = coefficients;
-    this.nInitializerCodes = nInitializerCodes;
-    this.initializerCodes = initializerCodes;
-    this.nInteriorCodes = nInteriorCodes;
-    this.interiorCodes = interiorCodes;
+  /**
+   * A static method to adds the LS encoder and decoder classes to
+   * the G93 File Specification.
+   *
+   * @param spec a valid G93 file specification
+   */
+  public static void addLsopToSpecification(G93FileSpecification spec) {
+    spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder.class, LsDecoder.class);
+  }
+ 
+  /** 
+   * A private constructor to deter applications from constructing instances
+   * of this class.
+   */   
+  private LsCodecUtility(){
   }
 }

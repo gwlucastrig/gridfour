@@ -43,13 +43,13 @@ import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import org.gridfour.demo.lsComp.LS8CodecUtility;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.g93.G93CacheSize;
 import org.gridfour.g93.G93DataType;
 import org.gridfour.g93.G93File;
 import org.gridfour.g93.G93FileSpecification;
 import org.gridfour.io.FastByteArrayOutputStream;
+import org.gridfour.g93.lsop.compressor.LsCodecUtility;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
@@ -72,7 +72,7 @@ public class PackageData {
     "   -tileSize <###x###> n_rows and n_columns of tile (i.e. 90x120)",
     "   -compress (-nocompress)  Apply compression to file (default: false)",
     "   -verify (-noconfirm)     Verify that output is correct (default: false)",
-    "   -ls8 (-nols8)            Enable LS8 when compressing data (default:false)",
+    "   -lsop (-nolsop)            Enable LS encoder when compressing data (default:false)",
     "Note: the zScale option instructs the packager to use the",
     "      integer-scaled-float data type when storing values.",
     "      If it is not specified, the data type will be selected",
@@ -137,7 +137,7 @@ public class PackageData {
     ps.format("Input file:  %s%n", inputPath);
     ps.format("Output file: %s%n", outputFile.getPath());
     boolean[] matched = new boolean[args.length];
-    boolean useLS8 = options.scanBooleanOption(args, "-ls8", matched, false);
+    boolean useLsop = options.scanBooleanOption(args, "-lsop", matched, false);
 
     // Open the NetCDF file -----------------------------------
     ps.println("Opening NetCDF input file");
@@ -235,11 +235,11 @@ public class PackageData {
     // diagnostic.
     extractionCoords.checkSpecificationTransform(ps, spec);
 
-    // Add the LS8 optimal predictor codec to the specification.
+    // Add the LSOP optimal predictor codec to the specification.
     // This enhanced compression technique will be used only if compression
     // is enabled and the data type is integral.
-    if (useLS8) {
-      LS8CodecUtility.addLS8ToSpecification(spec);
+    if (useLsop) {
+      LsCodecUtility.addLsopToSpecification(spec);
     }
 
     // ---------------------------------------------------------

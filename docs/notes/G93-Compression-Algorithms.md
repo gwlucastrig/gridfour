@@ -66,13 +66,20 @@ as much as anything else.
 
 # Predictive Techniques for Raster Data Compression
 Data compression techniques that work well for text are often ineffective for raster data sets.
-Most data compression algorithms operate by identifying redundancy in a data set and
-replacing it with a more compact representation. Unfortunately, raster data,
-particularly geophysical information, tends to have a large number of unique
-values and, at least superficially, tends to exhibit relatively little redundancy.
-
+Virtually all data compression algorithms operate by identifying redundant elements in a data set and
+replacing them with a more compact representation. Unfortunately, many raster data sets,
+particularly those containing geophysical information, tend to not present
+redundancy in a form that conventional data compression tools can exploit.  Turning to the
+elevation example cited above, it is easy to imagine a set of sample points collected
+along a constant slope. Each elevation value in the set would be unique. So a superficial inspection
+of the numeric values in the set would not reveal redundant elements.  But every sample would
+reflect the same rate of increase from point to point. And the underlying structure of the data
+would, in fact, carry a high degree of redundancy. The key to compressing such data
+is to transform it into a state in which the redundant elements become visible to conventional
+data compression techniques.  
+  
 Many raster compression techniques address the problem of non-compliant raster
-data by using so called _predictive_ techniques_. These techniques implement
+data by using so called _predictive_ techniques. These techniques implement
 models that predict the value at each grid point in the raster. The residuals
 from these predictions (actual value minus predicted value), tend to be small
 in magnitude and more readily compressed than the source data.  Thus, in its
@@ -93,10 +100,10 @@ In the original Gem93 project, the Constant Predictor approach was inspired by
 a description of audio delta pulse code modulation in
 _The Data Compression Book_ (Nelson, 1991, p. 346). Delta pulse coding is a well-known
 technique that was used in the audio industry as early as the 1950’s (Chaplin, 1952).
-While the Constant Predictor Model predictor is not especially powerful,
+While the Constant Model predictor is not especially powerful,
 it is easy to implement and offers excellent run-time performance.
 
-The Constant Predictor makes a critical assumption about the data. It assumes that
+The Constant Model predictor makes a critical assumption about the data. It assumes that
 the values of two points closely located in space will tend to be similar.
 In other words, it assumes that the _values_ of elements that are closely located
 spatially (i.e. in terms of grid coordinates) will also be close together numerically.
@@ -107,12 +114,26 @@ such as elevation data.  We expect that two points a few hundred meters
 apart have a higher probably of being similar than two points placed
 far apart in much different kinds of terrain.  This idea is sometimes referred
 to as "spatial autocorrelation" and has been extensively studied in
-Geographic Information Analysis and other fields. For raster-based data
-compression, it leads a requirement that the ordering of values given
-in a raster be constructed so that two points given in sequence also
-be close together in terms of spatial positions.
+Geographic Information Analysis and other fields.
 
-In practice, this requirement is easily met. In the uncompressed form,
+Again let's consider the example of a set of elevation grid points specified on a
+region with a constant slope. Because the sample points are collected at positions
+with a uniform spacing, the difference in elevation from point-to-point is
+constant or nearly constant. These differences are just the residuals from
+the Constant Predictor Model. They would exhibit a high degree of redundancy
+and, thus, would compress to a highly compact form.
+
+### Access Patterns for In-Memory Data
+There are different ways we can construct a predictive model for raster data,
+but all of them depend on being able to relate any particular sample
+to its neighbors. When we consider the Constant Predictor Model over a single
+row of data in a grid, identifying neighbors is straight forward.
+The relevant neighbor point is just the previous or next data point in the
+sequence. But special handling is required when processing the transition
+from the end of one row to the beginning of the next. If taken in sequence,
+these two sample points will not be spatially correlated. 
+ 
+In practice, this requirement for special handling is easily met. In the uncompressed form,
 G93 stores grid points in row-major order (one row at a time). So in most cases,
 the predecessor of a grid point is just the sample that preceded it in the row.
 There is, however, one edge case that requires special handling. In row-major order,
@@ -164,7 +185,8 @@ using the following:
 
 ![Variables for triangle predictor](images/G93Compression/TriangleAlgebra2.png) 
 
-Solving for Z<sub>P</sub> yields the computation used by the triangle-model predictive transform.
+When we solve for Z<sub>P</sub>, the _x_, _y_, _s_, and _t_ variables cancel out and we find
+the simple computation used by the Triangle Predictor model.
 
 Both the Linear and the Triangle Predictor require special handling to initialize
 the grid before applying the prediction computations. In the case of the Linear
@@ -184,7 +206,7 @@ are designed to process bytes. But the predictive-residual models produce output
 in the form of integers. So in order to use them to process
 and store the outputs from the models, the residuals must somehow be serialized
 into a byte form. Most of the residuals tend to be close to zero, so the serialization
-for them is trivial. But a non-negligible number of them will be in
+for them is trivial. In some cases, however, the residuals will be in
 excess of the value that can be stored in a single byte.
 
 While it would be feasible to simply split out the integer residual
