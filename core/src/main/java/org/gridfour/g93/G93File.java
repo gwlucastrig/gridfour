@@ -408,6 +408,7 @@ public class G93File implements Closeable, AutoCloseable {
         tileStore.analyzeAndReport(ps);
       } catch (IOException ioex) {
         ps.format("IOException encountered during analysis: " + ioex.getMessage());
+        ioex.printStackTrace(ps);
       }
     }
 
@@ -419,7 +420,9 @@ public class G93File implements Closeable, AutoCloseable {
         long nSamples = n * spec.getNumberOfCellsInTile();
         avgBitsPerSample = fileSize * 8.0 / nSamples;
       }
-      ps.format("Average bits per sample (estimated): %6.4f%n",
+      ps.format("File size:                           %12d bytes, %8.2f MB%n",
+        fileSize, fileSize / (1024.0 * 1024.0));
+      ps.format("Average bits per sample (estimated):     %6.4f%n",
         avgBitsPerSample);
     }
   }

@@ -55,28 +55,37 @@ import org.gridfour.util.CodecM32;
  * Models using the Method of Lagrange Multipliers" </cite>
  *
  */
-public class LsOptimalPredictor {
+public class LsOptimalPredictor12 {
 
   LsOptimalPredictorResult encode(
     int nRows,
     int nColumns,
     int[] values) {
 
-    if (nRows < 4 || nColumns < 4) {
+    if (nRows < 6 || nColumns < 6) {
       return null;
     }
 
-    // Initialze storage for up to
+    // Initialze storage for
     //    1) two full initial rows
-    //    2) two columns in each subsequent row
-    //    3) With 6 bytes per value
-    int n = (nColumns * 2 + (nRows - 2) * 2);
+    //    2) first two columns in each subsequent row
+    //    3) last two columns in each subsequent row
+    //  Constructor CodecM32 allocates 5 bytes per value
+    int n = nColumns * 4 + nRows * 2;
     CodecM32 initializationCodec = new CodecM32(n);
-    int seed = values[0];
 
-    // for the initialization, we use the simple differencing predictor
-    // to populate the first two rows, and then the first two columns
-    // of all subsequent rows.
+    // The Initialization
+    // It is necessary to initialize the first two rows and the
+    // first and last two columns, since these are cells that cannot
+    // be populated by the predictor.  We use the persistence predictor
+    // for the first row, first column, and then the second to last
+    // column.  Then we use the triangle predictor for the second row,
+    // second column, and last column.  This design elected to use the
+    // extra complexity of switching predictors because the triangle
+    // predictor does produce better results than the persistence predictor.
+    //
+    // Fist row, start from column 1, do not encode column 0
+    int seed = values[0];
     long prior = seed;
     for (int i = 1; i < nColumns; i++) {
       long test = values[i];
@@ -88,10 +97,10 @@ public class LsOptimalPredictor {
       prior = test;
     }
 
-    // the second row
+    // the first column ------------------------------------
     prior = values[0];
-    for (int i = 0; i < nColumns; i++) {
-      long test = values[i + nColumns];
+    for (int i = 1; i < nRows; i++) {
+      long test = values[i * nColumns];
       long delta = test - prior;
       if (isDeltaOutOfBounds(delta)) {
         return null;
@@ -100,20 +109,62 @@ public class LsOptimalPredictor {
       prior = test;
     }
 
-    // all subsequent rows, nColumns each
-    for (int iRow = 2; iRow < nRows; iRow++) {
-      int index = iRow * nColumns;
-      prior = values[index - nColumns];
-      for (int i = 0; i < 2; i++) {
-        long test = values[index++];
-        long delta = test - prior;
-        if (isDeltaOutOfBounds(delta)) {
-          return null;
-        }
-        initializationCodec.encode((int) delta);
-        prior = test;
+    // the second to last column ------------------------------------
+    prior = values[nColumns - 2];
+    for (int i = 1; i < nRows; i++) {
+      long test = values[i * nColumns + nColumns - 2];
+      long delta = test - prior;
+      if (isDeltaOutOfBounds(delta)) {
+        return null;
       }
+      initializationCodec.encode((int) delta);
+      prior = test;
     }
+
+    // now use the Triangle Predictor-------------------------
+    // the second row
+    for (int i = 1; i < nColumns; i++) {
+      int index = nColumns + i;
+      long a = values[index - 1];
+      long b = values[index - nColumns - 1];
+      long c = values[index - nColumns];
+      long test = values[index];
+      long delta = test - ((a + c) - b);
+      if (isDeltaOutOfBounds(delta)) {
+        return null;
+      }
+      initializationCodec.encode((int) delta);
+
+    }
+
+    // The second column
+    for (int i = 2; i < nRows; i++) {
+      int index = i * nColumns + 1;
+      long a = values[index - 1];
+      long b = values[index - nColumns - 1];
+      long c = values[index - nColumns];
+      long test = values[index];
+      long delta = test - ((a + c) - b);
+      if (isDeltaOutOfBounds(delta)) {
+        return null;
+      }
+      initializationCodec.encode((int) delta);
+    }
+
+    // The last column
+    for (int i = 2; i < nRows; i++) {
+      int index = i * nColumns + nColumns - 1;
+      long a = values[index - 1];
+      long b = values[index - nColumns - 1];
+      long c = values[index - nColumns];
+      long test = values[index];
+      long delta = test - ((a + c) - b);
+      if (isDeltaOutOfBounds(delta)) {
+        return null;
+      }
+      initializationCodec.encode((int) delta);
+    }
+
 
     // now process the samples and compute the 3x3 optimal predictor
     double[] ud = computeCoefficients(nRows, nColumns, values);
@@ -122,9 +173,9 @@ public class LsOptimalPredictor {
     }
 
     // although the solution is in doubles, we wish to store floats
-    // in our output.  in order to ensure correct calculations, we need to
-    // work with floats.
-    float[] u = new float[9];
+    // in our output.  in order to ensure correct calculations, we need to work
+    // with floats. So we transcribe the coefficients to an array of floats
+    float[] u = new float[13];
     for (int i = 0; i < ud.length; i++) {
       u[i] = (float) ud[i];
     }
@@ -137,23 +188,33 @@ public class LsOptimalPredictor {
     float u5 = u[5];
     float u6 = u[6];
     float u7 = u[7];
+    float u8 = u[8];
+    float u9 = u[9];
+    float u10 = u[10];
+    float u11 = u[11];
+    // u[12] is the coefficient for the lagrange multplier itself,
+    // which we do not use in the predictor
 
     // Allocate a new mCodec with storage for the interior codes
     // use it to store the delta values.
-    n = (nRows - 2) * (nColumns - 2);
+    n = (nRows - 2) * (nColumns - 4);
     CodecM32 interiorCodec = new CodecM32(n);
     for (int iRow = 2; iRow < nRows; iRow++) {
-      for (int iCol = 2; iCol < nColumns; iCol++) {
+      for (int iCol = 2; iCol < nColumns - 2; iCol++) {
         int index = iRow * nColumns + iCol;
         float p
           = u0 * values[index - 1]
           + u1 * values[index - nColumns - 1]
           + u2 * values[index - nColumns]
-          + u3 * values[index - 2]
-          + u4 * values[index - nColumns - 2]
-          + u5 * values[index - 2 * nColumns - 2]
-          + u6 * values[index - 2 * nColumns - 1]
-          + u7 * values[index - 2 * nColumns];
+          + u3 * values[index - nColumns + 1]
+          + u4 * values[index - nColumns + 2]
+          + u5 * values[index - 2]
+          + u6 * values[index - nColumns - 2]
+          + u7 * values[index - 2 * nColumns - 2]
+          + u8 * values[index - 2 * nColumns - 1]
+          + u9 * values[index - 2 * nColumns]
+          + u10 * values[index - 2 * nColumns + 1]
+          + u11 * values[index - 2 * nColumns + 2];
         int delta = values[index] - (int) (p + 0.5f);
         interiorCodec.encode(delta);
       }
@@ -190,61 +251,64 @@ public class LsOptimalPredictor {
    *    row i-2:    u5   u6   u7
    * </pre>
    *
-   * @param nRows a value of 2 or greater
-   * @param nColumns a value of 2 or greater
+   * @param nRows a value of 6 or greater
+   * @param nColumns a value of 6 or greater
    * @param values an array of values given in row-major order.
    * @return if successful, an valid array; otherwise, null.
    */
   public double[] computeCoefficients(int nRows, int nColumns, int[] values) {
-    if (nRows < 4 || nColumns < 4) {
+    if (nRows < 6 || nColumns < 6) {
       return null;
     }
-    // now process the samples and compute the 3x3 optimal predictor
-    double[] z = new double[9];
-    double[] s = new double[9];
-    double c[][] = new double[9][9];
+    // now process the samples and compute the 12 coefficient optimal predictor
+    double[] z = new double[13];
+    double[] s = new double[13];
+    double c[][] = new double[13][13];
     for (int iRow = 2; iRow < nRows; iRow++) {
-      for (int iCol = 2; iCol < nColumns; iCol++) {
+      for (int iCol = 2; iCol < nColumns - 2; iCol++) {
         int index = iRow * nColumns + iCol;
         z[0] = values[index];
-        z[1] = values[index - 1];                // z[row][col-1]
-        z[2] = values[index - nColumns - 1];     // z[row-1][col-1]
-        z[3] = values[index - nColumns];         // z[row-1][col]
-        z[4] = values[index - 2];                // z[row][col-2]
-        z[5] = values[index - nColumns - 2];     // z[row-1][col-2]
-        z[6] = values[index - 2 * nColumns - 2]; // z[row-2][col-2]
-        z[7] = values[index - 2 * nColumns - 1]; // z[row-2][col-1]
-        z[8] = values[index - 2 * nColumns];     // z[row-2][col]
-        for (int i = 0; i < 9; i++) {
+        z[1] = values[index - 1];
+        z[2] = values[index - nColumns - 1];
+        z[3] = values[index - nColumns];
+        z[4] = values[index - nColumns + 1];
+        z[5] = values[index - nColumns + 2];
+        z[6] = values[index - 2];
+        z[7] = values[index - nColumns - 2];
+        z[8] = values[index - 2 * nColumns - 2];
+        z[9] = values[index - 2 * nColumns - 1];
+        z[10] = values[index - 2 * nColumns];
+        z[11] = values[index - 2 * nColumns + 1];
+        z[12] = values[index - 2 * nColumns + 2];
+        for (int i = 0; i < 13; i++) {
           s[i] += z[i];
         }
-        for (int i = 0; i < 9; i++) {
-          for (int j = i; j < 9; j++) {
+        for (int i = 0; i < 13; i++) {
+          for (int j = i; j < 13; j++) {
             c[i][j] += z[i] * z[j];
           }
         }
       }
     }
     // transcribe symmetric part of the summation matrix
-    for (int i = 1; i < 9; i++) {
+    for (int i = 1; i < 13; i++) {
       for (int j = 0; j < i; j++) {
         c[i][j] = c[j][i];
       }
     }
 
     // populate the design matrix
-    double[][] m = new double[9][9];
-    for (int i = 1; i < 9; i++) {
-      for (int j = 1; j < 9; j++) {
+    double[][] m = new double[13][13];
+    for (int i = 1; i < 13; i++) {
+      for (int j = 1; j < 13; j++) {
         m[i - 1][j - 1] = c[i][j];
       }
-      m[i - 1][8] = s[i];
+      m[i - 1][12] = s[i];
     }
-    for (int j = 1; j < 9; j++) {
-      m[8][j - 1] = s[j];
+    for (int j = 1; j < 13; j++) {
+      m[12][j - 1] = s[j];
     }
 
-    // m[8][8] = 0
     RealMatrix mX = new BlockRealMatrix(m);
     QRDecomposition cd = new QRDecomposition(mX); // NOPMD
     DecompositionSolver cdSolver = cd.getSolver();
@@ -256,11 +320,11 @@ public class LsOptimalPredictor {
       return null;
     }
 
-    double[][] b = new double[9][1];
-    for (int i = 1; i < 9; i++) {
+    double[][] b = new double[13][1];
+    for (int i = 1; i < 13; i++) {
       b[i - 1][0] = c[0][i];
     }
-    b[8][0] = s[0];
+    b[12][0] = s[0];
     RealMatrix mB = new BlockRealMatrix(b);
     RealMatrix mU = cInv.multiply(mB);
 

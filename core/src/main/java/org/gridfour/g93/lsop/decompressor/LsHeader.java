@@ -46,17 +46,26 @@ public class LsHeader {
   protected final int compressionType;
   protected final int headerSize;
 
+  /**
+   * Constructs a instance populated with parameters extracted from the
+   * packing
+   *
+   * @param packing an array of bytes containing the encoded parameters;
+   * it is assumed that the packing is at least as long as the required storage
+   * @param packingOffset the starting position within the encoded packing
+   */
   public LsHeader(byte[] packing, int packingOffset) {
-
-    // currently, the preface is 47 bytes and the number of predictors
-    // is expected to always be 8.  This may be expanded in the future.
+// the header is 15+N*4 bytes:
+    //   for 8 predictor coefficients:  47 bytes
+    //   for 12 predictor coefficients: 63 bytes
     //    1 byte     codecIndex
-    //    1 bye      Number of predictors (currently 8)
+    //    1 byte     number of predictors (currently 8)
     //    4 bytes    seed
-    //    N*4 bytes  coefficients (currently N=8)
+    //    N*4 bytes  coefficients (currently, N=8)
     //    4 bytes    nInitializationCodes
     //    4 bytes    nInteriorCodes
     //    1 byte     method
+
     int offset = packingOffset;
     codecIndex = packing[offset++];
     nPredictor = packing[offset++];
@@ -75,6 +84,52 @@ public class LsHeader {
     headerSize = offset - packingOffset;
   }
 
+  /**
+   * Packs the metadata ("header") for a LSOP compression into an array of bytes
+   *
+   * @param codecIndex the index of the CODEC used for G93 file
+   * @param nCoefficients the number of coefficients
+   * @param seed the seed value
+   * @param u the compression coefficients, should be dimensioned
+   * to at least nCoefficients
+   * @param nInitializationCodes the number of M32 codes in the initializer
+   * @param nInteriorCodes the number of M32 codes in the interior
+   * @param genericCompression which generic compression method was used
+   * to compress the M32 code sequence
+   * @return an array in the exact size of the packing.
+   */
+  public static byte[] packHeader(
+    int codecIndex,
+    int nCoefficients,
+    int seed,
+    float[] u,
+    int nInitializationCodes,
+    int nInteriorCodes,
+    int genericCompression) {
+    // the header is 15+N*4 bytes:
+    //   for 8 predictor coefficients:  47 bytes
+    //   for 12 predictor coefficients: 63 bytes
+    //    1 byte     codecIndex
+    //    1 byte     number of predictors (currently 8)
+    //    4 bytes    seed
+    //    N*4 bytes  coefficients (currently, N=8)
+    //    4 bytes    nInitializationCodes
+    //    4 bytes    nInteriorCodes
+    //    1 byte     method
+
+    byte[] packing = new byte[15 + nCoefficients * 4];
+    packing[0] = (byte) (codecIndex & 0xff);
+    packing[1] = (byte) nCoefficients;
+    int offset = packInteger(packing, 2, seed);
+    for (int i = 0; i < nCoefficients; i++) {
+      offset = packFloat(packing, offset, u[i]);
+    }
+    offset = packInteger(packing, offset, nInitializationCodes);
+    offset = packInteger(packing, offset, nInteriorCodes);
+    packing[offset++] = 1;
+    return packing;
+  }
+
   private int unpackInteger(byte[] packing, int offset) {
     return (packing[offset] & 0xff)
       | ((packing[offset + 1] & 0xff) << 8)
@@ -85,6 +140,19 @@ public class LsHeader {
   private float unpackFloat(byte[] output, int offset) {
     int bits = unpackInteger(output, offset);
     return Float.intBitsToFloat(bits);
+  }
+
+  private static int packInteger(byte[] output, int offset, int iValue) {
+    output[offset] = (byte) (iValue & 0xff);
+    output[offset + 1] = (byte) ((iValue >> 8) & 0xff);
+    output[offset + 2] = (byte) ((iValue >> 16) & 0xff);
+    output[offset + 3] = (byte) ((iValue >> 24) & 0xff);
+    return offset + 4;
+  }
+
+  private static int packFloat(byte[] output, int offset, float f) {
+    int iValue = Float.floatToRawIntBits(f);
+    return packInteger(output, offset, iValue);
   }
 
   /**

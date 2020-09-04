@@ -35,8 +35,8 @@ terms of bits-per-symbol is smaller for GEBCO than for ETOPO1.
 
 | Product    | Grid Spacing  | Values in Grid | Standard  | LSOP Only | Combined  | Improvement    |
 | ---------- | ------------- | -------------- | --------- | --------- | --------- | -------------- |
-| ETOPO1     |  1 minute     |  233 Million   | 4.40 bps  | 3.78 bps  | 3.77 bps  | 14.4%, 17.6 MB |
-| GEBCO 2020 |  15 seconds   |  3.7 Billion   | 3.08 bps  | 3.08 bps  | 2.96 bps  |  3.9%, 54.9 MB |
+| ETOPO1     |  1 minute     |  233 Million   | 4.40 bps  | 3.67 bps  | 3.66 bps  | 16.8%, 20.6 MB |
+| GEBCO 2020 |  15 seconds   |  3.7 Billion   | 3.08 bps  | 2.97 bps  | 2.87 bps  |  6.8%, 71.2 MB |
 
 One interesting feature in the compression statistics is that the LSOP predictors
 give a much larger percentage improvement for the lower-resolution ETOPO1 product
