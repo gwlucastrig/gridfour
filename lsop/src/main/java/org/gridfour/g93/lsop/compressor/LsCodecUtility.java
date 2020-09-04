@@ -27,13 +27,11 @@
  *
  * -----------------------------------------------------------------------
  */
-
-
-
 package org.gridfour.g93.lsop.compressor;
 
 import org.gridfour.g93.G93FileSpecification;
-import org.gridfour.g93.lsop.decompressor.LsDecoder;
+import org.gridfour.g93.lsop.decompressor.LsDecoder08;
+import org.gridfour.g93.lsop.decompressor.LsDecoder12;
 
 /**
  * Provides convenience methods for adding the Ls8 encoder and decoder
@@ -42,9 +40,10 @@ import org.gridfour.g93.lsop.decompressor.LsDecoder;
 public class LsCodecUtility {
 
   /**
-   * The standard ID for the Smith and Lewis optimal-predictor based encoder and decoder pair.
+   * The standard ID for the Smith and Lewis optimal-predictor based encoder and
+   * decoder pair.
    */
-  public static final String LSOP_CODEC_ID = "G93_LSOP";
+  public static final String LSOP_CODEC_ID = "G93_LSOP12";
 
   /**
    * A static method to adds the LS encoder and decoder classes to
@@ -53,13 +52,15 @@ public class LsCodecUtility {
    * @param spec a valid G93 file specification
    */
   public static void addLsopToSpecification(G93FileSpecification spec) {
-    spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder.class, LsDecoder.class);
+    // spec.removeAllCompressionCodecs();
+    // spec.addCompressionCodec("G93_LSOP08", LsEncoder08.class, LsDecoder08.class);
+    spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder12.class, LsDecoder12.class);
   }
- 
-  /** 
+
+  /**
    * A private constructor to deter applications from constructing instances
    * of this class.
-   */   
-  private LsCodecUtility(){
+   */
+  private LsCodecUtility() {
   }
 }

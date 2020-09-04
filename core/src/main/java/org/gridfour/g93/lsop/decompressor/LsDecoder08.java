@@ -54,7 +54,7 @@ import org.gridfour.util.CodecM32;
  * an external dependency. Thus the decoder is specified as part of the
  * Gridfour core module, while the encoder is not.
  */
-public class LsDecoder implements IG93Decoder {
+public class LsDecoder08 implements IG93Decoder {
 
   private CodecStats[] codecStats;
 

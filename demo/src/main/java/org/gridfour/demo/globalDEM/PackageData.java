@@ -350,7 +350,7 @@ public class PackageData {
       long outputSize = outputFile.length();
       long nCells = (long) nRows * (long) nCols;
       double bitsPerSymbol = 8.0 * (double) outputSize / (double) nCells;
-      ps.format("Storage used (including overhead) %4.2f bits/sample%n",
+      ps.format("Storage used (including overhead) %6.4f bits/sample%n",
         bitsPerSymbol);
 
       ps.format("%nSummary of file content and packaging actions------------%n");

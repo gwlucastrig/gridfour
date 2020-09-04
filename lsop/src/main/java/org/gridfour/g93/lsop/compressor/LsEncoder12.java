@@ -41,13 +41,13 @@ package org.gridfour.g93.lsop.compressor;
 import java.util.zip.Deflater;
 import org.gridfour.g93.HuffmanEncoder;
 import org.gridfour.g93.IG93Encoder;
+import org.gridfour.g93.lsop.decompressor.LsHeader;
 import org.gridfour.io.BitOutputStore;
 
 /**
  * Provides methods and data elements used to encode raster data to be
- * compressed
- * using the G93-LS format based on the methods of Lewis and Smith's
- * Optimal Predictor.
+ * compressed using the G93-LS format based on the methods of Lewis and Smith's
+ * Optimal Predictor with 12 coefficients.
  * <p>
  * The LS decoder and encoder are separated into separate packages and
  * separate modules in order to manage code dependencies. The encoding
@@ -58,10 +58,10 @@ import org.gridfour.io.BitOutputStore;
  * an external dependency. Thus the decoder is specified as part of the
  * Gridfour core module, but the encoder is not.
  */
-public class LsEncoder implements IG93Encoder {
+public class LsEncoder12 implements IG93Encoder {
 
-  private final LsOptimalPredictor optimalPredictor
-    = new LsOptimalPredictor();
+  private final LsOptimalPredictor12 optimalPredictor
+    = new LsOptimalPredictor12();
 
   @Override
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
@@ -71,24 +71,19 @@ public class LsEncoder implements IG93Encoder {
       return null;
     }
 
-    // the preface is 49 bytes:
-    //    1 byte     codecIndex
-    //    1 byte     number of predictors (currently 8)
-    //    4 bytes    seed
-    //    N*4 bytes  coefficients (currently, N=8)
-    //    4 bytes    nInitializationCodes
-    //    4 bytes    nInteriorCodes
-    //    1 byte     method
-    byte[] preface = new byte[47];
-    preface[0] = (byte) (codecIndex & 0xff);
-    preface[1] = 8;
-    int offset = packInteger(preface, 2, result.seed);
-    for (int i = 0; i < 8; i++) {
-      offset = packFloat(preface, offset, result.coefficients[i]);
-    }
-    offset = packInteger(preface, offset, result.nInitializerCodes);
-    offset = packInteger(preface, offset, result.nInteriorCodes);
-    preface[offset] = 1;
+    // construct an array giving the header for the packing.
+    // initially, the "generic compression" method is set
+    // to 1 (meaning Deflate), but this may be overwritten by zero
+    // if testing determines that Huffman would require less storage.
+    byte[] header = LsHeader.packHeader(
+      codecIndex,
+      12,
+      result.seed,
+      result.coefficients,
+      result.nInitializerCodes,
+      result.nInteriorCodes,
+      1);
+
 
     Deflater deflater = new Deflater(6);
     deflater.setInput(result.initializerCodes, 0, result.nInitializerCodes);
@@ -110,11 +105,11 @@ public class LsEncoder implements IG93Encoder {
       return null;
     }
 
-    byte[] packing = new byte[47 + initN + insideN];
+    byte[] packing = new byte[header.length + initN + insideN];
 
-    System.arraycopy(preface, 0, packing, 0, 47);
-    System.arraycopy(initPack, 0, packing, 47, initN);
-    System.arraycopy(insidePack, 0, packing, 47 + initN, insideN);
+    System.arraycopy(header, 0, packing, 0, header.length);
+    System.arraycopy(initPack, 0, packing, header.length, initN);
+    System.arraycopy(insidePack, 0, packing, header.length + initN, insideN);
 
     HuffmanEncoder huffman = new HuffmanEncoder();
     BitOutputStore store = new BitOutputStore();
@@ -122,11 +117,11 @@ public class LsEncoder implements IG93Encoder {
     huffman.encode(store, result.nInteriorCodes, result.interiorCodes);
     int huffLength = store.getEncodedTextLengthInBytes();
     if (huffLength < initN + insideN) {
-      packing = new byte[47 + huffLength];
+      packing = new byte[header.length + huffLength];
       byte[] huff = store.getEncodedText();
-      preface[offset] = 0;
-      System.arraycopy(preface, 0, packing, 0, 47);
-      System.arraycopy(huff, 0, packing, 47, huff.length);
+      header[header.length - 1] = 0; // the last byte gives the generic packing
+      System.arraycopy(header, 0, packing, 0, header.length);
+      System.arraycopy(huff, 0, packing, header.length, huff.length);
     }
 
     return packing;
@@ -145,19 +140,6 @@ public class LsEncoder implements IG93Encoder {
   @Override
   public boolean implementsIntegerEncoding() {
     return true;
-  }
-
-  private int packInteger(byte[] output, int offset, int iValue) {
-    output[offset] = (byte) (iValue & 0xff);
-    output[offset + 1] = (byte) ((iValue >> 8) & 0xff);
-    output[offset + 2] = (byte) ((iValue >> 16) & 0xff);
-    output[offset + 3] = (byte) ((iValue >> 24) & 0xff);
-    return offset + 4;
-  }
-
-  private int packFloat(byte[] output, int offset, float f) {
-    int iValue = Float.floatToRawIntBits(f);
-    return packInteger(output, offset, iValue);
   }
 
 }
