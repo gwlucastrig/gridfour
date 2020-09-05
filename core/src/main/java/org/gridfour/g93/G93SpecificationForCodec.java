@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 12/2019  G. Lucas     Introduced to support application-contributed 
+ * 12/2019  G. Lucas     Introduced to support application-contributed
  *                       data-compression codecs.
  *
  * Notes:
@@ -50,21 +50,21 @@ import java.util.List;
    */
   public class G93SpecificationForCodec{
     private final String identification;
-    private final Class codec;
+    private final Class<?> codec;
     private final int index;
     private G93SpecificationForCodec(){
       identification = null;
       codec = null;
       index = 0;
     }
-    
-    
-    G93SpecificationForCodec(String identification, Class codec, int index){
+
+
+    G93SpecificationForCodec(String identification, Class<?> codec, int index) {
       this.identification = identification;
       this.codec = codec;
       this.index = index;
     }
-    
+
     /**
      * Gets the identification string for the codec.
      * @return a string of up to 16 ASCII characters, should follow
@@ -73,15 +73,15 @@ import java.util.List;
     public String getIdentification(){
       return identification;
     }
-    
+
     /**
      * Gets the codec associated with the specified identification string.
      * @return a valid Java class object.
      */
-    public Class getCodec(){
+    public Class<?> getCodec() {
       return codec;
     }
-    
+
     /**
      * Get the numeric index of the compression specification
      * @return a value in the range 0 to 255.
@@ -89,8 +89,8 @@ import java.util.List;
     public int getIndex(){
       return index;
     }
-    
-    
+
+
     public static List<G93SpecificationForCodec> parseSpecificationString(String string) throws IOException {
       List<G93SpecificationForCodec> csList = new ArrayList<>();
       String codecID = null;
@@ -103,7 +103,7 @@ import java.util.List;
           if (mode == 1 && c == '\n') {
             String path = sb.toString();
             try {
-              Class codec = Class.forName(path);
+              Class<?> codec = Class.forName(path);
               csList.add(new G93SpecificationForCodec(codecID, codec, index++));
             } catch (ClassNotFoundException ex) {
               throw new IOException(

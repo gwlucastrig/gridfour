@@ -53,11 +53,28 @@ import org.gridfour.util.CodecM32;
  * <cite>Lewis, M. and Smith, D. H. (1994). "Optimal Predictors for the
  * Data Compression of Digital Elevation
  * Models using the Method of Lagrange Multipliers" </cite>
+ * <p>
+ * The floating-point arithmetic operations in this class are all performed
+ * using the Java strictfp specification. This design choice is essential
+ * to the correct operation of this module. Because one of the goals for
+ * Gridfour is to facilitate portability to other development environments,
+ * it is essential that the math operations performed here be reliably
+ * reproducible across platforms and programming languages.
  *
  */
-public class LsOptimalPredictor12 {
+strictfp public class LsOptimalPredictor12 {
 
-  LsOptimalPredictorResult encode(
+  /**
+   * Encode the specified raster using the Smith-Lewis Optimal Predictor
+   * 12-coefficient variation
+   *
+   * @param nRows the number of rows in the raster
+   * @param nColumns the number of columns in the raster
+   * @param values the values for the raster given as an array of integers
+   * in row-major order.
+   * @return if successful, a valid results instance; otherwise, a null.
+   */
+  public LsOptimalPredictorResult encode(
     int nRows,
     int nColumns,
     int[] values) {
@@ -180,18 +197,24 @@ public class LsOptimalPredictor12 {
       u[i] = (float) ud[i];
     }
 
-    float u0 = u[0];
-    float u1 = u[1];
-    float u2 = u[2];
-    float u3 = u[3];
-    float u4 = u[4];
-    float u5 = u[5];
-    float u6 = u[6];
-    float u7 = u[7];
-    float u8 = u[8];
-    float u9 = u[9];
-    float u10 = u[10];
-    float u11 = u[11];
+    // Although the array u[] is indexed from zero, the coefficients
+    // for the predictors are numbered starting at one. Here we copy them
+    // out so that the code will match up with the indexing used in the
+    // original papers.  There may be some small performance gain to be
+    // had by not indexing the array u[] multiple times in the loop below,
+    // but that is not the main motivation for using the copy variables.
+    float u1 = u[0];
+    float u2 = u[1];
+    float u3 = u[2];
+    float u4 = u[3];
+    float u5 = u[4];
+    float u6 = u[5];
+    float u7 = u[6];
+    float u8 = u[7];
+    float u9 = u[8];
+    float u10 = u[9];
+    float u11 = u[10];
+    float u12 = u[11];
     // u[12] is the coefficient for the lagrange multplier itself,
     // which we do not use in the predictor
 
@@ -203,19 +226,20 @@ public class LsOptimalPredictor12 {
       for (int iCol = 2; iCol < nColumns - 2; iCol++) {
         int index = iRow * nColumns + iCol;
         float p
-          = u0 * values[index - 1]
-          + u1 * values[index - nColumns - 1]
-          + u2 * values[index - nColumns]
-          + u3 * values[index - nColumns + 1]
-          + u4 * values[index - nColumns + 2]
-          + u5 * values[index - 2]
-          + u6 * values[index - nColumns - 2]
-          + u7 * values[index - 2 * nColumns - 2]
-          + u8 * values[index - 2 * nColumns - 1]
-          + u9 * values[index - 2 * nColumns]
-          + u10 * values[index - 2 * nColumns + 1]
-          + u11 * values[index - 2 * nColumns + 2];
-        int delta = values[index] - (int) (p + 0.5f);
+          = u1 * values[index - 1]
+          + u2 * values[index - nColumns - 1]
+          + u3 * values[index - nColumns]
+          + u4 * values[index - nColumns + 1]
+          + u5 * values[index - nColumns + 2]
+          + u6 * values[index - 2]
+          + u7 * values[index - nColumns - 2]
+          + u8 * values[index - 2 * nColumns - 2]
+          + u9 * values[index - 2 * nColumns - 1]
+          + u10 * values[index - 2 * nColumns]
+          + u11 * values[index - 2 * nColumns + 1]
+          + u12 * values[index - 2 * nColumns + 2];
+        int estimate = StrictMath.round(p);
+        int delta = values[index] - estimate;
         interiorCodec.encode(delta);
       }
     }

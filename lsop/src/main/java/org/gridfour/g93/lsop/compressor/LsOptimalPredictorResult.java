@@ -29,19 +29,22 @@
  */
 package org.gridfour.g93.lsop.compressor;
 
+import java.util.Arrays;
+
 /**
- *
+ * Provides a simple class for holding the results from an LSOP predictor
+ * analysis operation.
  */
-class LsOptimalPredictorResult {
+public class LsOptimalPredictorResult {
 
-  int seed;
-  float[] coefficients;
-  int nInitializerCodes;
-  byte[] initializerCodes;
-  int nInteriorCodes;
-  byte[] interiorCodes;
+  final int seed;
+  final float[] coefficients;
+  final int nInitializerCodes;
+  final byte[] initializerCodes;
+  final int nInteriorCodes;
+  final byte[] interiorCodes;
 
-  LsOptimalPredictorResult(
+  public LsOptimalPredictorResult(
     int seed,
     float[] coefficients,
     int nInitializerCodes,
@@ -55,5 +58,24 @@ class LsOptimalPredictorResult {
     this.initializerCodes = initializerCodes;
     this.nInteriorCodes = nInteriorCodes;
     this.interiorCodes = interiorCodes;
+  }
+
+  /**
+   * Get an array of the M32 codes computed by the encoder.
+   *
+   * @return a valid array of bytes giving Gridfour M32 codes.
+   */
+  public byte[] getInteriorCodes() {
+    return Arrays.copyOf(interiorCodes, interiorCodes.length);
+  }
+
+  /**
+   * Gets the number of unique symbols that comprise the interior
+   * portion of the encoded data.
+   *
+   * @return a positive value greater than zero.
+   */
+  public int getInteriorCodeCount() {
+    return nInteriorCodes;
   }
 }
