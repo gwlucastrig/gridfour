@@ -30,11 +30,10 @@
 package org.gridfour.g93.lsop.compressor;
 
 import org.gridfour.g93.G93FileSpecification;
-import org.gridfour.g93.lsop.decompressor.LsDecoder08;
 import org.gridfour.g93.lsop.decompressor.LsDecoder12;
 
 /**
- * Provides convenience methods for adding the Ls8 encoder and decoder
+ * Provides convenience methods for adding the LSOP encoder and decoder
  * to a G93 File Specification.
  */
 public class LsCodecUtility {
