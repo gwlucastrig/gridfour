@@ -4,7 +4,7 @@ Tools for raster data including scientific and geophysical applications.
 ## Project Links
 [The Gridfour Code Repository on Github](https://github.com/gwlucastrig/gridfour) -- Our main project space and code repository
 
-[The Gridfour Application Notes](notes_index.html) -- A collection of articles describing the algorithms used in Gridfour,
+[The Gridfour User Notes](notes_index.html) -- A collection of articles describing the algorithms used in Gridfour,
 the results of performance tests, and helpful how-to articles.
 
 ## Background
