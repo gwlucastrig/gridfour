@@ -203,8 +203,10 @@ The Gridfour implementation uses the 12 coefficient variation.
 The current implementation policy for the Gridfour project is to ensure that the _core_ Gridfour module (GridfourCore.jar)
 has no external dependencies beyond the standard Java API. Determining coefficients for a 12-coefficient Optimal Predictor
 requires solving a system of 13 linear equations.  The linear algebra and matrix operations required to find
-such a solution are not supported by the standard Java API.  Thus the LSOP algorithm for _data compression_
-was implemented in a separate module named "lsop" (GridfourLsop.jar).
+such a solution are not supported by the standard Java API. To perform these operations, the LSOP implementation
+depends on the API provided by the Apache Commons Math library.  To prevent the Gridfour core module from depending on
+this external library, the Java classes related to Smith and Lewis' Optimal Predictor algorithm are implemented in
+a separate module named "lsop" (GridfourLsop.jar).
 
 Fortunately, the logic required to decompress LSOP data does not require solving linear systems and, thus, does
 not require external dependencies. Therefore, the _data decompression_ logic for the LSOP algorithm
