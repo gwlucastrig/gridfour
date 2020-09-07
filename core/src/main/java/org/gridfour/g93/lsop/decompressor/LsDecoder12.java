@@ -189,24 +189,76 @@ strictfp public class LsDecoder12 implements IG93Decoder {
     float u12 = u[11];
 
     CodecM32 m32 = new CodecM32(packing, 0, packing.length);
+
+    // in the loop below, we wish to economize on processing by copying
+    // the neighbor values into local variables.  In the inner (column)
+    // loop, as each raster cell is processed, the local copies of the z values
+    // (z1, z2, etc.) are shifted to the left to populate the neighbor
+    // values for the next cell in the loop.
+    // The reason we do this is two-fold. First, due to arry bounds checking,
+    // accessing an array element in Java is more expensive than reading
+    // a local variable. Second, promoting an integer to a float also
+    // carries a small overhead. The shifting strategy below helps
+    // save that processing.  In testing, the extra coding for local variables
+    // resulted in about a 10 percent reduction in processing time.
+    //
+    //   For a given grid cell of interest P, the layout for neighbors is
+    //                              iCol
+    //        iRow      z6      z1    P     --    --
+    //        iRow-1    z7      z2    z3    z4    z5
+    //        iRow-2    z8      z9    z10   z11   z12
+    //
+    //  For example, as we increment iCol, the z1 value from the first iteration
+    //  becomes the z6 value for the second, the z2 value from the first becomes
+    //  the z7 value for the second, etc.
     for (int iRow = 2; iRow < nRows; iRow++) {
+      int index = iRow * nColumns + 2;
+      float z1 = values[index - 1];
+      float z2 = values[index - nColumns - 1];
+      float z3 = values[index - nColumns];
+      float z4 = values[index - nColumns + 1];
+      float z5; // = values[index - nColumns + 2];  computed below
+      float z6 = values[index - 2];
+      float z7 = values[index - nColumns - 2];
+      float z8 = values[index - 2 * nColumns - 2];
+      float z9 = values[index - 2 * nColumns - 1];
+      float z10 = values[index - 2 * nColumns];
+      float z11 = values[index - 2 * nColumns + 1];
+      float z12; // values[index - 2 * nColumns + 2];  computed below
       for (int iCol = 2; iCol < nColumns - 2; iCol++) {
-        int index = iRow * nColumns + iCol;
+        index = iRow * nColumns + iCol;
+        z5 = values[index - nColumns + 2];
+        z12 = values[index - 2 * nColumns + 2];
         float p
-          = u1 * values[index - 1]
-          + u2 * values[index - nColumns - 1]
-          + u3 * values[index - nColumns]
-          + u4 * values[index - nColumns + 1]
-          + u5 * values[index - nColumns + 2]
-          + u6 * values[index - 2]
-          + u7 * values[index - nColumns - 2]
-          + u8 * values[index - 2 * nColumns - 2]
-          + u9 * values[index - 2 * nColumns - 1]
-          + u10 * values[index - 2 * nColumns]
-          + u11 * values[index - 2 * nColumns + 1]
-          + u12 * values[index - 2 * nColumns + 2];
+          = u1 * z1
+          + u2 * z2
+          + u3 * z3
+          + u4 * z4
+          + u5 * z5
+          + u6 * z6
+          + u7 * z7
+          + u8 * z8
+          + u9 * z9
+          + u10 * z10
+          + u11 * z11
+          + u12 * z12;
         int estimate = StrictMath.round(p);
         values[index] = estimate + m32.decode();
+
+        // perform the shifting operation for all variables so that
+        // only z5 and z12 will have to be read from the values array.
+        z6 = z1;
+        z1 = values[index];
+
+        z7 = z2;
+        z2 = z3;
+        z3 = z4;
+        z4 = z5;
+
+        z8 = z9;
+        z9 = z10;
+        z10 = z11;
+        z11 = z12;
       }
     }
   }
