@@ -321,14 +321,16 @@ strictfp public class LsDecoder12 implements IG93Decoder {
       }
     }
 
+    // number of symbols for interior, first and last two columns,
+    // bottom 2 rows, deducting for column overlap
     int k = format * 3;
     CodecStats stats = codecStats[k];
-    int nSymbols = 2 * (nColumns + nRows) - 4;
-    stats.addToCounts((int) nBytesForInitializers, nSymbols, 0);
+    int nSymbolsForInitializers = 4 * nColumns + 2 * (nRows - 4);
+    stats.addToCounts((int) nBytesForInitializers, nSymbolsForInitializers, 0);
     stats.addCountsForM32(nInitializerCodes, initializerCodes);
 
     stats = codecStats[k + 1];
-    nSymbols = (nRows - 2) * (nColumns - 2);
+    int nSymbols = nRows * nColumns - nSymbolsForInitializers;
     stats.addToCounts((int) nBytesForInterior, nSymbols, 0);
     stats.addCountsForM32(nInteriorCodes, interiorCodes);
 
@@ -385,8 +387,10 @@ strictfp public class LsDecoder12 implements IG93Decoder {
           timesUsed = String.format("%8d (%4.1f %%)", tileCount, percentTiles);
         }
         ps.format("   %-20.20s %s      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f%n",
-          label, timesUsed,
-          bitsPerSymbol, avgBitsInText,
+          label,
+          timesUsed,
+          bitsPerSymbol,
+          avgBitsInText,
           avgMCodeLength,
           avgUniqueSymbols,
           entropy);

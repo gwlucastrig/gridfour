@@ -64,6 +64,12 @@ import org.gridfour.util.CodecM32;
  */
 strictfp public class LsOptimalPredictor12 {
 
+  double errorSum;
+  double errorSquaredSum;
+  double errorAbsSum;
+  long errorCount;
+  long deltaZeroCount;
+
   /**
    * Encode the specified raster using the Smith-Lewis Optimal Predictor
    * 12-coefficient variation
@@ -241,6 +247,14 @@ strictfp public class LsOptimalPredictor12 {
         int estimate = StrictMath.round(p);
         int delta = values[index] - estimate;
         interiorCodec.encode(delta);
+        double err = values[index] - p;
+        errorSum += err;
+        errorSquaredSum += err * err;
+        errorAbsSum += Math.abs(err);
+        errorCount++;
+        if (delta == 0) {
+          deltaZeroCount++;
+        }
       }
     }
 
@@ -354,5 +368,52 @@ strictfp public class LsOptimalPredictor12 {
 
     return mU.getColumn(0);
 
+  }
+
+  /**
+   * Gets the mean error for the predictor. The error is defined as the
+   * the value minus the predictor computed using single-precision
+   * floating-point
+   * values (4-byte floats)).
+   *
+   * @return a valid floating point value
+   */
+  public double getMeanError() {
+    if (errorCount == 0) {
+      return 0;
+    }
+    return errorSum / errorCount;
+  }
+
+  /**
+   * Gets the root mean squared error (RMSE) for the predictor.
+   *
+   * @return a valid floating point value
+   */
+  public double getRootMeanSquaredError() {
+    if (errorCount == 0) {
+      return 0;
+    }
+    return Math.sqrt(errorSquaredSum / errorCount);
+  }
+
+  /**
+   * Gets the percent of the integer coded residuals that have a
+   * zero value.
+   *
+   * @return a value in the range zero to 100.
+   */
+  public double getPercentZeroIntegerResiduals() {
+    if (errorCount == 0) {
+      return 0;
+    }
+    return 100.0 * (double) deltaZeroCount / (double) errorCount;
+  }
+
+  public double getMeanAbsError() {
+    if (errorCount == 0) {
+      return 0;
+    }
+    return Math.sqrt(errorAbsSum / errorCount);
   }
 }
