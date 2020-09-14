@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -159,7 +159,7 @@ class RasterTileInt extends RasterTile {
     if (Float.isNaN(value)) {
       values[index] = NULL_DATA_CODE;
     } else {
-      values[index] = (int) Math.floor((value - valueOffset) * valueScale + 0.5);
+      values[index] = (int) Math.floor((value - valueOffset) * valueScale + 0.5f);
     }
     writingRequired = true;
   }

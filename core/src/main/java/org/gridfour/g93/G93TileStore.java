@@ -294,10 +294,19 @@ class G93TileStore {
     int payloadSize = standardTileSizeInBytes;
     int sizeToStore = multipleOf8(RECORD_HEADER_SIZE + payloadSize);
     long posToStore;
+
     nTileWrites++;
 
     long initialFilePos = getTilePosition(tileIndex);
     assert initialFilePos >= 0 : "Invalid file position";
+
+    if (!tile.hasValidData()) {
+      if (initialFilePos > 0) {
+        fileSpaceDealloc(initialFilePos);
+        setTilePosition(tileIndex, 0);
+      }
+      return;
+    }
 
     if (spec.isDataCompressionEnabled()) {
       // whether the compression succeeds or not, it is likely that the
@@ -312,6 +321,7 @@ class G93TileStore {
         setTilePosition(tileIndex, 0);
       }
       byte[] packing = tile.getCompressedPacking(codecMaster);
+
       if (packing != null) {
         // The compression was successful.  Usually, it will be much smaller
         // than the native form of the data. But, if the data is noisy,
@@ -642,6 +652,10 @@ class G93TileStore {
       return;
     }
 
+    int nCompressedTiles = 0;
+    int nNonCompressedTiles = 0;
+    long nonCompressedBytes = 0;
+
     for (int tileIndex = 0; tileIndex < tilePositions.length; tileIndex++) {
 
       long filePos = getTilePosition(tileIndex);
@@ -660,6 +674,7 @@ class G93TileStore {
 
       if (compressionFlag != 0) {
         // it's compressed
+        nCompressedTiles++;
         int paddedPayloadSize = recordSize - RECORD_HEADER_SIZE;
         byte[] packing = new byte[paddedPayloadSize];
         for (int iRank = 0; iRank < spec.dimension; iRank++) {
@@ -672,9 +687,24 @@ class G93TileStore {
           braf.readFully(packing, 0, n);
           codecMaster.analyze(spec.nRowsInTile, spec.nColsInTile, packing);
         }
+      } else {
+        nNonCompressedTiles++;
+        nonCompressedBytes += recordSize;
       }
     }
     codecMaster.reportAndClearAnalysisData(ps, spec.nRowsOfTiles * spec.nColsOfTiles);
+    if (nCompressedTiles > 0 && nNonCompressedTiles > 0) {
+      int n = nCompressedTiles + nNonCompressedTiles;
+      double percentNonCompressed
+        = 100.0 * (double) nNonCompressedTiles / (double) n;
+      ps.format("Non Compressed%n");
+      ps.format("                           Times Used        bits/sym    Bytes Stored%n");
+
+      ps.format("                        %8d (%4.1f %%)      %4.1f   %d bytes, %4.2f MB%n",
+        nNonCompressedTiles, percentNonCompressed, 32.0,
+        nonCompressedBytes, nonCompressedBytes / (1024.0 * 1024.0));
+
+    }
   }
 
     /**
