@@ -1,6 +1,6 @@
 /*
   The specifications below are adapted from 960 Grid System ~ Text CSS.
-  More information and a nicely designed website is available at http://960.gs/
+  More information and a truly beautiful website is available at http://960.gs/
 
   Licensed under GPL and MIT.
 */
@@ -9,12 +9,21 @@
 ----------------------------------------------------------------------------------------------------*/
 
 body {
-    font: 13px/1.5 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+    font: 16px/1.25 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
 }
 
 pre,
 code {
     font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+
+p.title {
+	font: 30px/1.25 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+	font-weight: bold;
+	color: #4F81BD;
+	margin-top: 60px;
+	margin-left: 30px;
+	margin-bottom: 60px;
 }
 
 hr {
@@ -69,12 +78,6 @@ li {
 p,
 dl,
 hr,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
 ol,
 ul,
 pre,
@@ -82,7 +85,18 @@ table,
 address,
 fieldset,
 figure {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin-top: 40px;
+	margin-bottom: 1px;
+	line-height: 0.5;
 }
 
 li.spaciousList {
