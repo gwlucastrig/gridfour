@@ -16,6 +16,11 @@
                     <li> <a href="https://gwlucastrig.github.io/gridfour/">Home</a> </li>
                     <li>|</li>
                     <li><a href="https://github.com/gwlucastrig/gridfour">Code (Github)</a></li>
+                    <li>|</li>
+                    <li><a href="https://gwlucastrig.github.io/gridfour/notes_index.html">User Notes</a></li>
+                    <li>|</li>
+                    <li><a href="ElevationGeoTiff2.html">Elevation GeoTIFFs: Part 2</a></li>
+                    <li>|</li>
                 </ul>
                 <p>&nbsp;</p>
             </div>
@@ -73,11 +78,13 @@
                     second of arc (about 10.3 meters between rows, 8.5 meters between columns).
                     That spacing equates to 10800-by-10800 cells for a 1-degree tile, but the USGS adds
                     6 additional rows and columns of padding to each side of the tile so that it
-                    product overlaps somewhat with adjacent tiles.</p>
+                    product overlaps somewhat with adjacent tiles. The motivation for
+                    this overlap is discussed below (see <a href="#optimized_how">What makes it an optimized GeoTIFF?</a>).
+                </p>
 
 
                 <figure>
-                    <img width=780 height=1006 id="Picture 1" src="ElevationGeoTiff1_files/image001.jpg">
+                    <img width=780 height=1006   src="ElevationGeoTiff1_files/image001.jpg">
                     <figcaption>Figure 1 &ndash; Monochrome shaded relief from Cloud Optimized GeoTIFF (data source USGS_13_n24w117.tif).</figcaption>
                 </figure>
 
@@ -91,7 +98,7 @@
                 </p>
 
                 <figure>
-                    <img width=820 height=650 id="Close up" src ="ElevationGeoTiff1_files/USGS_13_n34w117_Section_steep25_amb_03.jpg">
+                    <img width=820 height=650   src ="ElevationGeoTiff1_files/USGS_13_n34w117_Section_steep25_amb_03.jpg">
                     <figcaption>Figure 2 &ndash; Close up view at full resolution, color and surface water added (data source USGS_13_n24w117.tif).</figcaption>
                 </figure>
 
@@ -168,7 +175,7 @@
 
 
                 <figure>
-                    <img border=0 width=780 height=496 id="Elevation and Roads" src="ElevationGeoTiff1_files/ElevationAndRoads.jpg">
+                    <img border=0 width=780 height=496   src="ElevationGeoTiff1_files/ElevationAndRoads.jpg">
                     <figcaption>Figure 3 &ndash; Shaded-relief registered with TIGER/Line roads data (data source: USGS, US Census Bureau).</figcaption>
                 </figure>
 
@@ -526,7 +533,7 @@ ModelPixelScaleTag
 
 
                 <figure>
-                    <img border=0 width=732 height=434 id="Shading with exageration factor" src="ElevationGeoTiff1_files/image012.jpg">
+                    <img border=0 width=732 height=434   src="ElevationGeoTiff1_files/image012.jpg">
                     <figcaption>Figure 4 &ndash; Factor-of-five exaggeration for slope (left panel) and no exaggeration (right panel).</figcaption>
                 </figure>
 
@@ -615,6 +622,36 @@ ModelPixelScaleTag
                 <p>L is a value in the range 0 to 1.  When building the
                     shaded-relief rendering, we simply multiply the RGB values for each pixel by
                     its corresponding illumination coefficient.</p>
+
+                <a id="optimized_how"></a>
+                <h1>What makes it an <i>Optimized</i> GeoTIFF?</h1>
+                <p>There are two aspects of the USGS's elevation GeoTIFF products
+                    that are optimized for use in cloud-based applications. First, the
+                    files are organized in sub-sections (internal tiles) of 256-by-256
+                    raster cells, each of which can be accessed independently as needed.
+                    This feature provides the ability for applications to extract only
+                    the subset of the image that it needs for rendering. It is particularly
+                    useful when zooming-in to a detail (such as the view of the Salton Sea
+                    shown in Figure 2 above). It is also useful when constructing a picture
+                    for an area that overlaps more than a single one-degree file
+                    and must be stitched together using pieces from multiple files.</p>
+
+                <p>The second optimizing element is the overlap from one-degree file to the
+                    next. Earlier in this article we mentioned that even though the one third second
+                    of arc resolution of the Cloud-Optimized GeoTIFF products would result in
+                    a 10800-by-10800 raster grid for a one-degree tile, the actual resolution
+                    was 10812-by-10812.  Each file in the Cloud-Optimized GeoTIFF offerings
+                    provides 6 rows and columns of overlap with each of its neighbors.
+                    This overlap permits an application to create images from two separate,
+                    adjacent one-degree areas so that the transition between images appears
+                    seamless when they are placed side-by-side. The slope computations that
+                    were described above combine a four-by-four set of neighboring elevation data cells
+                    in order to compute slope in the easterly and northerly directions.
+                    By providing data with a small overlap, the Cloud-Optimized GeoTIFF
+                    products avoid any edge-effects or discontinuities at the edge
+                    of a one-degree square. For shaded-relief purposes, we are concerned
+                    with first-derivative continuity. Some applications require second-derivative
+                    continuity and may benefit from having 6 full rows of overlap.</p>
 
                 <h1>Conclusion</h1>
 
