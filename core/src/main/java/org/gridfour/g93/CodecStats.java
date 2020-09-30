@@ -110,7 +110,7 @@ public class CodecStats {
   private static final double log2 = Math.log(2.0);
 
   /**
-   * Get the entropy for the data. In information theory, the term 
+   * Get the entropy for the data. In information theory, the term
    * "entropy" is essentially an indicator of the number of bits actually
    * needed to encode data.
    * @return a positive value
@@ -162,7 +162,7 @@ public class CodecStats {
   public long getTileCount() {
     return nTilesCounted;
   }
-  
+
   /**
    * Gets the average length of the M32 code length across tiles.
    *
@@ -180,8 +180,10 @@ public class CodecStats {
   }
 
     /**
-   * Gets the average length of the M32 code length across tiles.
-   *
+     * Gets the average number of unique M32 codes observed in
+     * the compressed tile. The maximum number of unique M32 codes
+     * is 256 (which would occur if all possible M32 codes were used).
+     *
    * @return a positive floating point value, potentially zero.
    */
   public double getAverageObservedMCodes() {
@@ -190,8 +192,8 @@ public class CodecStats {
     }
     return 0;
   }
-  
-  
+
+
   /**
    * Get the average overhead per tile. Not all compressors tabulate
    * this value.
