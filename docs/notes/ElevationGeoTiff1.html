@@ -63,8 +63,9 @@
                     introduce a demonstration application called DemoCOG. The example application uses
                     the Apache Commons Imaging API and Cloud Optimized GeoTIFF elevation data to
                     create shaded-relief imagery of the Earth’s terrain. The source code for
-                    DemoCOG is available for inspection and use at the Gridfour open-source
-                    software project.</p>
+                    DemoCOG is available for inspection and use at the
+                    <a "href="https://gwlucastrig.github.io/gridfour/">Gridfour open-source software project</a>.
+                </p>
 
                 <p>Let’s take a look at what the USGS products have to offer. 
                     The picture below is a shaded-relief rendering of elevation data for part of
@@ -85,21 +86,21 @@
 
                 <figure>
                     <img width=780 height=1006   src="ElevationGeoTiff1_files/image001.jpg">
-                    <figcaption>Figure 1 &ndash; Monochrome shaded relief from Cloud Optimized GeoTIFF (data source USGS_13_n24w117.tif).</figcaption>
+                    <figcaption>Figure 1 &ndash; Monochrome shaded-relief rendering derived from Cloud Optimized GeoTIFF (data source: USGS_13_n24w117.tif).</figcaption>
                 </figure>
 
 
                 <p>The detail in the San Jacinto Mountains image is especially
                     striking when you consider that it is only a reduced-scale version of the
                     original. In order to fit in on this page, we needed to shrink it down by a
-                    factor of 12.  To give a better sense, the figure below show a subset of the image
-                    rendered at fill resolution. The color techniques used to create this image are
+                    factor of 12. To give a better sense, the figure below show a subset of the image
+                    rendered at its full resolution. The color techniques used to create this image are
                     discussed in Part 2 of this article.
                 </p>
 
                 <figure>
                     <img width=820 height=650   src ="ElevationGeoTiff1_files/USGS_13_n34w117_Section_steep25_amb_03.jpg">
-                    <figcaption>Figure 2 &ndash; Close up view at full resolution, color and surface water added (data source USGS_13_n24w117.tif).</figcaption>
+                    <figcaption>Figure 2 &ndash; Close up view at full resolution, color and surface water added (data source: USGS_13_n24w117.tif).</figcaption>
                 </figure>
 
 
@@ -167,7 +168,7 @@
                     to a location on the face of the earth. The metadata attached to a GeoTIFF is
                     what makes this mapping possible.  It also allows us to correlate GeoTIFF
                     products with data from other sources. For example, the picture below shows a
-                    section of the shaded relief imagery from the USGS GeoTIFF overlaid with a set
+                    section of the shaded-relief imagery from the USGS GeoTIFF overlaid with a set
                     of road data from a completely independent data source, the TIGER/Line roads
                     Shapefile (U.S. Census Bureau, 2019). The fact that the imagery from the
                     GeoTIFF fits so neatly with the line data from the Shapefile is due in large
@@ -176,7 +177,7 @@
 
                 <figure>
                     <img border=0 width=780 height=496   src="ElevationGeoTiff1_files/ElevationAndRoads.jpg">
-                    <figcaption>Figure 3 &ndash; Shaded-relief registered with TIGER/Line roads data (data source: USGS, US Census Bureau).</figcaption>
+                    <figcaption>Figure 3 &ndash; Shaded-relief registered with TIGER/Line roads data (data source: USGS, U.S. Census Bureau).</figcaption>
                 </figure>
 
 
@@ -187,8 +188,8 @@
                     numeric “tags” that allow software applications to access them. Some tags, such
                     as 256 (Image Width) and 257 (Image Height), describe basic parameters from
                     image-processing.  These tags, which are defined in the TIFF specification
-                    (Adobe 1992), also include elements such color model, data representation, and
-                    photometric parameters that could can be found in many other graphics formats.
+                    (Adobe 1992), also include elements such color model and data format
+                    that could can be found in many other graphics formats.
                     But the real advantage of the TIFF specification is that it permits applications
                     to add their own custom tags to TIFF files. The GeoTIFF specification (OGC,
                     2019) identifies the following custom elements that are used in Cloud Optimized
@@ -291,9 +292,9 @@
                             none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
                             padding:0in 5.4pt 0in 5.4pt'>
                             <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>N sets of 6 elements (I, j, k, x, y, z), associating raster or pixel
+                               normal'>N sets of 6 elements (i, j, k, x, y, z), associating raster or pixel
                                 coordinates (i, j, j) to Cartesian “model” coordinates (x, y, z).  In the
-                                GeoTIFF raster space, the I coordinate refers to column and the j coordinate
+                                GeoTIFF raster space, the i coordinate refers to column and the j coordinate
                                 refers to row. For rotated or distorted images, multiple tie points may be
                                 required. Only one tiepoint is used for Cloud Optimized GeoTIFF products.</p>
                         </td>
@@ -335,12 +336,12 @@
    key     ref     len   value/pos  Identifier -- description
        1       1       0       8    GeoTIFF version indicator
     1024       0       1       2    GTModelTypeGeoKey  -- Geographic Coordinate System
-    1025       0       1       1    GtRasterTypeGeoKey -- Pixel Is Area
+    1025       0       1       1    GtRasterTypeGeoKey -- Pixel is area
     2048       0       1    4269    GeographicTypeGeoKey -- Datum is NAD83
-    2049   34737       6       0    GeogCitationKey -- authorship notes
-    2054       0       1    9102    GeogAngularUnitsGeoKey -- Angular Degrees
-    2057   34736       1       1    GeogSemiMajorAxisKey – equatorial radius of Earth
-    2059   34736       1       0    GeogInvFlatteningGeoKey –- flattening of spherioid
+    2049   34737       6       0    GeogCitationKey -- Authorship notes
+    2054       0       1    9102    GeogAngularUnitsGeoKey -- Angular degrees
+    2057   34736       1       1    GeogSemiMajorAxisKey –- Equatorial radius of Earth
+    2059   34736       1       0    GeogInvFlatteningGeoKey –- Flattening of spherioid
     2062   34736       3       2    TOWGS84GeoKey  -- “To WGS84” transformation data
                 </pre>
 
@@ -356,7 +357,7 @@
 
                 <p>In the GeoTIFF specification, coordinates defining the
                     column and row of image pixels or raster cells are referred to as “Raster
-                    Coordinates”.  The corresponding real-valued coordinates related to geographic
+                    Coordinates”. The corresponding real-valued coordinates related to geographic
                     locations are referred to as “Model Coordinates”.  The ModelTiepointTag and
                     ModelPixelScaleTag provide the parameters that permit us to transform from one
                     system to the other.</p>
@@ -388,7 +389,7 @@ ModelPixelScaleTag
                     ModelPixelTiepointTag are the i, j, and k coordinates for the raster coordinate
                     system and specify, respectively, the column, row, and an unused third-axis
                     coordinate for the tiepoint.  The column is specified by the variable i, not j
-                    as it is in many other graphics applications. Although the coordinates (I, j,
+                    as it is in many other graphics applications. Although the coordinates (i, j,
                     k) extracted here are all zero, those values are not necessarily always the
                     case. The second three parameters in the ModelPixelTiepointTag are the model
                     coordinates x, y, and z. The z coordinate is not used and always set to zero.
@@ -404,7 +405,7 @@ ModelPixelScaleTag
                     value that shows up in the ModelPixelScale specification.    A one degree grid
                     would include 10800 rows and columns but, again, the Cloud Optimized GeoTIFF
                     rasters cover slightly more than one degree and have an additional 6 rows or
-                    columns of overlap om each side.</p>
+                    columns of overlap on each side.</p>
 
                 <p>Because the rows in the USGS GeoTIFF run north to south, the
                     Y coordinates in the model coordinate system decrease as the raster (row)
@@ -474,7 +475,7 @@ ModelPixelScaleTag
                     and offset adjustment to a feature’s coordinates.  In the case of the Cloud
                     Optimized GeoTIFFs, the transform provides a convenient way for applications to
                     map geographic coordinates (longitude and latitude given by the variables x and
-                    y) to raster coordinates (I and j), or vice versa.</p>
+                    y) to raster coordinates (i and j), or vice versa.</p>
 
                 <h3>Trimming the image’s waistline</h3>
 
@@ -485,7 +486,7 @@ ModelPixelScaleTag
                     because the distance between lines-of-longitude changes as a function of
                     latitude. At the equator, longitude lines are 60 nautical miles apart.  At the
                     poles, they converge to a single point.  If we wish the shape of features
-                    depicted in the image to be reasonably faithfully to their actual shape on the
+                    depicted in the image to be reasonably faithful to their actual shape on the
                     surface of the Earth, we need to account for this narrowing tendency. Thus,
                     when building a shaded-relief image, the overall shape of the image is narrowed
                     to reflect the convergence of the meridians. Although the horizontal spacing
@@ -640,7 +641,7 @@ ModelPixelScaleTag
                     next. Earlier in this article we mentioned that even though the one third second
                     of arc resolution of the Cloud-Optimized GeoTIFF products would result in
                     a 10800-by-10800 raster grid for a one-degree tile, the actual resolution
-                    was 10812-by-10812.  Each file in the Cloud-Optimized GeoTIFF offerings
+                    was 10812-by-10812. Each file in the Cloud-Optimized GeoTIFF offerings
                     provides 6 rows and columns of overlap with each of its neighbors.
                     This overlap permits an application to create images from two separate,
                     adjacent one-degree areas so that the transition between images appears

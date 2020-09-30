@@ -39,7 +39,7 @@
                 <h1>Introduction</h1>
 
                 <p>Part 1 of this series introduced the U.S. Geological
-                    Survey’s Cloud Optimized GeoTIFF (COG) data product and showed how its
+                    Survey’s Cloud-Optimized GeoTIFF (COG) data product and showed how its
                     elevation data could be used to produce shaded-relief imagery. It also
                     introduced the Apache Commons Imaging API, a software library that supports
                     data access to GeoTIFF data products. So far, the techniques that I discussed
@@ -59,7 +59,10 @@
                     includes the San Jacinto Mountains, the Coachella Valley, and part of the
                     Salton Sea. As in the previous article, all images were produced using the
                     Commons Imaging API and the DemoCOG application. Source code for DemoCOG is
-                    available at the Gridfour Software Project.</p>
+                    available at the
+                    <a href="https://gwlucastrig.github.io/gridfour/">Gridfour software project</a>.
+                </p>
+
 
                 <p> </p>
 
@@ -99,7 +102,7 @@
 
                 <figure>
                     <img width=780 height=542  src="ElevationGeoTiff2_files/image002.jpg">
-                    <figcaption>Figure 2 &ndash; Result of simple elevation palette compared to reference image (data source USGS, Google).</figcaption>
+                    <figcaption>Figure 2 &ndash; Result of simple elevation palette compared to reference image (data source: USGS, Google).</figcaption>
                 </figure>
 
 
@@ -118,9 +121,13 @@
                 <p>Of course, it is possible to adjust the palette so that the
                     water colors start at a lower elevation. For the panel below on the right, I
                     tweaked the intervals so that the blue colors started at 70.1 meters below MSL.
-                    That value matches the surface elevation of the Salton Sea, a well-known
-                    saltwater lake. And the general outline of the blue area does roughly agree
-                    with its shoreline.  As the panel shows, a custom palette can help improve the
+                    That value produces a blue area that matches the shoreline of the Salton Sea, a well-known
+                    saltwater lake. It can be interpreted as the elevation of the surface of that body of water.
+                    But the elevation of 70.1 meters below MSL does not agree with any published value for the
+                    surface of the Salton Sea that I was able to find. It was obtained through several
+                    rounds of trial and error.
+
+                <p>So, as the panel shows, a custom palette can help improve the
                     accuracy of a color-coded elevation rendering. But, while creating a palette to
                     fit a particular sample area is feasible, it is tedious at best and still prone
                     to error. It also fails to capture any lakes or reservoirs that may occur at
@@ -137,7 +144,8 @@
 
                 <h2>Adding Land-Cover from a GeoTIFF</h2>
 
-                <p>The first thing we’re going to take care of is the depiction
+                <p>Let's see what we can do to improve the depiction of the San Jacinto data sample.
+                    The first thing we’re going to take care of is the depiction
                     of land-cover. To that end, we turn to Tom Patterson’s Natural Earth Map Data
                     collections.  Mr. Patterson’s work is extraordinary both for its technical merit
                     and for his generosity in offering it free-of-charge and in the public domain.
@@ -192,7 +200,7 @@
                     sources. The ESPG system is well known and its specifications are readily
                     available on the Internet. ESPG map projection 5070 is an Albers Equal Area
                     Conic map projection optimized for depicting features in the Contiguous United
-                    States (CONUS) area.</p>
+                    States (CONUS).</p>
 
                 <p>The fact that the substantial majority of GIS analysis is
                     conducted using a projected coordinate system is not due to a love of
@@ -209,7 +217,7 @@
 
                 <p>In the previous article, we discussed how the GeoTIFF
                     metadata allowed us to transform the raster coordinates from the source data to
-                    geographic (latitude longitude) coordinates that permitted the data to be registered
+                    geographic (latitude, longitude) coordinates and permitted the data to be registered
                     with real-world locations. That coordinate conversion was accomplished using a
                     simple scale and offset transformation (an affine transformation). To register
                     the elevation with the land-cover GeoTIFF, we need to perform two more
@@ -228,15 +236,15 @@
 
 
                 <p>For the DemoCOG implementation, I elected to write my own
-                    partial implementation of the Albers Equal Area Conic map projection used by
-                    the Natural Earth GeoTIFF.&nbsp; While general purpose map-projection APIs are available
+                    implementation of the Albers Equal Area Conic map projection used by
+                    the Natural Earth GeoTIFF. While general purpose map-projection APIs are available
                     on the web, I didn’t want to add yet another software dependency to the demonstration
                     application. So I wrote a single class to perform the forward transform
-                    (geographic to projected) &nbsp;that the demonstration application required.
+                    (geographic to projected) that the demonstration application required.
                     Fortunately, the Albers is not very complicated as map projections go.  Formulas
                     for the transformation are given in John P. Snyder’s classic book “Map
                     projections – a working manual” (Snyder, 1987). Although coding Mr. Snyder’s
-                    formulas required care, it was not difficult. &nbsp;</p>
+                    formulas required care, it was not difficult.</p>
 
                 <p>The full size of the Natural Earth Land-Cover GeoTIFF for
                     the western half of the United States is quite large, 25403 by 31390 pixels.
@@ -255,25 +263,27 @@
 
                     <li>Load the sub image.</li>
 
-                    <li>For each raster cell in the shaded-relief image:</li>
+                    <li>For each raster cell in the shaded-relief image:
+                        <ol>
+                            <li>Find the geographic coordinates of the raster cell</li>
 
-                    <li>Find the geographic coordinates of the raster cell</li>
+                            <li>Map the geographic coordinates to pixel coordinates in the land-cover
+                                sub image (because the elevation data set has 10-meter spacing while the
+                                land-cover data set has 100-meter spacing, this result will be a fractional
+                                value, often falling between pixels).</li>
 
-                    <li>Map the geographic coordinates to pixel coordinates in the land-cover
-                        sub image (because the elevation data set has 10-meter spacing while the
-                        land-cover data set has 100-meter spacing, this result will be a fractional
-                        value, often falling between pixels).</li>
+                            <li>Interpolate the color values for the output pixel coordinates.</li>
 
-                    <li>Interpolate the color values for the output pixel coordinates.</li>
-
-                    <li>Apply the color to the shaded-relief imagery.</li>
+                            <li>Apply the color to the shaded-relief imagery.</li>
+                        </ol>
+                    </li>
                 </ol>
 
                 <p>The picture below shows the raw image extracted from the
                     Land-Cover GeoTIFF (left) and the result when the image is combined with shaded-relief
                     data created from the USGS elevation data set. One natural phenomenon that the
                     Natural Earth Land-Cover image doesn’t depict is surface water. We will discuss
-                    technique for handing that next.</p>
+                    technique for adding that information next.</p>
 
 
                 <figure>
@@ -285,11 +295,11 @@
                 <h2>Surface Water and Shapefiles</h2>
 
                 <p>You may be wondering why Mr. Patterson decided to omit
-                    surface water from his land-cover imagery.  It turns out that removing
+                    surface water from his land-cover imagery. It turns out that removing
                     surface-water features allows application to use alternate data sources that
                     can provide better results. The 100-meter pixel spacing for the Natural Earth
                     GeoTIFF is adequate for land-cover. But most surface water features included on
-                    maps are drawn at a much higher resolution than that.. Omitting surface water
+                    maps are drawn at a much higher resolution than that. Omitting surface water
                     from the Land-Cover depiction leaves developers and cartographers free to use
                     other sources. And, because surface water data in the form of Shapefile
                     (polygon) data products is easy to come by, omitting it from a land-cover
@@ -311,10 +321,10 @@
                     (Red-Green-Blue) color model. If you look through the DemoCOG code, you may be
                     surprised by the complexity of the color processing used to interpolate those
                     RGB values to populate the output image. The DemoCOG application uses an alternate
-                    color model known as CIELAB (“CIELAB color space”.  n.d.).  While the RGB color
+                    color model known as CIELAB (“CIELAB color space”, Wikipedia,  n.d.).  While the RGB color
                     model is well suited for the implementation of computer monitors and display
-                    hardward, the CIELAB model is a closer match for the human vision system. Thus
-                    the CIELAB model often produces better results when blending colors.  The
+                    hardware, the CIELAB model is a closer match for the way the human eye perceives color.
+                    Thus the CIELAB model can produce better results when blending colors.  The
                     Apache Commons Imaging API includes a set of utilities for converting between
                     the RGB color space (which is used by the source image and output display) and
                     the CIELAB model. The DemoCOG application takes advantage of these conversions
@@ -345,7 +355,7 @@
                     lakes and rivers. The blue strip on the left side of the image is the Hudson
                     River. </p>
 
-                <p>New York and Connecticut receive relatively regular rainfall
+                <p>New York and Connecticut receive reasonably regular rainfall
                     and snow. Consequently, the land-cover depiction is much greener than for the
                     area near the San Jacinto mountain range. The Northeast U.S. area shown above
                     is also much more urbanized than the San Jacinto area. The Natural Earth Land
@@ -454,16 +464,7 @@
                             http://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Elevation/13/TIFF/</a></li>
                 </ul>
 
-
-
-
-
-
-
             </div>
         </div>
     </body>
 </html>
-
-
-

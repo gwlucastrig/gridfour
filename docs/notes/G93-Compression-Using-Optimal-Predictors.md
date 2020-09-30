@@ -21,7 +21,8 @@ data compression format, the Gridfour project hopes to direct some overdue atten
 to this useful technique.
 
 The algorithm used by Smith and Lewis was published in _Computers & Geosciences_ (Smith & Lewis, 1994),
-but an earlier version of their paper (Lewis & Smith, 1993) may obtained without fee from the  [Cartography and Geographic Information Society website](https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf).  The Lewis & Smith paper provided
+but an earlier version of their paper (Lewis & Smith, 1993) may obtained without fee from the
+[Cartography and Geographic Information Society website](https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf).  The Lewis & Smith paper provided
 the basis for the implementation used for Gridfour.  One of the paper's authors, Derek Smith,
 also contributed to an "overview" paper that gives much useful background on the ideas used
 for data compression (see Kidner and Smith, 2003).
@@ -89,7 +90,8 @@ than the less dense ETOPO1 product (22.84%).
 
 # How it works
 The concept of using predictive algorithms to improve data compression was introduced
-in a previous article in this series (Lucas, 2019).  In practice, raster data often compresses
+in a previous article in this series (Lucas, 2019)[https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms].
+In practice, raster data often compresses
 poorly when processed by convention data compressors such as Huffman coding or
 the popular Deflate algorithm used in the zip format. Predictive algorithms implement
 an invertible (bijective) transformation that converts the source data from a raster grid
