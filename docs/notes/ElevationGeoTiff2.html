@@ -406,16 +406,16 @@
                 <p>Discussing shaded-relief imagery gave us an opportunity to
                     explore the underlying concepts used in GeoTIFF files. It also gave us an
                     opportunity to exercise some of these concepts through the implementation of a
-                    data access and map rendering tool called DemoCog.</p>
+                    data access and map rendering tool called DemoCOG.</p>
 
-                <p>DemoCog uses the Apache Commons Imaging software library to
+                <p>DemoCOG uses the Apache Commons Imaging software library to
                     access GeoTIFF files and obtain the three fundamental data elements necessary
                     to perform shaded-relief rendering: raster-based elevation data, geolocation
                     metadata, and georeferenced imagery (the Natural Earth land-cover information).
                      Commons Imaging also provided the color-space conversion tools that allowed
-                    DemoCog to perform optimal color-blending and interpolation operations. The
-                    source code for the DemoCog application is available from the Gridfour Software
-                    Project. Although DemoCog is implemented in the Java programming language, its
+                    DemoCOG to perform optimal color-blending and interpolation operations. The
+                    source code for the DemoCOG application is available from the Gridfour Software
+                    Project. Although DemoCOG is implemented in the Java programming language, its
                     code includes plenty of comments and is written to be accessible to readers who
                     are unfamiliar with Java.  </p>
 
@@ -463,6 +463,17 @@
                     <li>Via HTML (Amazon cloud) <a href="http://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Elevation/13/TIFF/">
                             http://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Elevation/13/TIFF/</a></li>
                 </ul>
+
+                <p>Shapefiles providing coastlines, surface-water features, political boundaries, etc.
+                    are available from the U.S. Geological Survey (USGS) <a href="https://earthexplorer.usgs.gov/">EarthExplorer</a> website.
+                    Data at a map scale of 1:1 million that was collected for the discontinued U.S. National Atlas may be downloaded using
+                    using the following procedure that is taken from Tom Patterson's Shaded Relief website:</p>
+                <p style="margin-left:.5in">Click the "Data Sets" tab then select Digital Maps/National Atlas.
+                    Then click the "Additional Criteria" tab and specify Collection/1:1,000,000-scale
+                    before clicking the "Results" button in the lower right (Patterson, 2020).</p>
+                <p>Shapefiles and land-cover GeoTIFFs providing data for the entire Earth at 1:10 million scale
+                    is available at the <a href="http://naturalearthdata.com/">Natural Earth</a> website.</p>
+
 
             </div>
         </div>
