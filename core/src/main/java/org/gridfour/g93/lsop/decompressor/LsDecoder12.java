@@ -321,25 +321,31 @@ strictfp public class LsDecoder12 implements IG93Decoder {
       }
     }
 
-    // number of symbols for interior, first and last two columns,
-    // bottom 2 rows, deducting for column overlap
+      // number of symbols for interior, first and last two columns (4*nRows),
+      // bottom 2 rows (2*nColumns), deducting for column overlap
     int k = format * 3;
     CodecStats stats = codecStats[k];
-    int nSymbolsForInitializers = 4 * nColumns + 2 * (nRows - 4);
+      int nSymbolsForInitializers = 4 * nRows + 2 * nColumns - 8;
     stats.addToCounts((int) nBytesForInitializers, nSymbolsForInitializers, 0);
     stats.addCountsForM32(nInitializerCodes, initializerCodes);
 
-    stats = codecStats[k + 1];
-    int nSymbols = nRows * nColumns - nSymbolsForInitializers;
-    stats.addToCounts((int) nBytesForInterior, nSymbols, 0);
-    stats.addCountsForM32(nInteriorCodes, interiorCodes);
+      stats = codecStats[k + 1];
+      int nSymbolsForInterior = nRows * nColumns - nSymbolsForInitializers;
+      stats.addToCounts((int) nBytesForInterior, nSymbolsForInterior, 0);
+      stats.addCountsForM32(nInteriorCodes, interiorCodes);
 
-    int nBytesTotal = packing.length - 49;
-    stats = codecStats[k + 2];
-    nSymbols = nRows * nColumns;
-    stats.addToCounts(nBytesTotal, nSymbols, 0);
-    stats.addCountsForM32(nInitializerCodes, initializerCodes);
-    stats.addCountsForM32(nInteriorCodes, interiorCodes);
+      int nBytesTotal = packing.length - headerSize;
+      stats = codecStats[k + 2];
+      int nSymbols = nRows * nColumns;
+      stats.addToCounts(nBytesTotal, nSymbols, 0);
+
+      // a temporary solution
+      byte[] temp = new byte[nInitializerCodes + nInteriorCodes];
+      System.arraycopy(initializerCodes, 0, temp, 0, nInitializerCodes);
+      System.arraycopy(interiorCodes, 0, temp, nInitializerCodes, nInteriorCodes);
+      stats.addCountsForM32(temp.length, temp);
+      //stats.addCountsForM32(nInitializerCodes, initializerCodes);
+      //stats.addCountsForM32(nInteriorCodes, interiorCodes);
   }
 
   @Override
@@ -378,7 +384,7 @@ strictfp public class LsDecoder12 implements IG93Decoder {
         double avgUniqueSymbols = stats.getAverageObservedMCodes();
         double avgMCodeLength = stats.getAverageMCodeLength();
         double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
-        double entropy = stats.getEntropy();
+          double entropy = stats.getEntropy();
         stats = codecStats[iGroup * 3 + iStats];
         String timesUsed;
         if (iStats == 0 || iStats == 1) {
