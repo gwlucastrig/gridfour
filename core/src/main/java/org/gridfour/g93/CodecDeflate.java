@@ -61,10 +61,10 @@ class CodecDeflate implements IG93Encoder, IG93Decoder {
    */
   public CodecDeflate() {
     predictiveTransform = new IPredictiveTransform[4];
-    predictiveTransform[0] = new PredictiveTransformConstantModel();
+    predictiveTransform[0] = new PredictiveTransformDifferencingModel();
     predictiveTransform[1] = new PredictiveTransformLinearModel();
     predictiveTransform[2] = new PredictiveTransformTriangleModel();
-    predictiveTransform[3] = new PredictiveTransformConstantWithNulls();
+    predictiveTransform[3] = new PredictiveTransformDifferencingWithNulls();
   }
 
   @Override
@@ -107,8 +107,8 @@ class CodecDeflate implements IG93Encoder, IG93Decoder {
     PredictiveTransformType predictiveTransform = PredictiveTransformType.valueOf(packing[1]);
     IPredictiveTransform pcc = null;
     switch (predictiveTransform) {
-      case Constant:
-        pcc = new PredictiveTransformConstantModel();
+      case Differencing:
+        pcc = new PredictiveTransformDifferencingModel();
         break;
       case Linear:
         pcc = new PredictiveTransformLinearModel();
@@ -116,8 +116,8 @@ class CodecDeflate implements IG93Encoder, IG93Decoder {
       case Triangle:
         pcc = new PredictiveTransformTriangleModel();
         break;
-      case ConstantWithNulls:
-        pcc = new PredictiveTransformConstantWithNulls();
+      case DifferencingWithNulls:
+        pcc = new PredictiveTransformDifferencingWithNulls();
         break;
       default:
         throw new IOException("Unknown PredictorCorrector type");

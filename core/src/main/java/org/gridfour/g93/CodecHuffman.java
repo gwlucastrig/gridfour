@@ -59,10 +59,10 @@ public class CodecHuffman implements IG93Encoder, IG93Decoder {
    */
   public CodecHuffman() {
     predictiveTransform = new IPredictiveTransform[4];
-    predictiveTransform[0] = new PredictiveTransformConstantModel();
+    predictiveTransform[0] = new PredictiveTransformDifferencingModel();
     predictiveTransform[1] = new PredictiveTransformLinearModel();
     predictiveTransform[2] = new PredictiveTransformTriangleModel();
-    predictiveTransform[3] = new PredictiveTransformConstantWithNulls();
+    predictiveTransform[3] = new PredictiveTransformDifferencingWithNulls();
 
   }
 
@@ -155,14 +155,14 @@ public class CodecHuffman implements IG93Encoder, IG93Decoder {
   private IPredictiveTransform decodePredictorCorrector(int code) throws IOException {
     PredictiveTransformType pcType = PredictiveTransformType.valueOf(code);
     switch (pcType) {
-      case Constant:
-        return new PredictiveTransformConstantModel();
+      case Differencing:
+        return new PredictiveTransformDifferencingModel();
       case Linear:
         return new PredictiveTransformLinearModel();
       case Triangle:
         return new PredictiveTransformTriangleModel();
-      case ConstantWithNulls:
-        return new PredictiveTransformConstantWithNulls();
+      case DifferencingWithNulls:
+        return new PredictiveTransformDifferencingWithNulls();
       default:
         throw new IOException("Unknown PredictorCorrector type");
     }
