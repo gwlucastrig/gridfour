@@ -388,6 +388,8 @@ public class DemoCOG {
         // source data.   As a bonus, the interpolation routine also
         // provides derivatives (slopes) in the direction of the x and y
         // axis.
+		ps.println("Begin rendering");
+		time0 = System.nanoTime();
         for (int iRow = 0; iRow < adjustedHeight; iRow++) {
             double yRow = iRow + 0.5;
             for (int iCol = 0; iCol < adjustedWidth; iCol++) {
@@ -429,6 +431,8 @@ public class DemoCOG {
             }
 
         }
+		time1 = System.nanoTime();
+        ps.println("Shaded relief rendering completed in " + ((time1 - time0) / 1.0e+6) + " ms");
 
         BufferedImage bImage = new BufferedImage(
           adjustedWidth,
