@@ -49,7 +49,7 @@ G93 file format divides the overall collection into subsets called "tiles".  For
 given above, the partitioning scheme was specified to use tiles 120 rows high and 240 columns wide.
 Each tile is compressed independently. When a tile is compressed, the Gridfour library uses a _brute force_
 method for compressing the data: it reduces the tile using one of the three standard predictors
-(Constant, Linear, and Triangle) and the compresses the residual values using either of
+(Differencing, Linear, and Triangle) and the compresses the residual values using either of
 the conventional data compression techniques Huffman coding or the Deflate algorithm.  The compressed
 sizes are compared and the combination that produces the best results is used to store data to
 a file.  For this test, the LSOP predictor was added to the roster, and the same approach was applied.

@@ -39,14 +39,15 @@ package org.gridfour.g93;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PredictiveTransformConstantModelTest {
+public class PredictiveTransformDifferencingWithNullsTest {
 
-  public PredictiveTransformConstantModelTest() {
+  public PredictiveTransformDifferencingWithNullsTest() {
   }
 
   /**
-   * Test of encode and decode methods, of class PredictiveTransformConstantModel.
+   * Test of encode and decode methods, of class PredictiveTransformDifferencingWithNulls.
    */
   @Test
   public void testRoundTrip() {
@@ -60,12 +61,15 @@ public class PredictiveTransformConstantModelTest {
         values[offset + iCol] = v;
         v++;
       }
+	  values[offset+iRow] = Integer.MIN_VALUE; // code for NULL.
     }
 
     byte[] encoding = new byte[nRows * nColumns * 6];
-    PredictiveTransformConstantModel instance
-            = new PredictiveTransformConstantModel();
+    PredictiveTransformDifferencingWithNulls instance
+            = new PredictiveTransformDifferencingWithNulls();
 
+	assertTrue(instance.isNullDataSupported(), "Implementation does not support null data");
+	
     int encodedLength = instance.encode(nRows, nColumns, values, encoding);
     int seed = instance.getSeed();
 

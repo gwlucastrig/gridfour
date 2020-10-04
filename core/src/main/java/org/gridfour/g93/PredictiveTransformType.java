@@ -45,10 +45,11 @@ public enum PredictiveTransformType {
    */
   None(0),
   /**
-   * The constant-predictor model is applied.
-   */
-  Constant(1),
-  /**
+   * The differencing-predictor model is applied. This model assumes that
+     * the value for an element in a sequence is predicted by its predecessor.
+     */
+    Differencing(1),
+    /**
    * The linear-predictor model is applied
    */
   Linear(2),
@@ -59,7 +60,7 @@ public enum PredictiveTransformType {
   /**
    * Used when the data includes null values.
    */
-  ConstantWithNulls(4);
+  DifferencingWithNulls(4);
 
   final int codeValue;
 
@@ -88,13 +89,13 @@ public enum PredictiveTransformType {
       case 0:
         return None;
       case 1:
-        return Constant;
+            return Differencing;
       case 2:
         return Linear;
       case 3:
         return Triangle;
       case 4:
-        return ConstantWithNulls;
+        return DifferencingWithNulls;
       default:
         return None;  // technically, this is an invalid value.
     }

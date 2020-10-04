@@ -33,7 +33,7 @@
  * 10/2019  G. Lucas     Created
  *
  * Notes:
- *  The original inspiration for the constant-value predictor
+ *  The original inspiration for the differencing predictor
  * was a short description of "Differential Modulation" in
  * Nelson, Mark (1991). "The Data Compression Book", M&T Publishing, Inc.
  * Redwood City, CA, pg. 350.  In his book, Mr. Nelson traces the concept
@@ -47,8 +47,8 @@ import org.gridfour.util.CodecM32;
 import static org.gridfour.g93.G93FileConstants.NULL_DATA_CODE;
 
 /**
- * Applies to predictive-transform constant-value model to the data. The
- * constant-value model always predicts that the current value in a series will
+ * Applies to predictive-transform differencing model to the data. The
+ * differencing model always predicts that the current value in a series will
  * have the same value as the prior value.
  * <p>
  * This technique is used in several well-established raster data formats. For
@@ -58,7 +58,7 @@ import static org.gridfour.g93.G93FileConstants.NULL_DATA_CODE;
  * used in the TIFF specification (see TIFF Tag Predictor horizontal
  * differencing, tag 0x013D).
  */
-public class PredictiveTransformConstantWithNulls implements IPredictiveTransform {
+public class PredictiveTransformDifferencingWithNulls implements IPredictiveTransform {
 
   int encodedSeed;
 
@@ -184,6 +184,6 @@ public class PredictiveTransformConstantWithNulls implements IPredictiveTransfor
 
   @Override
   public PredictiveTransformType getPredictorType() {
-    return PredictiveTransformType.ConstantWithNulls;
+      return PredictiveTransformType.DifferencingWithNulls;
   }
 }

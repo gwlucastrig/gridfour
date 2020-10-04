@@ -77,7 +77,7 @@ the largest reduction in data storage size.
 
 Each of the existing compression methods uses _Predictive-Transform_ methods
 to improve the compressability of the data. There are 3 predictive-transform models
-currently supported: Constant, Linear, and Triangle. The statistics below show which 
+currently supported: Differencing, Linear, and Triangle. The statistics below show which 
 compression methods (Huffman, Deflate, and BZip2) were used for compression
 and which predictor.  In the stock setup, Deflate usually produces better results,
 except for about 20 percent of the tiles for which Huffman works better.
@@ -95,22 +95,22 @@ for which a particular method was selected.
 
 	Codec G93_Huffman
 	   Predictor                Times Used        bits/sym   entropy     avg bits in tree/tile
-	   Constant                  393 ( 1.8 %)      1.9         2.3          205.4/20487.5
+	   Differencing              393 ( 1.8 %)      1.9         2.3          205.4/20487.5
 	   Linear                   1572 ( 7.3 %)      2.9         2.9          744.3/30985.3
 	   Triangle                 3956 (18.3 %)      3.7         4.0          773.9/39829.3
-	   ConstantWithNulls           0 ( 0.0 %)      0.0         0.0            0.0/0.0
+	   DifferencingWithNulls       0 ( 0.0 %)      0.0         0.0            0.0/0.0
 	Codec G93_Deflate
 	   Predictor               Times Used         bits/sym   entropy     avg bits per tile
-	   Constant                  205 ( 0.9 %)      1.6         2.0         17037.2
+	   Differencing              205 ( 0.9 %)      1.6         2.0         17037.2
 	   Linear                    179 ( 0.8 %)      5.3         5.6         56868.0
 	   Triangle                 1856 ( 8.6 %)      7.1         6.8         77096.0
-	   ConstantWithNulls           0 ( 0.0 %)      0.0         0.0            0.0
+	   DifferencingWithNulls       0 ( 0.0 %)      0.0         0.0            0.0
 	Codec BZip2
 	   Predictor               Times Used         bits/sym   entropy     avg bits per tile
-	   Constant                 1269 ( 5.9 %)      1.2         1.4         13022.2
+	   Differencing             1269 ( 5.9 %)      1.2         1.4         13022.2
 	   Linear                    954 ( 4.4 %)      2.2         2.6         24079.9
 	   Triangle                11216 (51.9 %)      4.7         5.4         50511.5
-	   ConstantWithNulls           0 ( 0.0 %)      0.0         0.0            0.0
+	   DifferencingWithNulls       0 ( 0.0 %)      0.0         0.0            0.0
 
 ## How the BZip2 Compressor was Created
 For this article, the structure of the BZip2 compressor was very similar

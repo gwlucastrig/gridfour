@@ -94,16 +94,16 @@ For that predictor, the residual was just the value of the current grid
 point minus that of its predecessor.  The compressed form of the raster
 data consisted of an initial _seed_ value followed by a sequence of delta
 values that could be used to recover the original representation.
-In G93, this technique is referred to as a Constant Predictor Model.
+In G93, this technique is referred to as a Differencing Predictor Model.
 Other data compression implementations sometimes refer to it as a _differencing technique_.
-In the original Gem93 project, the Constant Predictor approach was inspired by
+In the original Gem93 project, the Differencing Predictor approach was inspired by
 a description of audio delta pulse code modulation in
 _The Data Compression Book_ (Nelson, 1991, p. 346). Delta pulse coding is a well-known
 technique that was used in the audio industry as early as the 1950’s (Chaplin, 1952).
-While the Constant Model predictor is not especially powerful,
+While the Differencing Model predictor is not especially powerful,
 it is easy to implement and offers excellent run-time performance.
 
-The Constant Model predictor makes a critical assumption about the data. It assumes that
+The Differencing Model predictor makes a critical assumption about the data. It assumes that
 the values of two points closely located in space will tend to be similar.
 In other words, it assumes that the _values_ of elements that are closely located
 spatially (i.e. in terms of grid coordinates) will also be close together numerically.
@@ -120,13 +120,13 @@ Again let's consider the example of a set of elevation grid points specified on 
 region with a constant slope. Because the sample points are collected at positions
 with a uniform spacing, the difference in elevation from point-to-point is
 constant or nearly constant. These differences are just the residuals from
-the Constant Predictor Model. They would exhibit a high degree of redundancy
+the Differencing Predictor Model. They would exhibit a high degree of redundancy
 and, thus, would compress to a highly compact form.
 
 ### Access Patterns for In-Memory Data
 There are different ways we can construct a predictive model for raster data,
 but all of them depend on being able to relate any particular sample
-to its neighbors. When we consider the Constant Predictor Model over a single
+to its neighbors. When we consider the Differencing Predictor Model over a single
 row of data in a grid, identifying neighbors is straight forward.
 The relevant neighbor point is just the previous or next data point in the
 sequence. But special handling is required when processing the transition
@@ -138,7 +138,7 @@ G93 stores grid points in row-major order (one row at a time). So in most cases,
 the predecessor of a grid point is just the sample that preceded it in the row.
 There is, however, one edge case that requires special handling. In row-major order,
 the grid point that follows the last point in a row is the first point in the next row.
-So, a predictor-residual based on the constant model needs to implement
+So, a predictor-residual based on the Differencing Model needs to implement
 special handling for that transition. In G93, the following rules are applied:
 
 1.	The first grid point in the first row of a tile is treated as a "seed" value.
@@ -149,9 +149,9 @@ The figure below illustrates the pattern.  The seed value is shown as a solid do
 the delta values are all shown as circles. The arrows indicate which samples are
 paired together to compute delta values.
 
-![Pattern for Constant-Model Predictive Resolution Transform](images/G93Compression/CompressionPatternDifferencing.png)
+![Pattern for Differencing-Model Predictive Resolution Transform](images/G93Compression/CompressionPatternDifferencing.png)
 
-It is worth noting that the use of the Constant Model for raster data is not unique to this project.
+It is worth noting that the use of the Differencing Model for raster data is not unique to this project.
 It is used in a number of specifications including the GRIB2 raster data format
 (NCEP 2005, table 5.6) and the TIFF image format
 (Adobe, 1992, p. 64, "Section 14: Differencing Predictor").
@@ -190,7 +190,7 @@ the simple computation used by the Triangle Predictor model.
 
 Both the Linear and the Triangle Predictor require special handling to initialize
 the grid before applying the prediction computations. In the case of the Linear
-Predictor, G93 uses the seed value and the pattern established for the Constant
+Predictor, G93 uses the seed value and the pattern established for the Differencing
 Predictor to pre-populate the first two columns of the grid. In the case of the
 Triangle Predictor, the first row and first column are populated using same approach.
 Once the grid is initialized, the specific predictors
