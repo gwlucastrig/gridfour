@@ -9,7 +9,7 @@
 ----------------------------------------------------------------------------------------------------*/
 
 body {
-    font: 16px/1.25 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+    font: 16px/1.25 Georgia, Serif ;
 }
 
 pre,
@@ -18,7 +18,7 @@ code {
 }
 
 p.title {
-	font: 30px/1.25 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+	font:30px/1.25  "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
 	font-weight: bold;
 	color: #4F81BD;
 	margin-top: 60px;
@@ -35,29 +35,29 @@ hr {
 
 /* `Headings
 ----------------------------------------------------------------------------------------------------*/
-
+ 
 h1 {
-    font-size: 25px;
-}
-
-h2 {
     font-size: 23px;
 }
 
-h3 {
+h2 {
     font-size: 21px;
 }
 
-h4 {
+h3 {
     font-size: 19px;
 }
 
-h5 {
+h4 {
     font-size: 17px;
 }
 
-h6 {
+h5 {
     font-size: 15px;
+}
+
+h6 {
+    font-size: 13px;
 }
 
 /* `Spacing
@@ -94,6 +94,7 @@ h3,
 h4,
 h5,
 h6 {
+	color: #4F81BD;
 	margin-top: 40px;
 	margin-bottom: 1px;
 	line-height: 0.5;
@@ -136,6 +137,7 @@ a.box-link:hover{
 
 
 .link-bar {
+    font:  16px/1.25 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
     list-style-type: none;
     overflow: hidden;
     float: left;
