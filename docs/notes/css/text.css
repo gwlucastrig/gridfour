@@ -23,7 +23,7 @@ p.title {
 	color: #4F81BD;
 	margin-top: 60px;
 	margin-left: 30px;
-	margin-bottom: 60px;
+	margin-bottom: 90px;
 }
 
 hr {
@@ -147,7 +147,7 @@ a.box-link:hover{
  
 
 .link-bar li {
-    font-weight:bold;
+    font-weight:normal;
     display: inline; 
     padding: 0px 0px 0px 0px;
 	 margin-left: 5px;
@@ -160,7 +160,7 @@ a.box-link:hover{
 }
 
 .link-bar li:first-of-type {
-    font-weight:bold;
+    font-weight:normal;
     padding: 0px 0px 0px 0px;
 		 margin-left: 0px;
 	 margin-right: 5px;
