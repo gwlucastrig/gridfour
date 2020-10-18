@@ -152,6 +152,41 @@
                     GEBCO_2020 product yields a somewhat better storage reduction (17.97 % of its original size)
                     than the less dense ETOPO1 product (22.84%).</p>
 
+                <p>The statistics in the table above support the idea that the denser spacing of the GEBCO 2020 data set
+                    leads to an increase in the predictability of its values compared to ETOPO1. The effects
+                    of this improved predictability are reflected in the reduced number of bits needed to encode the data.</p>
+
+				<p>Part of the compressibility of data also depends on the presense of features and artifacts that
+				   are small relative to the sample spacing and which exhibit unpredictable behavior... In other words,
+				   the presense of noise components that reduce predictability lead to less effective data compression.
+				   Often, such features are removed from data as a consequence of the data collection or modeling process.
+				   Determining which features contribute to the size of the post-compression data often requires insight
+				   into the methods used to collect it.</p>
+				   
+				<h3>Compressability for high-density data from the SRTM survey</h3>
+				<p>I will conclude with one last example of a data set that lends itself well to data compression
+				   using the method of Optimal Predictors. In 2000, NASA's Shutter Radar Topographiy Mission (SRTM)
+				   collected elevation data for much of the world using a sophisticated synthetic aperature radar apparatus.
+				   NASA has scrupulously provided the results of this survey for international public use. The SRTM data
+				   is available in various forms. The results in the table below are based on the analysis of data
+				   issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc (about
+				   30 meters spacing at the equator). Elvation values were coded in integral meters using two-bytes per sample.</p>
+
+				   
+					<table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <tr>
+                        <th>Data Area</th>
+                        <th>Bits per Elevation</th>
+                    </tr>
+					<tr><td>Paducah KY, USA</td>                  <td>1.9193</td></tr>
+					<tr><td>Pontypridd, Wales</td>                <td>1.7813</td></tr>
+					<tr><td>Padua, Italy</td>                     <td>2.2329</td></tr>
+					<tr><td>Poloniny National Park, Slovakia</td> <td>1.9881</td></tr>
+					</table>
+
+
+
+
                 <h1>How it works</h1>
                 <p>The concept of using predictive algorithms to improve data compression was introduced
                     in a previous article in this series
@@ -323,10 +358,6 @@
                     </tr>
                 </table>
 
-
-                <p>The statistics in the table above confirm that the denser spacing of the GEBCO 2020 data set
-                    leads to an increase in the predictability of its values compared to ETOPO1. The effects
-                    of this improved predictability are reflected in the reduced number of bits needed to encode the data.</p>
 
 
                 <h3>Derivation for Optimal Predictors</h3>
