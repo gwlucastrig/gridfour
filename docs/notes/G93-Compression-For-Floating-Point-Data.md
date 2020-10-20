@@ -24,10 +24,10 @@ products a convenient source of test data. Both products provide raster data
 in grids with a uniform angular spacing (i.e fixed intervals of latitude and longitude). Each of the
 high-resolution USGS products use a 1/3 second of arc spacing and cover a
 1 degree square region. The lower-resolution GEBCO product covers the entire
-Earth (land and water) and provides a raster data with a spacing of 15 seconds of arc[&lsqb;1&rsqb;](#note1).
+Earth (land and water) and provides a raster data with a spacing of 15 seconds of arc[&#91;1&#93;](#note1).
 
 In the table, the regions of coverage for the USGS data are indicated by named locations.
-All data values are given in bits-per-symbol (bits for elevation point)[&lsqb;2&rsqb;](#note2). The data sources
+All data values are given in bits-per-symbol (bits for elevation point)[&#91;2&#93;](#note2). The data sources
 used for this test series were taken from files in either the GeoTIFF or NetCDF data format,
 both of which implement their own techniques for
 data compression. Thus the bits-per-symbol rates for the source files were
@@ -250,7 +250,7 @@ U.S. Geological Survey [USGS] (2019). _USGS Digital Elevation Models (DEM) Switc
 Accessed April 2020 from [https://www.usgs.gov/news/usgs-digital-elevation-models-dem-switching-new-distribution-format](https://www.usgs.gov/news/usgs-digital-elevation-models-dem-switching-new-distribution-format)
 
 ## Notes
-<a name="note1">&lsqb;1&rsqb;</a>While the 2019 GEBCO data set featured non-integral data
+<a name="note1">&#91;1&#93;</a>While the 2019 GEBCO data set featured non-integral data
 given in the form of floats, the 2020 version released 28 April 2020, uses short (2-byte) integers.
 With this change, the product now reports elevation and depth data rounded to the nearest 1 meter.
 Because the data is no longer given in floating-point form, it is appropriate to compress the GEBCO 2020
@@ -258,7 +258,7 @@ product using the G93 integer compressor. The original 2020 data uses 16 bits pe
 a computed entropy of 12.9 bits per sample. The G93 integer data compression reduced the size of this set
 down to 3.12 bits per sample.
 
-<a name="note2">&lsqb;2&rsqb;</a>The USGS Cloud Optimized GeoTIFF files contain multiple
+<a name="note2">&#91;2&#93;</a>The USGS Cloud Optimized GeoTIFF files contain multiple
 raster data products including a full-resolution source data set and 4 or 5 lower-resolution
 "overview" data sets.  The bit counts cited above are based solely on the full-resolution product.
 
