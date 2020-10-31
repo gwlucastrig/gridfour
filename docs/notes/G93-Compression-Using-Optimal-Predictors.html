@@ -56,17 +56,49 @@
 
 
                 <h2>Performance</h2>
+				<p>There are two factors to consider when assessing the performance of a data compression technique:
+					access speed and compression ratios. The time-performance related to reading and writing LSOP-compressed
+					data files is similar to that of other G93 data compression techniques and will not be dicussed further.
+					For this article, our primary concern is the effectiveness of the Optimal Predictor technique for the reduction
+					of data storage size. So that will be the focus of this section</p>
+
+				<p>To assess the performance of the Optimal Predictors implementation, I drew on three elevation
+					data sets. The first two, ETOPO1 and GEBCO 2020 give global-scale elevation data with a grid spacing
+					of 1 minute of arc (about 1855 meters between points at the equator) and 15 seconds of arc
+					(about 463 meters between points) respectively. Both of these products were compiled from
+					multiple sources and cover the entire world in a single grid-based data file. The third source of
+					test data is taken from the Shuttle Radar Topography Mission (SRTM).  The SRTM data is available 
+                    in several thousand separate files each of which covers a single one-degree square with
+					a resolution of 1 second of arc (about  30 meters spacing at the equator).</p>
+				
                 <p>The table below gives data compression values in bits per sample (bps) for
-                    the ETOPO1 and GEBCO 2020 data sets. Both data sets give global elevation and
-                    bathymetry data in meters. Both data sets have similar complexity.
-                    The sample spacing for the GEBCO data set is smaller than that of the ETOPO1 set.
-                    The closer spacing of sample points in the GEBCO data set means that
-                    all of the predictors (both standard and LSOP) tend to be more successful
-                    for GEBCO than that are for ETOPO1. Thus the data compression rate given in
-                    terms of bits-per-symbol is smaller for GEBCO than for ETOPO1.</p>
+                    the ETOPO1, GEBCO 2020, and SRTM data sets. All three data sets give global elevation and
+                    bathymetry data in meters. The ETOP01 and GEBCO 2020 data sets have similar complexity.
+					The complexity of the SRTM data set varies substantially over the world, but is
+					similar to that of the other products when multiple source one-degree data files are considered.
+					In general, the smaller the spacing across grid cells, and the smaller the distance that
+					separates elevation points, the better the Optimal Predictor technique is able to
+					predict the value of neighboring samples. Better predictions result in small residuals (errors).
+					And smaller residuals tend to improve comprssion ratios. Thus the data storage rate given in
+                    terms of bits-per-symbol decreases as grid-spacing decreases.</p>
+					
+				<p>The table shows how the addition of the LSOP technique improves the compression
+				   results for the three products listed. The improvement column shows the percent reduction
+				   in overall size of the source file as well as the actual reduction in disk use.
+				   The listing for SRTM is somewhat different from the others because it is taken from only
+				   a single one-degree file. SRTM is, however, a global data set and there are several thousand
+				   such files in the overall collection. So the the small savings for a single file would
+				   be realized several thousands of times when applied to the entire data set.</p>
+					
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <tr>
-                        <th>Product</th> <th>Grid Spacing</th> <th>Values in Grid</th> <th>Standard</th> <th>LSOP Only</th> <th>Combined</th> <th>Improvement</th>
+                        <th>Product</th> 
+						<th>Grid Spacing</th> 
+						<th>Values in Grid</th> 
+						<th>Standard</th> 
+						<th>LSOP Only</th> 
+						<th>Combined</th> 
+						<th>Improvement</th>
                     </tr>
                     <tr>
                         <td> ETOPO1</td>
@@ -85,6 +117,16 @@
                         <td>2.97 bps</td>
                         <td>2.87 bps</td>
                         <td>6.8%, 71.2 MB</td>
+                    </tr>
+					
+                    <tr>
+                        <td>SRTM (Typical File)</td>
+                        <td>1 second </td>
+                        <td>12.9 Million</td>
+                        <td>2.23 bps </td>
+                        <td>1.92 bps</td>
+                        <td>1.92 bps</td>
+                        <td>10.4%, 0.50 MB</td>
                     </tr>
                 </table>
 
@@ -144,6 +186,14 @@
                         <td>7119.1 MB </td>
                         <td>1279.06 MB (17.97 %)</td>
                     </tr>
+
+                   <tr>
+                        <td>SRTM (selected files)</td>
+                        <td>3600 x 3600</td>
+                        <td>&#62;12.9 million</td>
+                        <td>25.3 MB </td>
+                        <td>2.99 MB (11.8 %)</td>
+                    </tr>
                 </table>
 
                 <p>Once again, we see the influence of data density on the effectiveness of a predictor
@@ -187,6 +237,7 @@
                         <th>Bits per Elevation</th>
 						<th>File Name (SE Corner)</th>
                     </tr>
+					<tr><td>Sioux Falls, SD, USA</td>             <td>1.7402</td><td>n47_w097_1arc_v3.tif</td></tr>
 					<tr><td>Paducah KY, USA</td>                  <td>1.9193</td><td>n37_w089_1arc_v3.tif</td></tr>
 					<tr><td>Pontypridd, Wales</td>                <td>1.7813</td><td>n51_w004_1arc_v3.tif</td></tr>
 					<tr><td>Padua, Italy</td>                     <td>2.2329</td><td>n45_w011_1arc_v3.tif</td></tr>
