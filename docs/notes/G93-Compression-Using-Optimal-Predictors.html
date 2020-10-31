@@ -142,14 +142,15 @@
                     a file. For this test, the LSOP predictor was added to the roster, and the same approach was applied.</p>
 
                 <p>The LSOP predictor proved to be the most effective predictor in 90.1 % of the tiles for ETOPO1
-                    and 53.7 % of the tiles for GEBCO_2020. Normally, the Deflate data compression technique is
+                    and 53.7 % of the tiles for GEBCO_2020. For SRTM, LSOP was used in almost all cases.
+					Normally, the Deflate data compression technique is
                     the preferred method for the standard predictors (with only a small number of tiles using Huffman).
                     Since the Deflate algorithm is generally more powerful that Huffman, this preference is not surprising.
                     However, when the Optimal Predictor implementation was added to the to the data compression process,
-                    the Huffman data compression technique was preferred by 5-to-1 margin for both
-                    test sets.</p>
+                    the Huffman data compression technique was preferred by 5-to-1 margin for both the ETOPO1 and GEBCO 2020
+                    test sets. The Huffman technique was chosen almost exclusively for all SRTM test sets.</p>
 
-                <p>One interesting feature in the compression statistics is that the LSOP predictors
+                <p>One noteworthy feature in the compression statistics is that the LSOP predictors
                     give a much larger percentage improvement for the lower-resolution ETOPO1 product
                     than for the higher-resolution GEBCO product. The LSOP predictor is more powerful
                     than the standard predictors, but in the denser product the standard predictors already
@@ -218,7 +219,7 @@
 				   of a data set that lends itself particularly well to data compression
 				   using the method of Optimal Predictors. In 2000, NASA's Shuttle Radar Topography Mission (SRTM)
 				   collected elevation data for much of the world using a sophisticated synthetic aperature radar apparatus.
-				   NASA has diligently provided the results of this survey for international public use
+				   NASA has faithfully provided the results of this survey for international public use
 				   (<a href="https://lpdaac.usgs.gov/products/astgtmv003" />NASA, 2020</a>). The SRTM data
 				   is available in various forms. The results in the table below are based on the analysis of data
 				   issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc (about
@@ -388,29 +389,34 @@
                         <th>&nbsp;</th>
                         <th>ETOPO1</th>
                         <th>GEBCO 2020</th>
+						<th>SRTM (Typical File)</th>
                     </tr>
                     <tr>
                         <td>Mean error predicted values</td>
                         <td>-6.74E-5</td>
-                        <td> 8.99E-7</td>
+                        <td> 8.99E-6</td>
+						<td> 3.59E-6</td>
                     </tr>
 
                     <tr>
                         <td>Mean absolute error</td>
                         <td>4.78</td>
                         <td>1.74</td>
+						<td>0.88</td>
                     </tr>
 
                     <tr>
                         <td>Percent integer residuals with zero value</td>
                         <td>25.3 %</td>
                         <td>43.4 %</td>
+						<td>51.9 %</td>
                     </tr>
 
                     <tr>
                         <td>Avg. bits/sample (LSOP only)</td>
                         <td>3.67</td>
                         <td>2.97</td>
+						<td>1.92</td>
                     </tr>
                 </table>
 
