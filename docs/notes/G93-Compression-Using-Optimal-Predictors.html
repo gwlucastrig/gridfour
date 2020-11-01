@@ -219,7 +219,7 @@
 				   of a data set that lends itself particularly well to data compression
 				   using the method of Optimal Predictors. In 2000, NASA's Shuttle Radar Topography Mission (SRTM)
 				   collected elevation data for much of the world using a sophisticated synthetic aperature radar apparatus.
-				   NASA has faithfully provided the results of this survey for international public use
+				   NASA and the U.S. government have generously provided the results of this survey for international public use
 				   (<a href="https://lpdaac.usgs.gov/products/astgtmv003" />NASA, 2020</a>). The SRTM data
 				   is available in various forms. The results in the table below are based on the analysis of data
 				   issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc (about
@@ -381,8 +381,9 @@
                 <p>Currently, the Gridfour implementation uses the 12 coefficient variation.</p>
 
                 <p>The following table gives some general statistics for the prediction using the 12-coefficient predictor
-                    over the ETOPO1 data set. Data from the polar regions was excluded because it tends to have a higher
-                    predictability than for the rest of the world.</p>
+                    over the ETOPO1 data set. Data from the polar regions was excluded because it tends to have a much higher
+                    level of redundancy than data for the rest of the world. Therefore it was ommitted to avoid
+					skewing the overall statistics.</p>
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <tr>
@@ -420,7 +421,27 @@
                     </tr>
                 </table>
 
+				<p>When I discussed the ideas behind the Optimal Predictor method, I mentioned that the constraint
+				   applied for the Legrange Multipliers derivation was that the mean error would be zero.
+				   Looking at the values in the table above, we see that the mean error is small, but non-zero.
+				   The reason for this is that the predictor coefficients derived by the code are stored in the
+				   form of four-byte (single precision) floating point values. The limited precision for
+				   floating-point formats means that the values stored for the predictor coefficients are not
+				   a perfect match for the actual optimal coefficients. As a result, the mean error accumulates
+				   a slight offset over the course of being applied over the full collection of samples.</p>
+				 
+				<p>Note also that as the density of the samples increase, and the Optimal Predictor becomes
+				   more successful, the percent of samples with zero-valued residuals also increases. As this happens
+				   the statistical frequency for residuals tends to strongly favor the value zero. For Huffman
+				   coding, this preponderence of zero residuals leads to a shorter coding sequence for the residuals.
+				   Thus the size of the compressed data is reduced.</p>
 
+				<p>A perfect predictor, if such a thing could exist,
+				   would always produce residual values of zero. In such cases, the information content of the 
+				   transformed data (e.g. its "entropy") would approach zero and the data could be stored with
+				   almost no disk space at all.</p>
+				   
+				   
 
                 <h3>Derivation for Optimal Predictors</h3>
                 <p>The equations and derivation for Optimal Predictors using Lagrange Multipliers is
