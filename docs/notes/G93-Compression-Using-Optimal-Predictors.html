@@ -31,7 +31,7 @@
 
                 <h1>Introduction</h1>
                 <p>The Gridfour software library recently added a supplemental data compression module that
-                    offers a substantial improvement in data compression ratios for its integer-based
+                    offers a significant improvement in data compression ratios for its integer-based
                     raster data sets. The implementation, which is designated LSOP, is based on
                     the method of Optimal Predictors proposed by Smith and Lewis (1994).
                     LSOP is a lossless data compression technique that offers good compression
@@ -57,12 +57,25 @@
 
                 <h2>Performance</h2>
 				<p>There are two factors to consider when assessing the performance of a data compression technique:
-					access speed and compression ratios. The time-performance related to reading and writing LSOP-compressed
-					data files is similar to that of other G93 data compression techniques and will not be dicussed further.
-					For this article, our primary concern is the effectiveness of the Optimal Predictor technique for the reduction
-					of data storage size. So that will be the focus of this section</p>
+					access speed and compression ratios.</p>
+					
+				<p>The overhead related to file-access and data retrieval are roughly
+					the same whether a Gridfour file is stored with or without the LSOP enhancement.
+					But the decompression operations for LSOP require a much larger number of floating-point
+					and array-access operations than the standard Gridfour predictor techniques
+					(because Java performs bounds-checking each time an array element is read,
+					the overhead due to array access operations is more significant than in languages
+					such as C and C++). This overhead leads to an increase in time-to-read files of approximately 50 percent.
+					For example, tests with the ETOPO1 product described below found an increase in access
+					time from an average 4.02 seconds to 6.15 seconds.</p>
 
-				<p>To assess the performance of the Optimal Predictors implementation, I drew on three elevation
+				<p>Future work on the LSOP compression may involve exploring different coding techniques
+				    in an effort to improve access speeds. When the work is completed,
+					the relevant techniques will be discussed in future versions of this article.
+					For the present, the primary concern of this article is the effectiveness of the
+					Optimal Predictor algorithm for the reduction of data storage size.</p>
+
+				<p>To assess the data-compression performance of the Optimal Predictors implementation, I drew on three elevation
 					data sets. The first two, ETOPO1 and GEBCO 2020 give global-scale elevation data with a grid spacing
 					of 1 minute of arc (about 1855 meters between points at the equator) and 15 seconds of arc
 					(about 463 meters between points) respectively. Both of these products were compiled from
