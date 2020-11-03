@@ -56,62 +56,62 @@
 
 
                 <h2>Performance</h2>
-				<p>There are two factors to consider when assessing the performance of a data compression technique:
-					access speed and compression ratios.</p>
-					
-				<p>The overhead related to file-access and data retrieval are roughly
-					the same whether a Gridfour file is stored with or without the LSOP enhancement.
-					But the decompression operations for LSOP require a much larger number of floating-point
-					and array-access operations than the standard Gridfour predictor techniques
-					(because Java performs bounds-checking each time an array element is read,
-					the overhead due to array access operations is more significant than in languages
-					such as C and C++). This overhead leads to an increase in time-to-read files of approximately 50 percent.
-					For example, tests with the ETOPO1 product described below found an increase in access
-					time from an average 4.02 seconds to 6.15 seconds.</p>
+                <p>There are two factors to consider when assessing the performance of a data compression technique:
+                    access speed and compression ratios.</p>
+                    
+                <p>The overhead related to file-access and data retrieval are roughly
+                    the same whether a Gridfour file is stored with or without the LSOP enhancement.
+                    But the decompression operations for LSOP require a much larger number of floating-point
+                    and array-access operations than the standard Gridfour predictor techniques
+                    (because Java performs bounds-checking each time an array element is read,
+                    the overhead due to array access operations is more significant than in languages
+                    such as C and C++). This overhead leads to an increase in time-to-read files of approximately 50 percent.
+                    For example, tests with the ETOPO1 product described below found an increase in access
+                    time from an average 4.02 seconds to 6.15 seconds.</p>
 
-				<p>Future work on the LSOP compression may involve exploring different coding techniques
-				    in an effort to improve access speeds. When the work is completed,
-					the relevant techniques will be discussed in future versions of this article.
-					For the present, the primary concern of this article is the effectiveness of the
-					Optimal Predictor algorithm for the reduction of data storage size.</p>
+                <p>Future work on the LSOP compression may involve exploring different coding techniques
+                    in an effort to improve access speeds. When the work is completed,
+                    the relevant techniques will be discussed in future versions of this article.
+                    For the present, the primary concern of this article is the effectiveness of the
+                    Optimal Predictor algorithm for the reduction of data storage size.</p>
 
-				<p>To assess the data-compression performance of the Optimal Predictors implementation, I drew on three elevation
-					data sets. The first two, ETOPO1 and GEBCO 2020 give global-scale elevation data with a grid spacing
-					of 1 minute of arc (about 1855 meters between points at the equator) and 15 seconds of arc
-					(about 463 meters between points) respectively. Both of these products were compiled from
-					multiple sources and cover the entire world in a single grid-based data file. The third source of
-					test data is taken from the Shuttle Radar Topography Mission (SRTM).  The SRTM data is available 
+                <p>To assess the data-compression performance of the Optimal Predictors implementation, I drew on three elevation
+                    data sets. The first two, ETOPO1 and GEBCO 2020 give global-scale elevation data with a grid spacing
+                    of 1 minute of arc (about 1855 meters between points at the equator) and 15 seconds of arc
+                    (about 463 meters between points) respectively. Both of these products were compiled from
+                    multiple sources and cover the entire world in a single grid-based data file. The third source of
+                    test data is taken from the Shuttle Radar Topography Mission (SRTM).  The SRTM data is available 
                     in several thousand separate files each of which covers a single one-degree square with
-					a resolution of 1 second of arc (about  30 meters spacing at the equator).</p>
-				
+                    a resolution of 1 second of arc (about  30 meters spacing at the equator).</p>
+                
                 <p>The table below gives data compression values in bits per sample (bps) for
                     the ETOPO1, GEBCO 2020, and SRTM data sets. All three data sets give global elevation and
                     bathymetry data in meters. The ETOP01 and GEBCO 2020 data sets have similar complexity.
-					The complexity of the SRTM data set varies substantially over the world, but is
-					similar to that of the other products when multiple source one-degree data files are considered.
-					In general, the smaller the spacing across grid cells, and the smaller the distance that
-					separates elevation points, the better the Optimal Predictor technique is able to
-					predict the value of neighboring samples. Better predictions result in small residuals (errors).
-					And smaller residuals tend to improve comprssion ratios. Thus the data storage rate given in
+                    The complexity of the SRTM data set varies substantially over the world, but is
+                    similar to that of the other products when multiple source one-degree data files are considered.
+                    In general, the smaller the spacing across grid cells, and the smaller the distance that
+                    separates elevation points, the better the Optimal Predictor technique is able to
+                    predict the value of neighboring samples. Better predictions result in small residuals (errors).
+                    And smaller residuals tend to improve comprssion ratios. Thus the data storage rate given in
                     terms of bits-per-symbol decreases as grid-spacing decreases.</p>
-					
-				<p>The table shows how the addition of the LSOP technique improves the compression
-				   results for the three products listed. The improvement column shows the percent reduction
-				   in overall size of the source file as well as the actual reduction in disk use.
-				   The listing for SRTM is somewhat different from the others because it is taken from only
-				   a single one-degree file. SRTM is, however, a global data set and there are several thousand
-				   such files in the overall collection. So the the small savings for a single file would
-				   be realized several thousands of times when applied to the entire data set.</p>
-					
+                    
+                <p>The table shows how the addition of the LSOP technique improves the compression
+                   results for the three products listed. The improvement column shows the percent reduction
+                   in overall size of the source file as well as the actual reduction in disk use.
+                   The listing for SRTM is somewhat different from the others because it is taken from only
+                   a single one-degree file. SRTM is, however, a global data set and there are several thousand
+                   such files in the overall collection. So the the small savings for a single file would
+                   be realized several thousands of times when applied to the entire data set.</p>
+                    
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <tr>
                         <th>Product</th> 
-						<th>Grid Spacing</th> 
-						<th>Values in Grid</th> 
-						<th>Standard</th> 
-						<th>LSOP Only</th> 
-						<th>Combined</th> 
-						<th>Improvement</th>
+                        <th>Grid Spacing</th> 
+                        <th>Values in Grid</th> 
+                        <th>Standard</th> 
+                        <th>LSOP Only</th> 
+                        <th>Combined</th> 
+                        <th>Improvement</th>
                     </tr>
                     <tr>
                         <td> ETOPO1</td>
@@ -131,7 +131,7 @@
                         <td>2.87 bps</td>
                         <td>6.8%, 71.2 MB</td>
                     </tr>
-					
+                    
                     <tr>
                         <td>SRTM (Typical File)</td>
                         <td>1 second </td>
@@ -156,7 +156,7 @@
 
                 <p>The LSOP predictor proved to be the most effective predictor in 90.1 % of the tiles for ETOPO1
                     and 53.7 % of the tiles for GEBCO_2020. For SRTM, LSOP was used in almost all cases.
-					Normally, the Deflate data compression technique is
+                    Normally, the Deflate data compression technique is
                     the preferred method for the standard predictors (with only a small number of tiles using Huffman).
                     Since the Deflate algorithm is generally more powerful that Huffman, this preference is not surprising.
                     However, when the Optimal Predictor implementation was added to the to the data compression process,
@@ -220,46 +220,46 @@
                     leads to an increase in the predictability of its values compared to ETOPO1. The effects
                     of this improved predictability are reflected in the reduced number of bits needed to encode the data.</p>
 
-				<p>Part of the compressibility of data also depends on the presense of features and artifacts that
-				   are small relative to the sample spacing and which exhibit unpredictable behavior... In other words,
-				   the presense of noise components that reduce predictability lead to less effective data compression.
-				   Often, such features are removed from data as a consequence of the data collection or modeling process.
-				   Determining which features contribute to the size of the post-compression data often requires insight
-				   into the methods used to collect it.</p>
-				   
-				<h3>Compressability for high-density data from the SRTM survey</h3>
-				<p>I will conclude the discussion of the compressor's performance with an example
-				   of a data set that lends itself particularly well to data compression
-				   using the method of Optimal Predictors. In 2000, NASA's Shuttle Radar Topography Mission (SRTM)
-				   collected elevation data for much of the world using a sophisticated synthetic aperature radar apparatus.
-				   NASA and the U.S. government have generously provided the results of this survey for international public use
-				   (<a href="https://lpdaac.usgs.gov/products/astgtmv003" />NASA, 2020</a>). The SRTM data
-				   is available in various forms. The results in the table below are based on the analysis of data
-				   issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc (about
-				   30 meters spacing at the equator). NASA names its data files based on the southwest corner of the
+                <p>Part of the compressibility of data also depends on the presense of features and artifacts that
+                   are small relative to the sample spacing and which exhibit unpredictable behavior... In other words,
+                   the presense of noise components that reduce predictability lead to less effective data compression.
+                   Often, such features are removed from data as a consequence of the data collection or modeling process.
+                   Determining which features contribute to the size of the post-compression data often requires insight
+                   into the methods used to collect it.</p>
+                   
+                <h3>Compressability for high-density data from the SRTM survey</h3>
+                <p>I will conclude the discussion of the compressor's performance with an example
+                   of a data set that lends itself particularly well to data compression
+                   using the method of Optimal Predictors. In 2000, NASA's Shuttle Radar Topography Mission (SRTM)
+                   collected elevation data for much of the world using a sophisticated synthetic aperature radar apparatus.
+                   NASA and the U.S. government have generously provided the results of this survey for international public use
+                   (<a href="https://lpdaac.usgs.gov/products/astgtmv003" />NASA, 2020</a>). The SRTM data
+                   is available in various forms. The results in the table below are based on the analysis of data
+                   issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc (about
+                   30 meters spacing at the equator). NASA names its data files based on the southwest corner of the
                    area of coverage. The table below uses place names for each sample to convey a more familiar
-				   sense of where the data was collected. In most cases, the named places are only
-				   a small part of the area that includes them (1-degree of longitude spans about 111 km or 69 miles at the equator).
-				   The SRTM data is given in integer meters. This format permits the source files to record terrestrial
-				   elevations using a two-byte integer format. Thus, for many of the samples, the method of
-				   Optimal Predictors achieves a better than 8-to-1 reduction in the size of the data set.</p>
+                   sense of where the data was collected. In most cases, the named places are only
+                   a small part of the area that includes them (1-degree of longitude spans about 111 km or 69 miles at the equator).
+                   The SRTM data is given in integer meters. This format permits the source files to record terrestrial
+                   elevations using a two-byte integer format. Thus, for many of the samples, the method of
+                   Optimal Predictors achieves a better than 8-to-1 reduction in the size of the data set.</p>
 
-				   
-					<table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                   
+                    <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <tr>
                         <th>Data Area</th>
                         <th>Bits per Elevation</th>
-						<th>File Name (SE Corner)</th>
+                        <th>File Name (SE Corner)</th>
                     </tr>
-					<tr><td>Sioux Falls, SD, USA</td>             <td>1.7402</td><td>n47_w097_1arc_v3.tif</td></tr>
-					<tr><td>Paducah KY, USA</td>                  <td>1.9193</td><td>n37_w089_1arc_v3.tif</td></tr>
-					<tr><td>Pontypridd, Wales</td>                <td>1.7813</td><td>n51_w004_1arc_v3.tif</td></tr>
-					<tr><td>Padua, Italy</td>                     <td>2.2329</td><td>n45_w011_1arc_v3.tif</td></tr>
-					<tr><td>Poloniny National Park, Slovakia</td> <td>1.9881</td><td>n49_e022_1arc_v3.tif</td></tr>
-					<tr><td>Atacama Desert, Chile</td>           <td>2.1032</td><td>s24_w070_1arc_v3.tif</td></tr>
-					<tr><td>Olduvai Gorge, Tanzania</td>          <td>2.2871</td><td>s03_e035_1arc_v3.tif</td></tr>
-					<tr><td>Auckland, New Zealand</td>            <td>1.2582</td><td>s37_e174_1arc_v3.tif</td></tr>
-					</table>
+                    <tr><td>Sioux Falls, SD, USA</td>             <td>1.7402</td><td>n47_w097_1arc_v3.tif</td></tr>
+                    <tr><td>Paducah KY, USA</td>                  <td>1.9193</td><td>n37_w089_1arc_v3.tif</td></tr>
+                    <tr><td>Pontypridd, Wales</td>                <td>1.7813</td><td>n51_w004_1arc_v3.tif</td></tr>
+                    <tr><td>Padua, Italy</td>                     <td>2.2329</td><td>n45_w011_1arc_v3.tif</td></tr>
+                    <tr><td>Poloniny National Park, Slovakia</td> <td>1.9881</td><td>n49_e022_1arc_v3.tif</td></tr>
+                    <tr><td>Atacama Desert, Chile</td>           <td>2.1032</td><td>s24_w070_1arc_v3.tif</td></tr>
+                    <tr><td>Olduvai Gorge, Tanzania</td>          <td>2.2871</td><td>s03_e035_1arc_v3.tif</td></tr>
+                    <tr><td>Auckland, New Zealand</td>            <td>1.2582</td><td>s37_e174_1arc_v3.tif</td></tr>
+                    </table>
 
 
 
@@ -269,7 +269,7 @@
                     in a previous article in this series
                     <a href="https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms">(Lucas, 2019)</a>
                     In practice, raster data often compresses
-                    poorly when processed by convention data compressors such as Huffman coding or
+                    poorly when processed by conventional data compressors such as Huffman coding or
                     the popular Deflate algorithm used in the zip format. Predictive algorithms implement
                     an invertible (bijective) transformation that converts the source data from a raster grid
                     into a form that exhibits a greatly improved degree of redundancy and, thus, is more suitable
@@ -292,12 +292,12 @@
                 <p>The triangle predictor estimates the value for a grid cell using a linear combination
                     of the values of its three neighboring points as shown below:</p>
 
-                <img alt="Geometry for triangle predictor" src="images/OptimalPredictors/SLGrid_3x3.png" />
+                <img alt="Geometry for Triangle predictor" src="images/OptimalPredictors/SLGrid_3x3.png" />
 
                 <p>Give a grid with uniform spacing and sample points A, B, and C, the predicted value
                     for point P is computed as</p>
 
-                <img alt="Variables for triangle predictor" src="images/OptimalPredictors/image001.png" />
+                <img alt="Variables for Triangle predictor" src="images/OptimalPredictors/image001.png" />
 
                 <p>The equation above assigns coefficients of 1 (or -1) to each of the source data values.
                     It is natural to wonder if there might be a different set of weighting coefficients that
@@ -321,7 +321,7 @@
                     method before moving to Lagrange Multipliers.</p>
 
                 <p>For the three-point case, we wish to find suitable
-                    coefficients  <img alt="Variables for triangle predictor" src="images/OptimalPredictors/image003.png" style="vertical-align:middle"/> for a predictor in the form</p>
+                    coefficients  <img alt="Variables for Triangle predictor" src="images/OptimalPredictors/image003.png" style="vertical-align:middle"/> for a predictor in the form</p>
 
                 <img src = "images/OptimalPredictors/image004.png" alt="Estimator for i,j" />
 
@@ -391,70 +391,70 @@
 
                 <img alt="Layout for predictor coefficients" src="images/OptimalPredictors/lsgroups.png" />
 
-                <p>Currently, the Gridfour implementation uses the 12 coefficient variation.</p>
+                <p>Currently, the Gridfour implementation uses the 12 coefficient variation as the primary
+                predictor for the LSOP implementation.</p>
 
-                <p>The following table gives some general statistics for the prediction using the 12-coefficient predictor
-                    over the ETOPO1 data set. Data from the polar regions was excluded because it tends to have a much higher
-                    level of redundancy than data for the rest of the world. Therefore it was ommitted to avoid
-					skewing the overall statistics.</p>
+                <p>The following table gives some general statistics for the prediction using the 12-coefficient configuration
+                    over the ETOPO1 and GEBCO 2020 data sets. The table also includes information
+                    for a selected, though fairly representative, file from the SRTM collection.</p>
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <tr>
                         <th>&nbsp;</th>
                         <th>ETOPO1</th>
                         <th>GEBCO 2020</th>
-						<th>SRTM (Typical File)</th>
+                        <th>SRTM (Typical File)</th>
                     </tr>
                     <tr>
                         <td>Mean error predicted values</td>
                         <td>-6.74E-5</td>
                         <td> 8.99E-6</td>
-						<td> 3.59E-6</td>
+                        <td> 3.59E-6</td>
                     </tr>
 
                     <tr>
                         <td>Mean absolute error</td>
                         <td>4.78</td>
                         <td>1.74</td>
-						<td>0.88</td>
+                        <td>0.88</td>
                     </tr>
 
                     <tr>
                         <td>Percent integer residuals with zero value</td>
                         <td>25.3 %</td>
                         <td>43.4 %</td>
-						<td>51.9 %</td>
+                        <td>51.9 %</td>
                     </tr>
 
                     <tr>
                         <td>Avg. bits/sample (LSOP only)</td>
                         <td>3.67</td>
                         <td>2.97</td>
-						<td>1.92</td>
+                        <td>1.92</td>
                     </tr>
                 </table>
 
-				<p>When I discussed the ideas behind the Optimal Predictor method, I mentioned that the constraint
-				   applied for the Legrange Multipliers derivation was that the mean error would be zero.
-				   Looking at the values in the table above, we see that the mean error is small, but non-zero.
-				   The reason for this is that the predictor coefficients derived by the code are stored in the
-				   form of four-byte (single precision) floating point values. The limited precision for
-				   floating-point formats means that the values stored for the predictor coefficients are not
-				   a perfect match for the actual optimal coefficients. As a result, the mean error accumulates
-				   a slight offset over the course of being applied over the full collection of samples.</p>
-				 
-				<p>Note also that as the density of the samples increase, and the Optimal Predictor becomes
-				   more successful, the percent of samples with zero-valued residuals also increases. As this happens
-				   the statistical frequency for residuals tends to strongly favor the value zero. For Huffman
-				   coding, this preponderence of zero residuals leads to a shorter coding sequence for the residuals.
-				   Thus the size of the compressed data is reduced.</p>
+                <p>When I discussed the ideas behind the Optimal Predictor method, I mentioned that the constraint
+                   applied for the Legrange Multipliers derivation was that the mean error would be zero.
+                   Looking at the values in the table above, we see that the mean error is small, but non-zero.
+                   The reason for this is that the predictor coefficients derived by the code are stored in the
+                   form of four-byte (single precision) floating point values. The limited precision for
+                   floating-point formats means that the values stored for the predictor coefficients are not
+                   a perfect match for the actual optimal coefficients. As a result, the mean error accumulates
+                   a slight offset over the course of being applied over the full collection of samples.</p>
+                 
+                <p>Note also that as the density of the samples increase, and the Optimal Predictor becomes
+                   more successful, the percent of samples with zero-valued residuals also increases. As this happens
+                   the statistical frequency for residuals tends to strongly favor the value zero. For Huffman
+                   coding, this preponderence of zero residuals leads to a shorter coding sequence for the residuals.
+                   Thus the size of the compressed data is reduced.</p>
 
-				<p>A perfect predictor, if such a thing could exist,
-				   would always produce residual values of zero. In such cases, the information content of the 
-				   transformed data (e.g. its "entropy") would approach zero and the data could be stored with
-				   almost no disk space at all.</p>
-				   
-				   
+                <p>A perfect predictor, if such a thing could exist,
+                   would always produce residual values of zero. In such cases, the information content of the 
+                   transformed data (e.g. its "entropy") would approach zero and the data could be stored with
+                   almost no disk space at all.</p>
+                   
+                   
 
                 <h3>Derivation for Optimal Predictors</h3>
                 <p>The equations and derivation for Optimal Predictors using Lagrange Multipliers is
@@ -481,11 +481,103 @@
 
                 <h2>Computational Considerations</h2>
 
-                <p>As noted above, the current Gridfour implementation uses the 12 coefficient variation. If you refer to the source code
+                <p>As noted above, the current Gridfour implementation uses the 12-coefficient variation. If you refer to the source code
                     for the implementation, you will note that the data elements and predictor coefficients are assigned
                     variables named according to their position relative to the data cell of interest as shown below (for example u1, u2, u3, etc.)</p>
 
                 <img alt="Layout for neighbor values" src="images/OptimalPredictors/SLGrid_12x12.png" />
+                
+                <p>On inspection, the layout illustrated in the figure above reveals that there are a small number of
+                grid cells for which the Smith and Lewis algorithm cannot predict grid cells. In order to predict
+                a value for grid cell P, the algorithm requires cells with known values to the left, beneath, and
+                beneath right of P. As the predictor scans through the grid, it can produce values for cells
+                in its interior, but there are a certain number of cells that it simply cannot reach. Therefore,
+                an implementation of Optimal Predictors must include special logic for populating the
+                unreachable cells.</p>
+                
+                <p>The Gridfour implementation of the Smith and Lewis algorithm begins processing by using
+                its simpler predictors to prepopulate the first two rows and first two columns of the grid.
+                It then applies Optimal Predictors to populate the interior. The last two columns
+                in the grid are also unreachable, so the implementation finishes processing by filling them
+                in using the simple Triangle predictor. The steps are as follows:</p>
+                <ol>
+                <li>The first row and first column are populated using the standard Differencing predictor
+                (see  <a href="https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms">Lucas, 2019</a>)</li>
+                <li>The second row and second column are then populated using the simple Triangle predictor.
+                The Triangle predictor itself requires an initialization, which is why the first step
+                in the process depends on the Differencing predictor to populate the first row and column</li>
+                <li>The Optimal Predictor is used to populate the interior of the grid.</li>
+                <li>The simple Triangle predictor is used to finish the last two columns
+                of the grid (which were unreachable to the Optimal Predictor).</li>
+                </ol>
+                
+                <p>Conventional compression techniques such as Huffman Coding and the Deflate algorithm
+                use information about the statistical properties of the source data to identify redundancy
+                and encode it in a more compact form. Because the two subdomains of the grid
+                (the edge region and the interior) are processed using different predictors, their
+                statistical properties are often quite different. While developing the Optimal Predictor
+                code, I tested a variety of data products and confirmed that compressing the
+                two sets of residuals separately almost always improved the overall reduction
+                compared to compressing them as a single group.</p>
+                
+                <h3>Gridfour Processing Statistics</h3>
+                
+                <p>When designing a data compression implementation or specifying data compression
+                parameters, it is often useful to review the summary data available from
+                the Gridfour data compression library.</p>
+                <p>The text below shows the summary data printed by the Gridfour packaging utility
+                that was used to process the SRTM elevation data for the Paducah, KY data set.
+                Recall that the SRTM data is packaged in separate files covering a 1-degree
+                square area with a grid spacing of one second of arc.  So the SRTM files
+                give a 3600-by-3600 grid (some SRTM files at high latitudes give a 1800-by-3600 grid).
+                In this case, the source grid was partitioned into 400 tiles of size
+                180-by-180 grid cells. Each tile was compressed separately.</p>
+                
+                <p>When the predictor operates over the code, the residuals are serialized
+                into streams of bytes. The bytes are then processed by a conventional data
+                compression technique such as Huffman or Deflate.  The choice of compressor
+                is determined by comperssing the data using both techniques and then selecting
+                the one that produces the most compact results. For the Paducah test data set,
+                the Huffman coding technique was preferred in 399 out of 400 cases.</p>
+                
+                <p>The values in the entropy column indicate the variability of the residuals
+                after the predictor is applied. They are computed using Shannon's
+                Information Entropy formula (Shannon, 1949). In general, the larger the entropy value,
+                harder it will be for a data compressor to reduce the size of the input.
+                The fact that the entropy values for the initializer grid cells (the edge
+                rows and columns) are higher than for the interior is due to the use of
+                the simpler predictors in the "unreachable" sections of the grid.</p>
+
+                <p>The overall entropy for the source data is given at the bottom of the printout.
+                This value, 6.64, represents the state of the data before the predictors are applied.
+                By using the predictors, the entropy in the data is reduced from 6.64 (pre-predictor)
+                to and average of about 1.9 (post-predictor, pre-Huffman/Deflate compression).</p>
+                
+<pre>
+    Codec G93_LSOP12                    Compression Output           Predictor Residuals
+      Huffman (399 tiles, 99.8%)
+       Phase                           bits/sym    bits/tile  |  len (bytes)   avg-unique  entropy
+         Outer rows/columns               2.6        2755.2   |     1071.0        13.9       2.4
+         Interior                         1.9       58567.5   |    31328.0        13.9       1.8
+         Total                            1.9       61379.6   |    32399.0        16.6       1.8
+    
+      Deflate (1 tile, 0.3%)
+       Phase                           bits/sym    bits/tile  |   len (bytes)  avg-unique  entropy
+         Outer rows/columns               3.2        3392.0   |     1071.0        29.0       2.8
+         Interior                         2.2       67792.0   |    31328.0        43.0       2.2
+         Total                            2.2       71272.0   |    32399.0        46.0       2.2
+    
+    Mean error predicted values                  3.591e-06
+    Mean absolute value of residuals                 0.557
+    Percent integer residuals with zero value       51.876 %
+    
+    File size:                                3101064 bytes, 2.96 MB
+    Average bits per sample (estimated):     1.9142
+    avg value: 135.01946705246914
+    min value: -37
+    max value: 329
+    Entropy for input data 6.64 bits/sample
+</pre>
 
                 <h3>Floating-point Operations</h3>
                 <p>The predictor used in the LSOP compressor is based on floating-point arithmetic. Writing the code
@@ -557,15 +649,17 @@
                     <a href="https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf">
                         https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf</a></p>
 
-				<p>NASA. (2020). <i>Shuttle Radar Topography Mission (SRTM)</i>
-				<a href="https://www2.jpl.nasa.gov/srtm/">https://www2.jpl.nasa.gov/srtm/</a>
-				Data was downloaded from the USGS Earth Explorer web site at <a href="https://earthexplorer.usgs.gov/">https://earthexplorer.usgs.gov/</a>.
-				</p>
+                <p>NASA. (2020). <i>Shuttle Radar Topography Mission (SRTM)</i>
+                <a href="https://www2.jpl.nasa.gov/srtm/">https://www2.jpl.nasa.gov/srtm/</a>
+                Data was downloaded from the USGS Earth Explorer web site at <a href="https://earthexplorer.usgs.gov/">https://earthexplorer.usgs.gov/</a>.
+                </p>
 
                 <p>Patterson, Tom. (2020). <i>100-meter Natural Earth Map Data</i>. Accessed September 2020 from <a href="http://shadedrelief.com/NE_100m/">http://shadedrelief.com/NE_100m/</a>
 
                 <p>Project Nayuki. (2020). <i>Reference arithmetic coding</i>. Accessed September 2020 from https://www.nayuki.io/page/reference-arithmetic-coding.</p>
 
+                <p>Shannon, C.E., & Weaver, W. (1949). <i>The mathematical theory of communication.</i> Urbana: University of Illinois Press.</p>
+                
                 <p>Smith, Derek H., &#38; Lewis, Michael. (1994). Optimal predictors for compression of digital elevation models.<br>
                     <i>Computers &#38; Geosciences, Volume 20, Issues 7-8,</i> August-October 1994, 1137-1141
                 </p>
