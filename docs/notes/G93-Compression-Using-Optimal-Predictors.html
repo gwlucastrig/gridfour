@@ -64,8 +64,9 @@
                     But the decompression operations for LSOP require a much larger number of floating-point
                     and array-access operations than the standard Gridfour predictor techniques.
 					This overhead leads to an increase in time-to-read files of approximately 50 percent.
-                    For example, tests with the ETOPO1 product described below found an increase in access
-                    time from an average 4.02 seconds to 6.15 seconds.</p>
+                    For example, the ETOPO1 product described is organized into 5400 blocks of
+					43200 data samples each.  Adding the LSOP compression to the file resulted
+					in an increase in the time to read that data from 4.02 seconds to 6.15 seconds.</p>
 
                 <p>Future work on the LSOP compression may involve exploring different coding techniques
                     in an effort to improve access speeds. When the work is completed,
@@ -79,11 +80,11 @@
                     (about 463 meters between points) respectively. Both of these products were compiled from
                     multiple sources and cover the entire world in a single grid-based data file. The third source of
                     test data is taken from the Shuttle Radar Topography Mission (SRTM).  The SRTM data is available 
-                    in several thousand separate files each of which covers a single one-degree square with
+                    in several thousand separate files. Each of these files covers a single one-degree square with
                     a resolution of 1 second of arc (about  30 meters spacing at the equator).</p>
                 
                 <p>The table below shows the results of data compression results for
-                   the ETOPO1 and GEBCO 2020 data sets and a typical SRTM file (the Paducah, KY sample).
+                   the ETOPO1 and GEBCO 2020 data sets and a typical SRTM file (the Paducah, KY sample identified below).
                    Storage sizes are given in bits per sample (bps). The "savings" column shows
 				   the amount by which the output data file was reduced when the standard compression
 				   technique was supplemented with LSOP.
@@ -151,7 +152,7 @@
 				ranging from -10952 (maximum depth) to 8627 (maximum elevation). These values could comfortably
 				be stored in a standard two-byte (16 bit) integer format, which is exactly what GEBCO 2020 and SRTM use.
 				But the raw ETOPO1 data set uses four-byte integers. So its file size is actually twice as large as it needs to
-				be. To give a fair estimate, I divided the size of the overall ETOPO1 file by two.</p>
+				be. To give a fair comparison, I divided the size of the ETOPO1 source file by two.</p>
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <tr>
@@ -190,16 +191,17 @@
 				  in space, there is more correlation between adjacent samples and the Optimal Predictor
 				  technique is better able to predict the value of neighboring samples.
 				  Better predictions result in small residuals (errors).
-                  And smaller residuals tend to improve comprssion ratios.</p>
+                  And smaller residuals tend to improve compression ratios.</p>
 
                 <p>Part of the compressibility of data also depends on the presence of features and artifacts that
                    are small relative to the sample spacing and which exhibit unpredictable behavior... In other words,
                    the presense of noise components that reduce predictability lead to less effective data compression.
-                   Often, such features are removed from data as a consequence of the data collection or modeling process.
-                   Determining which features contribute to the size of the post-compression data often requires insight
-                   into the methods used to collect it.</p>
+                   Often, the software systems that create Digital Elevation Model products remove noise and small features
+				   as part of their data quality assurance and filtering processes. So the features that do remain
+				   are generally significant and should not be neglected by a data compression implementation.</p>
                    
                 <h3>Compressability for high-density data from the SRTM survey</h3>
+				
                 <p>I will conclude the discussion of the Optimal Predictor's performance with a little more
 				   detail about the SRTM data set. In 2000, NASA's Shuttle Radar Topography Mission (SRTM)
                    collected elevation data for much of the world using a sophisticated synthetic aperature radar apparatus.
@@ -211,11 +213,12 @@
 				   14277 separate data files (based on a search at the 
 				   USGS <a href="https://earthexplorer.usgs.gov/">Earth Explorer</a> website).
 				   NASA names its SRTM files based on the southwest corner of the
-                   area of coverage.  To give a sense of where each data file was collected, 
-				   the SRTM files are identified by a named place that falls within
-				   their area of coverage. As noted above, the SRTM elevations are given in meters
-				   and stored using a two-byte itneger format.  For many of the samples, the method of
-                   Optimal Predictors achieves a better than 8-to-1 reduction in the size of the data set.</p>
+                   area of coverage. As a reference, the entries in the table below are labeled with
+				   the names of places that lie within the bounds of the 1-degree square area of
+				   coverage for the associated SRTM file. The degree to which SRTM data compresses depends
+				   on the variability of the source data. But for many of the sample files, the
+				   method of Optimal Predictors achieves better than a 8-to-1 reduction in the side
+				   of the data set.</p>
 
                    
                     <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
@@ -419,7 +422,7 @@
 				   As a result, the mean error accumulates a slight offset over the course of being applied
 				   over the full collection of samples.</p>
                  
-                <p>Note also that as the density of the samples increase, and the Optimal Predictor becomes
+                <p>Note also that as the density of the samples increases, and the Optimal Predictor becomes
                    more successful, the percent of samples with zero-valued residuals also increases. As this happens
                    the statistical frequency for residuals tends to strongly favor the value zero. For Huffman
                    coding, this preponderence of zero residuals leads to a shorter coding sequence for the residuals.
@@ -512,7 +515,7 @@
                 <p>When the predictor operates over the code, the residuals are serialized
                 into streams of bytes. The bytes are then processed by a conventional data
                 compression technique such as Huffman or Deflate.  The choice of compressor
-                is determined by comperssing the data using both techniques and then selecting
+                is determined by compressing the data using both techniques and then selecting
                 the one that produces the most compact results. For the Paducah test data set,
                 the Huffman coding technique was preferred in 399 out of 400 cases.</p>
                 
@@ -565,7 +568,7 @@
                     arithmetic needed for the Optimal Predictor be reproducible in a consistent manner.</p>
 
                 <p>In order to ensure consistency, LSOP uses 4-byte, single-precision floating point arithmetic for
-                    its predictor. The Java classes related to Optimal Predictors are implemented using Java's **strictfp** keyword.
+                    its predictor. The Java classes related to Optimal Predictors are implemented using Java's <i>strictfp</i> keyword.
                     All floating-point to integer conversions are all performed using Java's StrictMath.round() function.
                     Similar capabilities are available for most modern development environments and programming languages.</p>
 
@@ -599,8 +602,9 @@
 
                 <p>In testing, arithmetic coding yielded only small improvements in data compression. For ETOPO1, the
                     Huffman-variation cited above required and average of 3.6547 bits per symbol. The arithmetic coding variation
-                    required 3.6531 bits per symbol. However, the arithmetic coding process is slower than Huffman. Arithmetic coding
-                    required an average of 234 seconds across multiple trials versus 122 seconds for Huffman.</p>
+                    required 3.6531 bits per symbol. However, the arithmetic coding process is slower than Huffman.
+					While the standard implementation required 122 seconds to compress the ETOPO1 data set, replacing
+					Huffman with artihmetic coding increased the processing time to 234 seconds.</p>
 
                 <p>With regard to these results, it is worth noting that the Gridfour implementation of Huffman coding is
                     carefully tuned to the requirements of the G93 data compression application. A great deal of attention
@@ -610,8 +614,8 @@
                     I paid considerable attention to creating a compact representation of the frequency table for storing the
                     data, but did otherwise attempt to optimize the code.</p>
 
-                <p>In future work, the may be opportunities to obtain even better compression ratios using an arithmetic coding
-                    implementation customized for the G93 file application.</p>
+                <p>In future work, the may be opportunities to obtain even better compression ratios using a customized
+				arithmetic coding implementation tuned to the specific needs of the G93 file application.</p>
 
                 <h1>Referenceces</h1>
 
