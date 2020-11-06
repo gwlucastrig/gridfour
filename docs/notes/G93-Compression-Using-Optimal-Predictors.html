@@ -54,25 +54,21 @@
                     also contributed to an "overview" paper that gives much useful background on the ideas used
                     for data compression (see Kidner &#38; Smith, 2003).</p>
 
+				<h2>How this Article is Organized</h2>
+				<p>This article is organized into two parts. The first part discusses the Optimal Predictor
+					technique itself. The second discusses implementation details for a Java-based API
+					that is available through the Gridfour Software Project. One if the goals of the
+					Gridfour project is to explore data compression techniques for raster (grid) based data sources.
+					To that end, we have created a file format called G93 that provides a testbed for
+					experimenting with compression techniques. While the second part of this article does
+					touch on G93, the focus of these notes is the Optimal Predictor technique.</p>
+				
+				<h1>Part 1: Optimal Predictors</h1>
 
                 <h2>Performance</h2>
                 <p>There are two factors to consider when assessing the performance of a data compression technique:
-                    access speed and compression ratios.</p>
-                    
-                <p>The overhead related to file-access and data retrieval are roughly
-                    the same whether a Gridfour file is stored with or without the LSOP enhancement.
-                    But the decompression operations for LSOP require a much larger number of floating-point
-                    and array-access operations than the standard Gridfour predictor techniques.
-					This overhead leads to an increase in time-to-read files of approximately 50 percent.
-                    For example, the ETOPO1 product described is organized into 5400 blocks of
-					43200 data samples each.  Adding the LSOP compression to the file resulted
-					in an increase in the time to read that data from 4.02 seconds to 6.15 seconds.</p>
-
-                <p>Future work on the LSOP compression may involve exploring different coding techniques
-                    in an effort to improve access speeds. When the work is completed,
-                    the relevant techniques will be discussed in future versions of this article.
-                    For the present, the primary concern of this article is the effectiveness of the
-                    Optimal Predictor algorithm for the reduction of data storage size.</p>
+                    compression ratios and access speed. Since the motivation for implementing Optimal Predictors
+					was to improve the data compression ratios for the Gridfour library, we will being with that.</p>
 
                 <p>To assess the data-compression performance of the Optimal Predictors implementation, I tested three
                     Digital Elevation Models (DEMs). The first two, ETOPO1 and GEBCO 2020 give global-scale elevation data with a grid spacing
@@ -237,10 +233,24 @@
                     <tr><td>Auckland, New Zealand</td>            <td>1.2582</td><td>s37_e174_1arc_v3.tif</td></tr>
                     </table>
 
+                <h2>Access Speed</h2>
+                <p>The mechanics of reading raw bytes from a data file are roughly the same 
+                    whether a Gridfour file is stored with or without the LSOP enhancement.
+                    But the decompression operations for LSOP require a much larger number of floating-point
+                    and array-access operations than the standard Gridfour predictor techniques.
+					This overhead leads to an increase in time-to-read files of approximately 50 percent.
+                    For example, the ETOPO1 product described is organized into 5400 blocks of
+					43200 data samples each.  Adding the LSOP compression to the file resulted
+					in an increase in the time to read that data from 4.02 seconds to 6.15 seconds.</p>
+
+                <p>Future work on the LSOP compression may involve exploring different coding techniques
+                    in an effort to improve access speeds. When the work is completed,
+                    the relevant techniques will be discussed in future versions of this article.
+                    For the present, the primary concern of this article is the effectiveness of the
+                    Optimal Predictor algorithm for the reduction of data storage size.</p>
 
 
-
-                <h1>How it works</h1>
+                <h2>How it works</h2>
                 <p>The concept of using predictive algorithms to improve data compression was introduced
                     in a previous article in this series
                     <a href="https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms">(Lucas, 2019)</a>
@@ -294,7 +304,7 @@
                     <figcaption>Figure 1 - Terrain with ridges rendered using Gridfour DemoCOG application, land-cover from Patterson (2020).</figcaption>
                 </figure>
 
-                <h2>Lagrange Multipliers</h2>
+                <h3>Lagrange Multipliers</h3>
                 <p>The method of Lagrange Multipliers resembles that of the method of Ordinary Least Squares.
                     Because the least-squares technique is better known than Lagrange, we will begin with that
                     method before moving to Lagrange Multipliers.</p>
@@ -439,7 +449,7 @@
                 <p>The equations and derivation for Optimal Predictors using Lagrange Multipliers is
                     discussed in detail in <a href="https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf">Lewis &#38; Smith (1993).</a>
 
-                <h1>Implementation Details</h1>
+                <h1>Part 2: Implementation Details</h1>
 
                 <h2>Modules and Dependencies in the Java Implementation</h2>
                 <p>The current implementation policy for the Gridfour project is to ensure that the <i>core</i> Gridfour module (GridfourCore.jar)
