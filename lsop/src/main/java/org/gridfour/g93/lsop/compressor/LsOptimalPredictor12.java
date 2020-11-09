@@ -31,9 +31,37 @@
  * 07/2020  G. Lucas     Created
  *
  * Notes:
- *   the first 2 rows and then the first two columns are pre-populated using
- * simple differences. After that, the remainder of the grid is populated
- * using the Lewis and Smith Optimal Predictor
+ *  The design of this class needs improvement.  At present, it combines
+ * logic specific to the G93 encoding with logic that is related to
+ * the Optimal Predictor algorithm.  I would like to move the G93
+ * stuff (the initializations and M32 encoding) into the LsEncoder12 class
+ * and make this class be a clean implementation of Optimal Predictors.
+ *
+ * One feature of Optimal Predictors is that certain grid cells are
+ * "unreachable" to the predictor and must be populated using other means.
+ *    1.  The first row and first column are initialized using the
+ *        simple Differencing Predictor that is used for other G93 encoders.
+ *    2.  The second row and second column are initialized using
+ *        the simple Triangle Predictor that is used for other G93 encoders.
+ *    3.  The rows in the interior area of the grid are initialized using
+ *        Optimal Predictors, except for the last two columns in each row
+ *        which are also unreachable.  These are populated using
+ *        the triangle predictor.
+ *
+ *  This logic produces two separate packings for the compressed output.
+ *  The first is for the initialization, which covers the first two rows
+ *  of cells as well as the first and last pairs of columns.
+ *  The second is for the interior part of the grid, which is created
+ *  using Optimal Predictors.  The reason for the separate packing is that
+ *  they have significantly different statistical properties (symbol
+ *  frequencies) and compress more effectively when separated than when
+ *  lumped together.
+ *
+ *  In future work, it may be advantageous to replace the Triangle Predictor
+ *  with Smith and Lewis' 3-point variation of the Optimal Predictor.
+ *  This approach should reduce the size of the initializer storage, though
+ *  the savings most likely would be modest since the initializer itself
+ *  only makes a small contribution to the overall storage size.
  * -----------------------------------------------------------------------
  */
 package org.gridfour.g93.lsop.compressor;
@@ -94,19 +122,19 @@ strictfp public class LsOptimalPredictor12 {
     //    2) first two columns in each subsequent row
     //    3) last two columns in each subsequent row
     //  Constructor CodecM32 allocates 5 bytes per value
-    int n = nColumns * 4 + nRows * 2;
+    int n = nColumns * 4 + nRows * 2 - 8;
     CodecM32 initializationCodec = new CodecM32(n);
 
     // The Initialization
     // It is necessary to initialize the first two rows and the
-    // first and last two columns, since these are cells that cannot
-    // be populated by the predictor.  We use the persistence predictor
-    // for the first row, first column, and then the second to last
-    // column.  Then we use the triangle predictor for the second row,
-    // second column, and last column.  This design elected to use the
-    // extra complexity of switching predictors because the triangle
-    // predictor does produce better results than the persistence predictor.
-    //
+    // first two columns and the last two columns, since these are "unreachable"
+    // cells that cannot be populated by the predictor.  We use the
+    // differencing predictor for the first row and first column.
+    // Then we use the triangle predictor for the second row and second column.
+    // Finally, we use the triangle predictor for the last two columns. But
+    // when decompressing, the final two columns will not be extracted
+    // until after the interior is fully populated.
+
     // Fist row, start from column 1, do not encode column 0
     int seed = values[0];
     long prior = seed;
@@ -124,18 +152,6 @@ strictfp public class LsOptimalPredictor12 {
     prior = values[0];
     for (int i = 1; i < nRows; i++) {
       long test = values[i * nColumns];
-      long delta = test - prior;
-      if (isDeltaOutOfBounds(delta)) {
-        return null;
-      }
-      initializationCodec.encode((int) delta);
-      prior = test;
-    }
-
-    // the second to last column ------------------------------------
-    prior = values[nColumns - 2];
-    for (int i = 1; i < nRows; i++) {
-      long test = values[i * nColumns + nColumns - 2];
       long delta = test - prior;
       if (isDeltaOutOfBounds(delta)) {
         return null;
@@ -174,19 +190,30 @@ strictfp public class LsOptimalPredictor12 {
       initializationCodec.encode((int) delta);
     }
 
-    // The last column
-    for (int i = 2; i < nRows; i++) {
-      int index = i * nColumns + nColumns - 1;
-      long a = values[index - 1];
-      long b = values[index - nColumns - 1];
-      long c = values[index - nColumns];
-      long test = values[index];
-      long delta = test - ((a + c) - b);
-      if (isDeltaOutOfBounds(delta)) {
-        return null;
+    // The last two columns
+      for (int i = 2; i < nRows; i++) {
+          int index = i * nColumns + nColumns - 2;
+          long a = values[index - 1];
+          long b = values[index - nColumns - 1];
+          long c = values[index - nColumns];
+          long test = values[index];
+          long delta = test - ((a + c) - b);
+          if (isDeltaOutOfBounds(delta)) {
+              return null;
+          }
+          initializationCodec.encode((int) delta);
+
+          index++;
+          a = values[index - 1];
+          b = values[index - nColumns - 1];
+          c = values[index - nColumns];
+          test = values[index];
+          delta = test - ((a + c) - b);
+          if (isDeltaOutOfBounds(delta)) {
+              return null;
+          }
+          initializationCodec.encode((int) delta);
       }
-      initializationCodec.encode((int) delta);
-    }
 
 
     // now process the samples and compute the 3x3 optimal predictor
