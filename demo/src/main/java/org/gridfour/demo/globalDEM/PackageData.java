@@ -239,7 +239,7 @@ public class PackageData {
     // This enhanced compression technique will be used only if compression
     // is enabled and the data type is integral.
     if (useLsop) {
-      LsCodecUtility.addLsopToSpecification(spec);
+      LsCodecUtility.addLsopToSpecification(spec, false);
     }
 
     // ---------------------------------------------------------

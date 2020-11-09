@@ -38,28 +38,39 @@ import org.gridfour.g93.lsop.decompressor.LsDecoder12;
  */
 public class LsCodecUtility {
 
-  /**
-   * The standard ID for the Smith and Lewis optimal-predictor based encoder and
-   * decoder pair.
-   */
-  public static final String LSOP_CODEC_ID = "G93_LSOP12";
+    /**
+     * The standard ID for the Smith and Lewis optimal-predictor based encoder
+     * and
+     * decoder pair.
+     */
+    public static final String LSOP_CODEC_ID = "G93_LSOP12";
 
-  /**
-   * A static method to adds the LS encoder and decoder classes to
-   * the G93 File Specification.
-   *
-   * @param spec a valid G93 file specification
-   */
-  public static void addLsopToSpecification(G93FileSpecification spec) {
-    // spec.removeAllCompressionCodecs();
-    // spec.addCompressionCodec("G93_LSOP08", LsEncoder08.class, LsDecoder08.class);
-    spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder12.class, LsDecoder12.class);
-  }
+    /**
+     * A static method to adds the LS encoder and decoder classes to
+     * the G93 File Specification.
+     * <p>
+     * The exclusive option is intended for development and diagnostic
+     * purposes. It adjusts the G93FileSpecification so that the default
+     * compressor codecs are removed (if any) and the Optimal Predictor
+     * codecs are used exclusively.
+     *
+     * @param spec a valid G93 file specification
+     * @param exclusive a flag indicating whether Optimal Predictors are to be
+     * used exclusively for data compression (true) or whether other compressor
+     * codec are to be included.
+     */
+    public static void addLsopToSpecification(G93FileSpecification spec, boolean exclusive) {
+        if (exclusive) {
+            spec.removeAllCompressionCodecs();
+        }
+        // spec.addCompressionCodec("G93_LSOP08", LsEncoder08.class, LsDecoder08.class);
+        spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder12.class, LsDecoder12.class);
+    }
 
-  /**
-   * A private constructor to deter applications from constructing instances
-   * of this class.
-   */
-  private LsCodecUtility() {
-  }
+    /**
+     * A private constructor to deter applications from constructing instances
+     * of this class.
+     */
+    private LsCodecUtility() {
+    }
 }
