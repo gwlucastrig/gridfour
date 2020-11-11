@@ -245,10 +245,13 @@
                     whether a Gridfour file is stored with or without the LSOP enhancement.
                     But the decompression operations for LSOP require a much larger number of floating-point
                     and array-access operations than the standard Gridfour predictor techniques.
-                    This overhead leads to an increase in time-to-read files of approximately 50 percent.
+                    This overhead leads to an increase in time-to-read files of approximately a factor of two.
                     For example, the ETOPO1 product described is organized into 5400 blocks of
                     43200 data samples each.  Adding the LSOP compression to the file resulted
-                    in an increase in the time to read that data from 4.02 seconds to 6.15 seconds.</p>
+                    in an increase in the time to read that data from 4.02 seconds to 8.15 seconds.
+					Considering that the ETOPO1 data set contains over 233 million data,
+					the fact that it required four extra seconds to unpack it does not seem onerous.
+					</p>
 
                 <p>Future work on the LSOP compression may involve exploring different coding techniques
                     in an effort to improve access speeds. When the work is completed,
