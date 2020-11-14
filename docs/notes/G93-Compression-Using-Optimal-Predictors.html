@@ -635,31 +635,92 @@
 						to find out is, of course, through implementation and testing. Such an implementation
 						is a candidate for future work.</p>
 						
-						<h2>Arithmetic Coding</h2>
+						<h2>Potential Replacements for Huffman Coding</h2>
+						<p class="blockquote">
+							<i>Entropy encoding</i> techniques compress symbols according to a model of their expected
+							frequencies, with common symbols being represented by fewer bytes than rare ones (Gibbons, 2019).
+						</p>
+						<p>
+						To compress raster data, the Optimal Predictor produces a set of residuals that are passed to a
+						conventional data compression tool for final reduction. Testing reveals that the most successful
+						compressors tend to be the entropy-based Huffman coding. There are at least two other entropy encoders
+						that often achieve better compression ratios than Huffman: arithmetic coding and range-based Asymmetric Numeral Systems
+						(rANS) encoding. Preliminary investigations into using these alternate systems were inconclusive.
+						Future investigation may include a in-depth look at these encodings.</p>
+						<h3>Motivation</h3>
+						<p>Entropy encodings are based on probability. The more frequently a particular symbol (data value) appears
+						in a message sequence, the higher the probability that the next member in a sequence will be that symbol.
+						Higher probability symbols are encoded with shorter sequences, so the overall length of the output is reduced.
+						The Huffman coding algorithm uses symbol probabilities to create an encoding that can be represented
+						using a binary tree structure.  When decoding a Huffman encoded message, bits in a sequence
+						indicate which branch of the tree to follow (typically, 0 for left, 1 for right). As bits are read,
+						the branches of the tree are followed until a termal node (i.e. a leaf) is reached, at which time
+						the output symbol is identified. Because traversing a tree is a lightweight software process,
+						decompressing a Huffman-coded message tends to be very fast. </p>
+						
+						<p>Unfortunately, the fact that the probabilities are represented in
+						the structure of a tree means that the actual probabilities for symbols can only be
+						approximated as a sum of powers of 2 (i.e. 1/2, 1/4, 1/8, 3/8, etc.). Since the representation of probabilities
+						is not quite perfect, the Huffman coding does not quite reach the theoretical limits of entropy
+						encoding (as defined by Shannon's entropy equation).  Methods such as arithmetic coding and rANS
+						attempt to improve compression ratios by using alternate ways to embed knowledge about probabilities
+						into a bit sequence.</p>
+						<h3>Results</h3>
+						
                         <p>Kidner and Smith (2003) reported using arithmetic coding as their preferred method for compressing
-                            the post-prediction data set (the residuals). Since arithmetic coding is conceptually similar to Huffman
-                            coding, and since Huffman coding was the preferred compression technique for the LSOP predictor,
-                            I investigated the use of arithmetic coding in the Gridfour implementation. For purposes of this investigation,
-                            the <i>Reference arithmetic coding</i> library (Project Nayuki, 2020) was used to support arithmetic coding operations.</p>
+                            the post-prediction data set (the residuals). To investigate its suitability for Gridfour,
+							I implemented a G93 compression codec using the <i>Reference arithmetic coding</i> software library
+							(Project Nayuki, 2020).</p>
 
                         <p>In testing, arithmetic coding yielded only small improvements in data compression. For ETOPO1, the
                             Huffman-variation cited above required and average of 3.6547 bits per symbol. The arithmetic coding variation
                             required 3.6531 bits per symbol. However, the arithmetic coding process is slower than Huffman.
                             While the standard implementation required 122 seconds to compress the ETOPO1 data set, replacing
-                            Huffman with artihmetic coding increased the processing time to 234 seconds.</p>
+                            Huffman with arithmetic coding increased the processing time to 234 seconds.</p>
+						
+						<p>Data compression based on Asymmetric Numeral Systems was introduced by Jarek Duda in 2009. The rANS
+						variant of Duda's encoding requires much less processing overhead than arithmetic coding while
+						producing better compression ratios than Huffman coding.</p>
+						<p>Unfortunately, I was unable to find a suitable Java-based library for rANS. To develop a test
+						codec for this investigation, I combined the Java-based Gridfour code with a C-language API. While
+						the resulting application was clunky, fragile, and only ran under a Linux OS, it did provide the
+						capability for evaluating the potential for a rANS alternative to Huffman.</p>
+						
+						<p>To evaluate rANS, I used the ETOPO1 data set with a 90-by-120 raster tile size, using the 12-point
+						Optimal Predictor. I restricted the test to only those tiles where Huffman coding was the preferred method
+						of encoding (those tiles where Huffman worked better than Deflate). Processing times for the two compressors
+						were roughly the same.</p>
+						
+						<p>The saving achieved by using rANS was modest, less than 0.04 percent. This result was
+						substantially less than that reported by other developers working with other kinds of data.</p>
+						
+						<p>One reason for the disappointing results with the rANS and arithmetic coding implementations
+						may have been the relatively small size of the sample data. All entropy encoders (including implementations
+						such as adaptive Huffman and adaptive arithmetic coding) entail some overhead for embedding the
+						frequency table for its symbol set into the encoded output. With shorter data sequences, the overhead is more significant.
+						In fact, when I increased the tile size from 90-by-120 (10800 raster cells) to 120-by-240 (43200 raster cells),
+						the rANS technique resulted in an improved compression ratio of 1 percent. However, a larger
+						tile size isn't necessarily a panacea for improving compression ratios. As the tiles sizes increased,
+						the geographic area that they covered also increased. And the larger geographic areas often covered
+						a more varied set of terrain. With more variation, there was less redundancy. And redundancy is, of course,
+						the thing that makes data compression possible. So, as the tile sized increased, the rANS technique
+						had an advantage over Huffman, but the end result was not significantly smaller because the input residual data was less
+						suitable for data compression.</p>
+					
 
                         <p>With regard to these results, it is worth noting that the Gridfour implementation of Huffman coding is
-                            carefully tuned to the requirements of the G93 data compression application. A great deal of attention
-                            has been given both to speed of access and the representation of the Huffman tree when data is stored.
-                            The Nayuki arithmetic coding API is a reference implementation that is intended to demonstrate how arithmetic
-                            coding works and does not focus on the most minimal compression or fastest data access. In the test implementation,
-                            I paid considerable attention to creating a compact representation of the frequency table for storing the
-                            data, but did otherwise attempt to optimize the code.</p>
-
-                        <p>In future work, the may be opportunities to obtain even better compression ratios using a customized
-                            arithmetic coding implementation tuned to the specific needs of the G93 file application.</p>
+                            carefully tuned to the requirements of raster data compression applications.
+							This consideration gave Huffman an advantage the generic implementations for arithmetic coding
+							and rANS did not have. For example, Gridfour takes a
+							moderately innovative approach to Huffman by encoding the tree directly rather than storing
+							a frequency table as so many implementations do (for ETOPO1, the Huffman tree required only
+							10 bits per symbol). It is possible that with similar customizations, improvements to the results
+							for both arithmetic coding and rANS could be achieved.</p>
+ 
 
                         <h1>References</h1>
+						<p>Gibbons, Jeremy. (2019). "Coding with Asymmetric Numeral Systems (long version)". Accessed November 2019
+						from <a href="http://www.cs.ox.ac.uk/jeremy.gibbons/publications/asymm-long.pdf">http://www.cs.ox.ac.uk/jeremy.gibbons/publications/asymm-long.pdf</a></p>
 
                         <p>Kidner, David &#38; Smith, Derek. (2003). "Advances in the data compression of digital elevation models".<br>
                             <i>Computers &#38; Geosciences. 29. 985-1002.</i></p>
@@ -667,7 +728,7 @@
                         <p>Lewis, M., &#38; Smith, D.H. (1993). "Optimal predictors for the data compression of digital
                             elevation models using the method of Lagrange multipliers". In <i>Auto-Carto XI Proceedings of the
                                 International Symposium on Computer-Assisted Cartography</i>, Oct 30-Nov 1, 1993. PDF document accessed
-                            Aug, 2020 from
+                            August, 2020 from
                             <a href="https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf">
                                 https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf</a></p>
 
@@ -680,7 +741,7 @@
 
                         <p>Project Nayuki. (2020). <i>Reference arithmetic coding</i>. Accessed September 2020 from https://www.nayuki.io/page/reference-arithmetic-coding.</p>
 
-                        <p>Shannon, C.E., & Weaver, W. (1949). <i>The mathematical theory of communication.</i> Urbana: University of Illinois Press.</p>
+                        <p>Shannon, C.E., &#38; Weaver, W. (1949). <i>The mathematical theory of communication.</i> Urbana: University of Illinois Press.</p>
 
                         <p>Smith, Derek H., &#38; Lewis, Michael. (1994). Optimal predictors for compression of digital elevation models.<br>
                             <i>Computers &#38; Geosciences, Volume 20, Issues 7-8,</i> August-October 1994, 1137-1141
