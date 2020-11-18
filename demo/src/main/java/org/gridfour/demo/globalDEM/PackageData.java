@@ -253,6 +253,7 @@ public class PackageData {
       }
     }
 
+    ps.println("Begin processing");
     double zMin = Double.POSITIVE_INFINITY;
     double zMax = Double.NEGATIVE_INFINITY;
     double zSum = 0;
