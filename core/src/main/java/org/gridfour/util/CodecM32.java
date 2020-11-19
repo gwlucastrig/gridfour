@@ -247,8 +247,7 @@ public class CodecM32 {
      * <p>
      * Because this method is written to be used in tight loops with intense
      * processing, there is no bounds checking performed on the internal
-     * buffer.  Application developers must take responsibility for their
-     * own safety of implementation issues.
+     * buffer.
      *
      * @param value any integer value to be encoded (a signed integer that can
      * be stored with 5 bytes)
@@ -318,9 +317,8 @@ public class CodecM32 {
      * appropriate.
      * <p>
      * Because this method is written to be used in tight loops with intense
-     * processing, there is not bounds checking performed on the internal
-     * buffer.  Application developers must take responsibility for their
-     * own safety of implementation issues.
+     * processing, there is no bounds checking performed on the internal
+     * buffer.
      *
      * @return an arbitrary integer value.
      */
