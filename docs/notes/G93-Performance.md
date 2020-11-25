@@ -242,7 +242,7 @@ The G93 file format supports 3 different data formats:
 	
 The GEBCO data is expressed in a non-integral form. While the data can be stored
 as integer-coded-floats, the integer coding requires some loss of precision. 
-So, to store the data in a non-lossy form, it needs to be represented using
+So, to store the data in a lossless form, it needs to be represented using
 the 4-byte floating-point format.  While the floating-point representation of the
 data preserves all the precision in the original, it requires a different approach
 to data compression than the integer forms.  Unfortunately, the G93 floating-point

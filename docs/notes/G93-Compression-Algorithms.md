@@ -35,7 +35,7 @@ effect, a lossy representation. But, because the integer-coded float approach
 is used for a number of publically available geophysical data sets, the G93 API
 implements logic to support it directly.
 
-The G93 API implements non-lossy data compression algorithms for both 
+The G93 API implements lossless (non-lossy) data compression algorithms for both 
 integer and floating-point data.  The implementations for the two are much different.
 In particular, the floating-point data compression does not take advantage of
 the predictor methods described below. In general, floating-point data tends
@@ -396,7 +396,7 @@ the use of wavelet functions. Data compression continues to be an area
 of active interest in the software community, and we fully expect that
 new techniques are waiting to be discovered.
 
-The G93 project is especially interested in non-lossy, or nearly non-lossy, techniques
+The G93 project is especially interested in lossless, or nearly lossless, techniques
 for compressing real-valued data.  The current G93 implementation implements compression
 for floating point data, but the results are not as successful as they are for integers.
 

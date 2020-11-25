@@ -4,7 +4,7 @@ The G93 library implements a data compression technique that reduces many floati
 raster data sets to about 50% of their uncompressed size while preserving the full
 precision of the original data. The technique is relatively simple and requires
 moderate computational resources. Because the G93 data compression technique is
-_non-lossy_, it is suitable for applications that require faithful preservation of floating-point data in
+_lossless_, it is suitable for applications that require faithful preservation of floating-point data in
 its original form. Potential uses include data archival, distribution, and real-time processing systems.
 
 This wiki article provides information about the G93 technique. It includes performance test
@@ -33,7 +33,7 @@ both of which implement their own techniques for
 data compression. Thus the bits-per-symbol rates for the source files were
 already less than the 32 bits that would be expected for the single-precision
 floating-point data that they provided. Again, all three of the data formats cited
-in the table are based on _non-lossy_ compression techniques that preserve
+in the table are based on _lossless_ compression techniques that preserve
 the full precision of the original data. Better compression ratios are available
 using _lossy_ methods, but only at the cost of losing some information from the source data. 
 
