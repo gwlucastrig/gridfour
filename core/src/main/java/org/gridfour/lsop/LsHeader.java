@@ -38,7 +38,7 @@ package org.gridfour.lsop;
 public class LsHeader {
 
   protected final int codecIndex;
-  protected final int nPredictor;
+  protected final int nCoefficients;
   protected final int seed;
   protected final float[] u;
   protected final int nInitializerCodes;
@@ -59,20 +59,20 @@ public class LsHeader {
     //   for 8 predictor coefficients:  47 bytes
     //   for 12 predictor coefficients: 63 bytes
     //    1 byte     codecIndex
-    //    1 byte     number of predictors (currently 8)
+    //    1 byte     number of predictor coefficients (N)
     //    4 bytes    seed
-    //    N*4 bytes  coefficients (currently, N=8)
+    //    N*4 bytes  predictor coefficients
     //    4 bytes    nInitializationCodes
     //    4 bytes    nInteriorCodes
     //    1 byte     method
 
     int offset = packingOffset;
     codecIndex = packing[offset++];
-    nPredictor = packing[offset++];
+    nCoefficients = packing[offset++];
     seed = unpackInteger(packing, offset);
     offset += 4;
-    u = new float[nPredictor];
-    for (int i = 0; i < nPredictor; i++) {
+    u = new float[nCoefficients];
+    for (int i = 0; i < nCoefficients; i++) {
       u[i] = unpackFloat(packing, offset);
       offset += 4;
     }
@@ -110,9 +110,9 @@ public class LsHeader {
     //   for 8 predictor coefficients:  47 bytes
     //   for 12 predictor coefficients: 63 bytes
     //    1 byte     codecIndex
-    //    1 byte     number of predictors (currently 8)
+    //    1 byte     number of predictor coefficients (N)
     //    4 bytes    seed
-    //    N*4 bytes  coefficients (currently, N=8)
+    //    N*4 bytes  coefficients
     //    4 bytes    nInitializationCodes
     //    4 bytes    nInteriorCodes
     //    1 byte     method
@@ -165,13 +165,12 @@ public class LsHeader {
   }
 
   /**
-   * Gets the number of predictors defined for the encoding
+   * Gets the number of predictors coefficients defined for the encoding
    *
-   * @return a positive integer (always 8 at this time,
-   * subject to change in the future)
+   * @return a positive integer (currently, 8 or 12)
    */
-  public int getPredictorCount() {
-    return nPredictor;
+  public int getPredictorCoefficientCount() {
+    return nCoefficients;
   }
 
   /**

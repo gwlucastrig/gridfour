@@ -62,7 +62,7 @@ public class LsCodecUtility {
         if (exclusive) {
             spec.removeAllCompressionCodecs();
         }
-        // spec.addCompressionCodec("G93_LSOP08", LsEncoder08.class, LsDecoder08.class);
+        //spec.addCompressionCodec("G93_LSOP08", LsEncoder08.class, LsDecoder08.class);
         spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder12.class, LsDecoder12.class);
     }
 

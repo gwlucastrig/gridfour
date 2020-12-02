@@ -1399,24 +1399,24 @@ public class G93FileSpecification {
                 "Maximum identification length is 16 characters: " + codecID);
         }
 
-        boolean encoderInterfaceConfiirmed = false;
-        boolean decoderInterfaceConfiirmed = false;
+        boolean encoderInterfaceConfirmed = false;
+        boolean decoderInterfaceConfirmed = false;
         Class<?>[] interfaces = codec.getInterfaces();
         for (Class<?> c : interfaces) {
             if (c.equals(ICompressionEncoder.class)) {
-                encoderInterfaceConfiirmed = true;
+                encoderInterfaceConfirmed = true;
             }
             if (c.equals(ICompressionDecoder.class)) {
-                decoderInterfaceConfiirmed = true;
+                decoderInterfaceConfirmed = true;
             }
         }
 
-        if (!encoderInterfaceConfiirmed) {
+        if (!encoderInterfaceConfirmed) {
             throw new IllegalArgumentException(
                 "Codec " + codecID + "does not implement encoder interface");
         }
 
-        if (!decoderInterfaceConfiirmed) {
+        if (!decoderInterfaceConfirmed) {
             throw new IllegalArgumentException(
                 "Codec " + codecID + "does not implement decoder interface");
         }
@@ -1485,19 +1485,19 @@ public class G93FileSpecification {
                 "Maximum identification length is 16 characters: " + codecID);
         }
 
-        boolean encoderInterfaceConfiirmed = false;
-        boolean decoderInterfaceConfiirmed = false;
+        boolean encoderInterfaceConfirmed = false;
+        boolean decoderInterfaceConfirmed = false;
         Class<?>[] interfaces = encoder.getInterfaces();
         for (Class<?> c : interfaces) {
             if (c.equals(ICompressionEncoder.class)) {
-                encoderInterfaceConfiirmed = true;
+                encoderInterfaceConfirmed = true;
             }
             if (c.equals(ICompressionDecoder.class)) {
-                decoderInterfaceConfiirmed = true;
+                decoderInterfaceConfirmed = true;
             }
         }
 
-        if (!encoderInterfaceConfiirmed) {
+        if (!encoderInterfaceConfirmed) {
             throw new IllegalArgumentException(
                 "Codec " + codecID + "does not implement encoder interface");
         }
@@ -1505,11 +1505,11 @@ public class G93FileSpecification {
         interfaces = decoder.getInterfaces();
         for (Class<?> c : interfaces) {
             if (c.equals(ICompressionDecoder.class)) {
-                decoderInterfaceConfiirmed = true;
+                decoderInterfaceConfirmed = true;
             }
         }
 
-        if (!decoderInterfaceConfiirmed) {
+        if (!decoderInterfaceConfirmed) {
             throw new IllegalArgumentException(
                 "Decoder for " + codecID + "does not implement decoder interface");
         }
