@@ -469,17 +469,8 @@
                     has no external dependencies beyond the standard Java API. Determining coefficients for a 12-coefficient Optimal Predictor
                     requires solving a system of 13 linear equations. The linear algebra and matrix operations required to find
                     such a solution are not supported by the standard Java API. To perform these operations, the LSOP implementation
-                    depends on the API provided by the Apache Commons Math library. To prevent the Gridfour core module from depending on
-                    this external library, the Java classes related to Smith and Lewis' Optimal Predictor algorithm are implemented in
-                    a separate module named "lsop" (GridfourLsop.jar).</p>
-
-                <p>Fortunately, the logic required to decompress LSOP data does not require solving linear systems and, thus, does
-                    not require external dependencies. Therefore, the <i>data decompression</i> logic for the LSOP algorithm
-                    is implemented in the Gridfour core module. This approach ensures that even if an application does not include
-                    the GridfourLsop.jar file, it will still be able to decode an existing G93-formatted data file that contains
-                    information compressed using the Optimal Predictor module. This approach reflects the Gridfour design
-                    philosophy of open-source and open-data implementations and ensuring that information stored in the G93
-                    format remains accessible to external applications both now and in the future.</p>
+                    required that the core module incorporate a small number of classes from the public-domain
+                    <i>JAMA Java Matrix Project </i>(NIST, 2012).</p>
 
                 <h2>Computational Considerations</h2>
 
@@ -735,10 +726,13 @@
                     <a href="https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf">
                         https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf</a></p>
 
-                <p>NASA. (2020). <i>Shuttle Radar Topography Mission (SRTM)</i>
+                <p>National Aeronautics and Space Administration [NASA]. (2020). <i>Shuttle Radar Topography Mission (SRTM)</i>
                     <a href="https://www2.jpl.nasa.gov/srtm/">https://www2.jpl.nasa.gov/srtm/</a>
                     Data was downloaded from the USGS Earth Explorer web site at <a href="https://earthexplorer.usgs.gov/">https://earthexplorer.usgs.gov/</a>.
                 </p>
+
+				<p>National Institute of Standards and Technology [NIST]. 2012. <i>JAMA: A Java Matrix Package</i>. Accessed December 2020 from 
+				<a href="https://math.nist.gov/javanumerics/jama/">https://math.nist.gov/javanumerics/jama/</a>
 
                 <p>Patterson, Tom. (2020). <i>100-meter Natural Earth Map Data</i>. Accessed September 2020 from <a href="http://shadedrelief.com/NE_100m/">http://shadedrelief.com/NE_100m/</a>
 
