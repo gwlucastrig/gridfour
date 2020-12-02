@@ -43,77 +43,77 @@ package org.gridfour.g93;
  */
 public enum G93DataType {
 
-  /**
-   * Data is stored using the Java 4-byte integer data type.
-   */
-  INTEGER(0, 4),
-  /**
-   * Floating point values are multiplied by a scaling factor and
-   * stored as a Java 4-byte integer data type.
-   */
-  INTEGER_CODED_FLOAT(1, 4),
-  /**
-   * Data is stored using the Java 4-byte float data type, the IEEE-754
-   * single-precision floating point format.
-   */
-  FLOAT(2, 4);
+    /**
+     * Data is stored using the Java 4-byte integer data type.
+     */
+    INTEGER(0, 4),
+    /**
+     * Floating point values are multiplied by a scaling factor and
+     * stored as a Java 4-byte integer data type.
+     */
+    INTEGER_CODED_FLOAT(1, 4),
+    /**
+     * Data is stored using the Java 4-byte float data type, the IEEE-754
+     * single-precision floating point format.
+     */
+    FLOAT(2, 4);
 
-  final int codeValue;
-  final int bytesPerSample;
+    final int codeValue;
+    final int bytesPerSample;
 
-  G93DataType(int codeValue, int bytesPerSample) {
-    this.codeValue = codeValue;
-    this.bytesPerSample = bytesPerSample;
-  }
-
-  /**
-   * Gets the code value to be stored in a data file to indicate what
-   * data type was used for the non-compressed storage representation.
-   *
-   * @return gets an integer code value indicating the data type; used
-   * internally.
-   */
-  public int getCodeValue() {
-    return codeValue;
-  }
-
-  /**
-   * Get the number of bytes required to store a single data sample
-   * of the associated type.
-   *
-   * @return an integer value of one or greater.
-   */
-  public int getBytesPerSample() {
-    return bytesPerSample;
-  }
-
-  public static G93DataType valueOf(int codeValue) {
-    switch (codeValue) {
-      case 0:
-        return INTEGER;
-      case 1:
-        return INTEGER_CODED_FLOAT;
-      case 2:
-        return FLOAT;
-      default:
-        return INTEGER;
+    G93DataType(int codeValue, int bytesPerSample) {
+        this.codeValue = codeValue;
+        this.bytesPerSample = bytesPerSample;
     }
-  }
 
-  /**
-   * Indicates whether this enumeration identifies an integer-based datatype
-   * for G93 data.
-   *
-   * @return true if the identified data type is integral; otherwise, false.
-   */
-  public boolean isIntegral() {
-    switch (this) {
-      case INTEGER:
-      case INTEGER_CODED_FLOAT:
-        return true;
-      default:
-        return false;
+    /**
+     * Gets the code value to be stored in a data file to indicate what
+     * data type was used for the non-compressed storage representation.
+     *
+     * @return gets an integer code value indicating the data type; used
+     * internally.
+     */
+    public int getCodeValue() {
+        return codeValue;
     }
-  }
+
+    /**
+     * Get the number of bytes required to store a single data sample
+     * of the associated type.
+     *
+     * @return an integer value of one or greater.
+     */
+    public int getBytesPerSample() {
+        return bytesPerSample;
+    }
+
+    public static G93DataType valueOf(int codeValue) {
+        switch (codeValue) {
+            case 0:
+                return INTEGER;
+            case 1:
+                return INTEGER_CODED_FLOAT;
+            case 2:
+                return FLOAT;
+            default:
+                return INTEGER;
+        }
+    }
+
+    /**
+     * Indicates whether this enumeration identifies an integer-based datatype
+     * for G93 data.
+     *
+     * @return true if the identified data type is integral; otherwise, false.
+     */
+    public boolean isIntegral() {
+        switch (this) {
+            case INTEGER:
+            case INTEGER_CODED_FLOAT:
+                return true;
+            default:
+                return false;
+        }
+    }
 
 }

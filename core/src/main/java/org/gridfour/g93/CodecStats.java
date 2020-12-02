@@ -39,6 +39,8 @@
  */
 package org.gridfour.g93;
 
+import org.gridfour.compress.PredictorModelType;
+
 /**
  * A simple container for collecting statistics when analyzing compressed data.
  * <p>
@@ -50,7 +52,7 @@ package org.gridfour.g93;
  */
 public class CodecStats {
 
-    final PredictiveTransformType pcType;
+    final PredictorModelType pcType;
     long nTilesCounted;
     long nBytesTotal;
     long nSymbolsTotal;
@@ -62,16 +64,16 @@ public class CodecStats {
     double sumEntropyM32;
 
     /**
-     * Construct a statistics object for the specified predictive-transform.
+     * Construct a statistics object for the specified predictor model.
      *
-     * @param pcType a valid predictive-transform type.
+     * @param pcType a valid predictor model type.
      */
-    public CodecStats(PredictiveTransformType pcType) {
+    public CodecStats(PredictorModelType pcType) {
         this.pcType = pcType;
     }
 
     /**
-     * Get a label for the predictive-transform.
+     * Get a label for the predictor.
      *
      * @return a valid string
      */
@@ -99,7 +101,7 @@ public class CodecStats {
     private static final double log2 = Math.log(2.0);
 
     /**
-     * Add counts for the M32 symbols derived from the predictive-transforms
+     * Add counts for the M32 symbols derived from the predictor
      * for the tile.
      *
      * @param nM32 the total number of symbols in the encoded data

@@ -49,7 +49,7 @@ import org.gridfour.g93.G93DataType;
 import org.gridfour.g93.G93File;
 import org.gridfour.g93.G93FileSpecification;
 import org.gridfour.io.FastByteArrayOutputStream;
-import org.gridfour.g93.lsop.compressor.LsCodecUtility;
+import org.gridfour.lsop.LsCodecUtility;
 import ucar.ma2.Array;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;

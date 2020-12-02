@@ -1,8 +1,9 @@
-/*
+/* --------------------------------------------------------------------
+ *
  * The MIT License
  *
- * Copyright 2019 gwluc.
- *
+ * Copyright (C) 2019  Gary W. Lucas.
+
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -20,6 +21,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ * ---------------------------------------------------------------------
  */
 
  /*
@@ -28,29 +30,33 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created
+ * 11/2019  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.util;
 
 /**
- * Used to represent the coder-decoders (codecs) that are defined for G93.
- * Others may be added by application code.
+ * Defines constants used by various Gridfour implementations.
  */
-public enum CodecType {
-    /**
-     * The Huffman encoding is used to compress data.
-     */
-    G93_Huffman,
-    /**
-     * The Deflate (GZIP) compression algorithm is used.
-     */
-    G93_Deflate,
-    /**
-     * A non-lossy float format
-     */
-    G93_Float
+public class GridfourConstants {
+
+  /**
+   * A private constructor to deter applications from constructing instances of
+   * this class.
+   */
+  private GridfourConstants() {
+    // no action required
+  }
+
+  /**
+   * The null data value used for integer data representations, including cases
+   * where floating-point values are converted to integer values in support of
+   * data compression and other operations.
+   * <p>
+   * This constant is the minimum value for a four-byte signed integer.
+   */
+  public static final int INT4_NULL_CODE = Integer.MIN_VALUE;
 }

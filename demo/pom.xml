@@ -29,10 +29,6 @@
       <groupId>org.gridfour</groupId>
       <artifactId>GridfourCore</artifactId>
     </dependency>
-	<dependency>
-      <groupId>org.gridfour</groupId>
-      <artifactId>GridfourLsop</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>

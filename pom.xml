@@ -54,7 +54,6 @@
 
   <modules>
     <module>core</module>
-	<module>lsop</module>
     <module>demo</module>
   </modules>
 
@@ -81,13 +80,7 @@
         <artifactId>GridfourCore</artifactId>
         <version>${project.version}</version>
       </dependency>
-	  
-	   <dependency>
-        <groupId>org.gridfour</groupId>
-        <artifactId>GridfourLsop</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-	    
+
 <dependency>
     <groupId>org.junit.jupiter</groupId>
     <artifactId>junit-jupiter-api</artifactId>
