@@ -1,9 +1,8 @@
-/* --------------------------------------------------------------------
- *
+/*
  * The MIT License
  *
- * Copyright (C) 2019  Gary W. Lucas.
-
+ * Copyright 2019 Gary W. Lucas.
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -21,7 +20,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- * ---------------------------------------------------------------------
  */
 
  /*
@@ -36,44 +34,70 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.compress;
 
 /**
- * Defines record types for non-tile records
+ * Used to represent the type of predictor used to encode data
  */
-public enum G93RecordType {
-
+public enum PredictorModelType {
     /**
-     * Data is stored using the Java 4-byte integer data type.
+     * No predictor is applied; the data is stored as literals
      */
-    VariableLengthRecord(-1),
+    None(0),
     /**
-     * An undefined record type
+     * The differencing-predictor model is applied. This model assumes that
+     * the value for an element in a sequence is predicted by its predecessor.
      */
-    Undefined(-2);
+    Differencing(1),
+    /**
+     * The linear-predictor model is applied
+     */
+    Linear(2),
+    /**
+     * The triangle-predictor model is applied
+     */
+    Triangle(3),
+    /**
+     * Used when the data includes null values.
+     */
+    DifferencingWithNulls(4);
 
     final int codeValue;
 
-    G93RecordType(int codeValue) {
+    PredictorModelType(int codeValue) {
         this.codeValue = codeValue;
     }
 
     /**
-     * Gets the code value to be stored in a data file to indicate what
-     * data type was used for the non-compressed storage representation.
+     * Gets the code value to be stored in a data file to indicate what kind of
+     * predictor was used to store data
      *
-     * @return gets an integer code value indicating the data type; used
-     * internally.
+     * @return an integer in the range 0 to 4.
      */
     public int getCodeValue() {
         return codeValue;
     }
 
-    static G93RecordType valueOf(int codeValue) {
-        if (codeValue == -1) {
-            return VariableLengthRecord;
-        } else {
-            return Undefined;
+    /**
+     * Gets the enumeration instance associated with the specified code value
+     *
+     * @param codeValue a valid integer code value
+     * @return the associated enumeration instance.
+     */
+    public static PredictorModelType valueOf(int codeValue) {
+        switch (codeValue) {
+            case 0:
+                return None;
+            case 1:
+                return Differencing;
+            case 2:
+                return Linear;
+            case 3:
+                return Triangle;
+            case 4:
+                return DifferencingWithNulls;
+            default:
+                return None;  // technically, this is an invalid value.
         }
     }
 }

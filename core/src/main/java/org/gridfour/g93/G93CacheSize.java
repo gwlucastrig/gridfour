@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -45,23 +45,26 @@ package org.gridfour.g93;
  * data queries and storage.
  */
 public enum G93CacheSize {
-  /**
-   * The smallest cache size, makes conservative use of memory. May result in reduced
-   * performance compared to the larger cache sizes.
-   */
-  Small,
-  /**
-   * A moderate cache size providing better performance than the smaller size,
-   * though consuming additional memory, this setting is the default value.
-   */
-  Medium,
-  /**
-   * A larger cache size intended to support higher performance applications and
-   * creating new raster files. The large cache size will generally include
-   * enough tiles to span an entire row of tiles with a few more tiles added to
-   * improve transitions across portions of the data collection. This cache
-   * size is recommend when writing data and can also be beneficial when
-   * reading data.
-   */
-  Large;
+    /**
+     * The smallest cache size, makes conservative use of memory. May result in
+     * reduced
+     * performance compared to the larger cache sizes.
+     */
+    Small,
+    /**
+     * A moderate cache size providing better performance than the smaller size,
+     * though consuming additional memory, this setting is the default value.
+     */
+    Medium,
+    /**
+     * A larger cache size intended to support higher performance applications
+     * and
+     * creating new raster files. The large cache size will generally include
+     * enough tiles to span an entire row of tiles with a few more tiles added
+     * to
+     * improve transitions across portions of the data collection. This cache
+     * size is recommend when writing data and can also be beneficial when
+     * reading data.
+     */
+    Large;
 }

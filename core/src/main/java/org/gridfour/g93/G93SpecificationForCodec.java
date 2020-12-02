@@ -37,95 +37,96 @@
  *
  * -----------------------------------------------------------------------
  */
-
 package org.gridfour.g93;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Provides a simple container for compression codec specifications.
+ */
+public class G93SpecificationForCodec {
 
-  /**
-   * Provides a simple container for compression codec specifications.
-   */
-  public class G93SpecificationForCodec{
     private final String identification;
     private final Class<?> codec;
     private final int index;
-    private G93SpecificationForCodec(){
-      identification = null;
-      codec = null;
-      index = 0;
+
+    private G93SpecificationForCodec() {
+        identification = null;
+        codec = null;
+        index = 0;
     }
 
-
     G93SpecificationForCodec(String identification, Class<?> codec, int index) {
-      this.identification = identification;
-      this.codec = codec;
-      this.index = index;
+        this.identification = identification;
+        this.codec = codec;
+        this.index = index;
     }
 
     /**
      * Gets the identification string for the codec.
+     *
      * @return a string of up to 16 ASCII characters, should follow
      * the syntax of a Java identification string.
      */
-    public String getIdentification(){
-      return identification;
+    public String getIdentification() {
+        return identification;
     }
 
     /**
      * Gets the codec associated with the specified identification string.
+     *
      * @return a valid Java class object.
      */
     public Class<?> getCodec() {
-      return codec;
+        return codec;
     }
 
     /**
      * Get the numeric index of the compression specification
+     *
      * @return a value in the range 0 to 255.
      */
-    public int getIndex(){
-      return index;
+    public int getIndex() {
+        return index;
     }
-
 
     public static List<G93SpecificationForCodec> parseSpecificationString(String string) throws IOException {
-      List<G93SpecificationForCodec> csList = new ArrayList<>();
-      String codecID = null;
-      int mode = 0;
-      StringBuilder sb = new StringBuilder();
-      int index = 0;
-      for (int i = 0; i < string.length(); i++) {
-        char c = string.charAt(i);
-        if (Character.isWhitespace(c)) {
-          if (mode == 1 && c == '\n') {
-            String path = sb.toString();
-            try {
-              Class<?> codec = Class.forName(path);
-              csList.add(new G93SpecificationForCodec(codecID, codec, index++));
-            } catch (ClassNotFoundException ex) {
-              throw new IOException(
-                      "Codec specification " + codecID
-                      + " refers to unavailable class " + path, ex);
+        List<G93SpecificationForCodec> csList = new ArrayList<>();
+        String codecID = null;
+        int mode = 0;
+        StringBuilder sb = new StringBuilder();
+        int index = 0;
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+            if (Character.isWhitespace(c)) {
+                if (mode == 1 && c == '\n') {
+                    String path = sb.toString();
+                    try {
+                        Class<?> codec = Class.forName(path);
+                        csList.add(new G93SpecificationForCodec(codecID, codec, index++));
+                    } catch (ClassNotFoundException ex) {
+                        throw new IOException(
+                            "Codec specification " + codecID
+                            + " refers to unavailable class " + path, ex);
+                    }
+                    mode = 0;
+                }
+            } else if (c == ',') {
+                if (mode == 0) {
+                    codecID = sb.toString();
+                    sb.setLength(0);
+                    mode = 1;
+                } else {
+                    throw new IOException("Comma out of place in codec specification");
+                }
+            } else {
+                sb.append(c);
             }
-            mode = 0;
-          }
-        } else if (c == ',') {
-          if (mode == 0) {
-            codecID = sb.toString();
-            sb.setLength(0);
-            mode = 1;
-          } else {
-            throw new IOException("Comma out of place in codec specification");
-          }
-        } else {
-          sb.append(c);
         }
-      }
 
-      return csList;
+        return csList;
 
     }
-  }
+}

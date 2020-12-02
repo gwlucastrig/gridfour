@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -76,7 +76,7 @@ public enum G93GeometryType {
 
   /**
    * Gets the code value to be stored in a data file to indicate what kind of
-   * predictive-transform was used to store data
+   * predictor was used to store data
    *
    * @return gets an integer code value indicating the data type; used
    * internally.

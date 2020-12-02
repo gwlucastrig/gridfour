@@ -40,6 +40,8 @@
  */
 package org.gridfour.g93;
 
+import org.gridfour.compress.ICompressionDecoder;
+import org.gridfour.compress.ICompressionEncoder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,28 +98,28 @@ class CodecSpecification {
 
     CodecHolder getHolder(boolean mandatory) throws IOException {
 
-      Class<?> encoderClass = null;
+        Class<?> encoderClass = null;
         try {
             encoderClass = Class.forName(encoderClassName);
-            if (!IG93Encoder.class.isAssignableFrom(encoderClass)) {
+            if (!ICompressionEncoder.class.isAssignableFrom(encoderClass)) {
                 throw new IOException(
                     "Codec specification " + identification
                     + " encoder does not implement "
-                    + IG93Encoder.class.getName());
+                    + ICompressionEncoder.class.getName());
             }
         } catch (ClassNotFoundException ex) {
             // don't care, writing is not required
         }
 
-      Class<?> decoderClass = null;
+        Class<?> decoderClass = null;
 
         try {
             decoderClass = Class.forName(decoderClassName);
-            if (!IG93Decoder.class.isAssignableFrom(decoderClass)) {
+            if (!ICompressionDecoder.class.isAssignableFrom(decoderClass)) {
                 throw new IOException(
                     "Codec specification " + identification
                     + " decoder does not implement "
-                    + IG93Decoder.class.getName());
+                    + ICompressionDecoder.class.getName());
             }
         } catch (ClassNotFoundException ex) {
             if (mandatory) {
@@ -138,8 +140,8 @@ class CodecSpecification {
         StringBuilder sb = new StringBuilder();
         for (CodecHolder cs : csList) {
             String codecID = cs.getIdentification();
-          Class<?> encoderClass = cs.getEncoder();
-          Class<?> decoderClass = cs.getDecoder();
+            Class<?> encoderClass = cs.getEncoder();
+            Class<?> decoderClass = cs.getDecoder();
             sb.append(codecID).append(',')
                 .append(encoderClass.getCanonicalName()).append(',')
                 .append(decoderClass.getCanonicalName()).append('\n');
@@ -181,6 +183,5 @@ class CodecSpecification {
 
         return csList;
     }
-
 
 }

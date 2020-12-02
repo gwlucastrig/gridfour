@@ -21,35 +21,32 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 02/2020  G. Lucas     Created  
+ * 02/2020  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
-
- 
-
 package org.gridfour.g93;
 
 /**
  * A package-scoped class for specifying variables in a G93 file.
  */
 class G93VariableSpecification {
-  final G93DataType dataType;
-  final float scale;
-  final float offset;
-  final String name;
-  
-  G93VariableSpecification(
-          G93DataType dataType, 
-          float scale, 
-          float offset,
-          String name)
-  {
-    this.dataType = dataType;
-    this.scale = scale;
-    this.offset = offset;
-    this.name = name;
-  }
+
+    final G93DataType dataType;
+    final float scale;
+    final float offset;
+    final String name;
+
+    G93VariableSpecification(
+        G93DataType dataType,
+        float scale,
+        float offset,
+        String name) {
+        this.dataType = dataType;
+        this.scale = scale;
+        this.offset = offset;
+        this.name = name;
+    }
 }

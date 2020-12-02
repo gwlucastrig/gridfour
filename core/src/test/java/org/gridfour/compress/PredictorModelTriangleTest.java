@@ -30,53 +30,54 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created
- *
- * Notes:
+ * 02/2020  G. Lucas     Created  
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+ 
+package org.gridfour.compress;
 
-/**
- * Defines types for raster-related files used in the G93 system.
- */
-enum RasterFileType {
-    /**
-     * The simple g93 raster file type
-     */
-    G93raster("g93", "g93 raster"),
-    /**
-     * The optional index file for g93 rasters
-     */
-    G93index("g9x", "g93 index");
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    private final String extension;
-    private final String identifier;
+public class PredictorModelTriangleTest {
 
-    RasterFileType(String extension, String identifier) {
-        this.extension = extension;
-        this.identifier = identifier;
+  public PredictorModelTriangleTest() {
+  }
+
+  /**
+   * Test of encode and decode methods, of class PredictorModelTriangle.
+   */
+  @Test
+  public void testRoundTrip() {
+    int nRows = 10;
+    int nColumns = 10;
+    int[] values = new int[nRows * nColumns];
+    for (int iRow = 0; iRow < nRows; iRow++) {
+      int offset = iRow * nColumns;
+      int v = iRow;
+      for (int iCol = 0; iCol < 10; iCol += 2) {
+        values[offset + iCol] = v;
+        v++;
+      }
     }
 
-    /**
-     * Gets the 3 character extension associated with this enumeration type.
-     *
-     * @return a valid string consisting of lowercase letters and numerals.
-     */
-    public String getExtension() {
-        return extension;
+    byte[] encoding = new byte[nRows * nColumns * 6];
+    PredictorModelTriangle instance
+            = new PredictorModelTriangle();
+
+    int encodedLength = instance.encode(nRows, nColumns, values, encoding);
+    int seed = instance.getSeed();
+
+    int[] decoding = new int[values.length];
+    instance.decode(seed, nRows, nColumns, encoding, 0, encodedLength, decoding);
+    for (int i = 0; i < decoding.length; i++) {
+      assertEquals(values[i], decoding[i],
+             "Failure to decode at index "+i+", input="+values[i]+", output="+decoding[i]);
     }
 
-    /**
-     * Gets the identifier string that is embedded into g93 raster and
-     * raster-related files.
-     *
-     * @return a valid string consisting of lower case letters and numerals,
-     * beginning with the string "g93" and of maximum length 12 characters.
-     */
-    public final String getIdentifier() {
-        return identifier;
-    }
+  }
+ 
+  
 
 }
