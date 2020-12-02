@@ -66,7 +66,7 @@
  */
 package org.gridfour.lsop;
 
- 
+
 import org.gridfour.compress.CodecM32;
 import org.gridfour.util.jama.LUDecomposition;
 import org.gridfour.util.jama.Matrix;
@@ -80,15 +80,15 @@ import org.gridfour.util.jama.Matrix;
  * Data Compression of Digital Elevation
  * Models using the Method of Lagrange Multipliers" </cite>
  * <p>
- * The floating-point arithmetic operations in this class are all performed
- * using the Java strictfp specification. This design choice is essential
- * to the correct operation of this module. Because one of the goals for
- * Gridfour is to facilitate portability to other development environments,
+ * The floating-point arithmetic operations for the encode method in this class
+ * are performed using the Java strictfp specification. This design choice
+ * is essential to the correct operation of this module. Because one of the goals
+ * for Gridfour is to facilitate portability to other development environments,
  * it is essential that the math operations performed here be reliably
  * reproducible across platforms and programming languages.
  *
  */
-strictfp public class LsOptimalPredictor12 {
+public class LsOptimalPredictor12 {
 
   double errorSum;
   double errorSquaredSum;
@@ -106,7 +106,7 @@ strictfp public class LsOptimalPredictor12 {
    * in row-major order.
    * @return if successful, a valid results instance; otherwise, a null.
    */
-  public LsOptimalPredictorResult encode(
+  strictfp public LsOptimalPredictorResult encode(
     int nRows,
     int nColumns,
     int[] values) {
@@ -139,9 +139,6 @@ strictfp public class LsOptimalPredictor12 {
     for (int i = 1; i < nColumns; i++) {
       long test = values[i];
       long delta = test - prior;
-      if (isDeltaOutOfBounds(delta)) {
-        return null;
-      }
       initializationCodec.encode((int) delta);
       prior = test;
     }
@@ -151,9 +148,6 @@ strictfp public class LsOptimalPredictor12 {
     for (int i = 1; i < nRows; i++) {
       long test = values[i * nColumns];
       long delta = test - prior;
-      if (isDeltaOutOfBounds(delta)) {
-        return null;
-      }
       initializationCodec.encode((int) delta);
       prior = test;
     }
@@ -167,9 +161,6 @@ strictfp public class LsOptimalPredictor12 {
       long c = values[index - nColumns];
       long test = values[index];
       long delta = test - ((a + c) - b);
-      if (isDeltaOutOfBounds(delta)) {
-        return null;
-      }
       initializationCodec.encode((int) delta);
 
     }
@@ -182,9 +173,6 @@ strictfp public class LsOptimalPredictor12 {
       long c = values[index - nColumns];
       long test = values[index];
       long delta = test - ((a + c) - b);
-      if (isDeltaOutOfBounds(delta)) {
-        return null;
-      }
       initializationCodec.encode((int) delta);
     }
 
@@ -196,9 +184,6 @@ strictfp public class LsOptimalPredictor12 {
           long c = values[index - nColumns];
           long test = values[index];
           long delta = test - ((a + c) - b);
-          if (isDeltaOutOfBounds(delta)) {
-              return null;
-          }
           initializationCodec.encode((int) delta);
 
           index++;
@@ -207,9 +192,6 @@ strictfp public class LsOptimalPredictor12 {
           c = values[index - nColumns];
           test = values[index];
           delta = test - ((a + c) - b);
-          if (isDeltaOutOfBounds(delta)) {
-              return null;
-          }
           initializationCodec.encode((int) delta);
       }
 
@@ -293,14 +275,6 @@ strictfp public class LsOptimalPredictor12 {
       nInteriorCodes, interiorEncoding);
   }
 
-  private boolean isDeltaOutOfBounds(long delta) {
-    if (delta < Integer.MIN_VALUE) {
-      return true;
-    } else if (delta > Integer.MAX_VALUE) {
-      return true;
-    }
-    return false;
-  }
 
   /**
    * Computes the coefficients for an optimal predictor. In the unusual case
@@ -387,8 +361,6 @@ strictfp public class LsOptimalPredictor12 {
     }
 
     return  result;
-
-
   }
 
   /**
