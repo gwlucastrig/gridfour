@@ -1,13 +1,20 @@
  
 # Introduction
-This document provides details on the design, methods, and algorithms used by the G93 grid-based data compression implementation.
+This document provides details on the design, methods, and algorithms used
+by the Gridfour raster (grid) data compression implementation.
 
-One of the goals for the G93 software is to provide a testbed for developers who are investigating
-data-compression techniques for grid-based data. To illustrate how a compression codec
-(coder-decoder) could be implemented, G93 provides codecs based on the well-known
+One of the goals for the Gridfour software is to provide a testbed for developers who are investigating
+data-compression techniques for grid-based data. To that end, the Gridfour API
+includes am implementation of a file format named G93 which provides a file-based
+system for storing gridded data. Gridfour supports compression through the use of
+custom _codec_ (coder-decoder) classes that are included in its software
+distribution. These codecs may be used through the G93 file API or in stand-alone mode
+depending on the requirements of the applications that use them.  Developers may
+also legerage the Gridfour API to write their own custom codecs. 
+To illustrate how a compression codec could be implemented, Gridfour provides codecs based on the well-known
 Huffman coding (Huffman, 1952) and Deflate algorithms (Deutsch, 1996).  
 
-The G93 implementations provide moderate data compression with good
+The Gridfour implementations provide moderate data compression with good
 access speed, but there is certainly room for improvement.
 The algorithms used in the current G93 file management software are based on work that
 was conducted in 1993 for a project called Gem93 (the name "G93" was chosen as a tribute to that work).
