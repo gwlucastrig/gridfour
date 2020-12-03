@@ -5,12 +5,12 @@ by the Gridfour raster (grid) data compression implementation.
 
 One of the goals for the Gridfour software is to provide a testbed for developers who are investigating
 data-compression techniques for grid-based data. To that end, the Gridfour API
-includes am implementation of a file format named G93 which provides a file-based
+includes an implementation of a file format named G93 which provides a file-based
 system for storing gridded data. Gridfour supports compression through the use of
 custom _codec_ (coder-decoder) classes that are included in its software
 distribution. These codecs may be used through the G93 file API or in stand-alone mode
 depending on the requirements of the applications that use them.  Developers may
-also legerage the Gridfour API to write their own custom codecs. 
+also leverage the Gridfour API to write their own custom codecs. 
 To illustrate how a compression codec could be implemented, Gridfour provides codecs based on the well-known
 Huffman coding (Huffman, 1952) and Deflate algorithms (Deutsch, 1996).  
 
