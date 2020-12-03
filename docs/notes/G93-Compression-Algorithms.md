@@ -64,6 +64,36 @@ to geographic or geophysical information and is certainly not limited to
 Digital Elevation Models (DEMs). The choice of ETOPO1 was a matter of convenience
 as much as anything else.
 
+## Tiling Schemes and Data Compression
+The grid specification for many raster data files is large enough that it is often
+impractical to store the entire content in memory. Even with a relatively compact
+representation using short integers, the ETOPO1 data set would require close to
+500 megabytes of memory. So the G93 File format partitions large rasters using a tiling
+scheme. In a tiling scheme, the grid is divided into a series of regularly sized
+subgrids as illustrated in the figure below.
+
+![Tiling Scheme](images/General/TilingScheme.png) 
+
+From the perspective of data compression, the tiling scheme presents two influencial features.
+First, because tiles must be accessed independently, they are compressed individually rather
+than as a set. In G93, tiles are compressed on a case-by-case basis. This is significant because
+in many data sets, the statistical properties of the data tends to vary across the
+domain of the data. Data compression techniques thrive on redundancy and self-similarity
+in the source data. But raster data sets with larger grids allow more room for variation
+within the data. In the ETOPO1 elevation/bathymetry example, we would expect to see very
+different terrain (and very different data compression characteristics) over the Nullarbor Plain
+in Australia versus the steep drop offs along the Continental Shelf. By partitioning
+a data set into separate tiles, we reduce the tendenacy for regions of data to be compressed
+to include a large number of dissimilar features.
+
+On the other hand, partitioning the data into smaller subgrids can have a disadvantage because
+it reduces the overall size of a block of data to be compressed. Most practical compression
+implementations include a certain amount of overhead beyond the storage required for the
+actual data itself. This overhead tends to be of a more-or-less fixed size.For a small
+data set, that overhead may comprise a significant amount of the overall storage required for
+the data. But as the size of the data set increases, the relative contribution of the
+overhead is reduced.
+
 # Predictive Techniques for Raster Data Compression
 Data compression techniques that work well for text are often ineffective for raster data sets.
 Virtually all data compression algorithms operate by identifying redundant elements in a data set and
