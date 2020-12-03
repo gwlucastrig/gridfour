@@ -61,7 +61,7 @@ as an example for a number of reasons. First, it contains
 a substantial number of sample points and requires enough storage space to be
 interesting to compress. Second, the surface it describes is highly variable
 and provides a broad spectrum of test cases ranging from flat plains,
-to mountainous regions, to sheer drop offs along the continental shelf.
+to mountainous regions, to sheer drop offs along the Continental Shelf.
 And, finally, terrain data is something that is familiar to our readers
 and easily visualized.
 
@@ -96,7 +96,7 @@ to include a large number of dissimilar features.
 On the other hand, partitioning the data into smaller subgrids can have a disadvantage because
 it reduces the overall size of a block of data to be compressed. Most practical compression
 implementations include a certain amount of overhead beyond the storage required for the
-actual data itself. This overhead tends to be of a more-or-less fixed size.For a small
+actual data itself. This overhead tends to be of a more-or-less fixed size. For a small
 data set, that overhead may comprise a significant amount of the overall storage required for
 the data. But as the size of the data set increases, the relative contribution of the
 overhead is reduced.
