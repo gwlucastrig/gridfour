@@ -32,17 +32,17 @@
  *
  * Notes:
  *  The design of this class needs improvement.  At present, it combines
- * logic specific to the G93 encoding with logic that is related to
- * the Optimal Predictor algorithm.  I would like to move the G93
+ * logic specific to the Gridfour encoding with logic that is related to
+ * the Optimal Predictor algorithm.  I would like to move the Gridfour
  * stuff (the initializations and M32 encoding) into the LsEncoder12 class
  * and make this class be a clean implementation of Optimal Predictors.
  *
  * One feature of Optimal Predictors is that certain grid cells are
  * "unreachable" to the predictor and must be populated using other means.
  *    1.  The first row and first column are initialized using the
- *        simple Differencing Predictor that is used for other G93 encoders.
+ *        simple Differencing Predictor that is used for other Gridfour encoders.
  *    2.  The second row and second column are initialized using
- *        the simple Triangle Predictor that is used for other G93 encoders.
+ *        the simple Triangle Predictor that is used for other Gridfour encoders.
  *    3.  The rows in the interior area of the grid are initialized using
  *        Optimal Predictors, except for the last two columns in each row
  *        which are also unreachable.  These are populated using
@@ -352,15 +352,19 @@ public class LsOptimalPredictor12 {
     }
     b[12][0] = s[0];
 
-    Matrix mat = new Matrix(m, 13, 13);
-    LUDecomposition lud = new LUDecomposition(mat);
-    Matrix solution = lud.solve(new Matrix(b, 13, 1));
-    double []result = new double[12];
-    for(int i=0; i<12; i++){
-        result[i] = solution.get(i, 0);
+    try{
+        Matrix mat = new Matrix(m, 13, 13);
+        LUDecomposition lud = new LUDecomposition(mat);
+        Matrix solution = lud.solve(new Matrix(b, 13, 1));
+        double[] result = new double[12];
+        for (int i = 0; i < 12; i++) {
+            result[i] = solution.get(i, 0);
+        }
+        return result;
+    }catch(RuntimeException rex){
+        return null;
     }
 
-    return  result;
   }
 
   /**

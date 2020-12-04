@@ -120,6 +120,7 @@ class CodecMaster {
 
     void reportAndClearAnalysisData(PrintStream ps, int nTilesInRaster) {
         for (CodecHolder codec : codecList) {
+            ps.println("");
             ICompressionDecoder decompressor = codec.getDecoderInstance();
             decompressor.reportAnalysisData(ps, nTilesInRaster);
             decompressor.clearAnalysisData();

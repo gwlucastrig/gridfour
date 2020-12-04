@@ -31,9 +31,9 @@
  * One feature of Optimal Predictors is that certain grid cells are
  * "unreachable" to the predictor and must be populated using other means.
  *    1.  The first row and first column are initialized using the
- *        simple Differencing Predictor that is used for other G93 encoders.
+ *        simple Differencing Predictor that is used for other Gridfour encoders.
  *    2.  The second row and second column are initialized using
- *        the simple Triangle Predictor that is used for other G93 encoders.
+ *        the simple Triangle Predictor that is used for other Gridfour encoders.
  *    3.  The rows in the interior area of the grid are initialized using
  *        Optimal Predictors, except for the last two columns in each row
  *        which are also unreachable.  These are populated using
@@ -50,7 +50,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
-import org.gridfour.g93.CodecStats;
+import org.gridfour.compress.CodecStats;
 import org.gridfour.compress.HuffmanDecoder;
 import org.gridfour.compress.PredictorModelType;
 import org.gridfour.io.BitInputStore;
@@ -59,7 +59,7 @@ import org.gridfour.compress.ICompressionDecoder;
 
 /**
  * Provides methods and data elements used to decode data compressed
- * using the G93-LS format based on the methods of Smith and Lewis'
+ * using the LSOP format based on the methods of Smith and Lewis'
  * Optimal Predictors.
  * <p>
  * The LS decoder and encoder are separated into separate packages and
@@ -367,7 +367,7 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
 
     @Override
     public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-        ps.println("Codec G93_LSOP12");
+        ps.println("LSOP12                                         Compressed Output    |       Predictor Residuals");
         if (codecStats == null || nTilesInRaster == 0) {
             ps.format("   Tiles Compressed:  0%n");
             return;
@@ -409,7 +409,7 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
                 } else {
                     timesUsed = String.format("%8d (%4.1f %%)", tileCount, percentTiles);
                 }
-                ps.format("   %-20.20s %s      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f%n",
+                ps.format("   %-20.20s %s     %5.2f  %12.1f   | %10.1f      %6.1f    %6.2f%n",
                     label,
                     timesUsed,
                     bitsPerSymbol,

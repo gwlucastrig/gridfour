@@ -37,14 +37,14 @@ import org.gridfour.compress.CodecM32;
 import org.gridfour.compress.HuffmanDecoder;
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.PredictorModelType;
-import org.gridfour.g93.CodecStats;
+import org.gridfour.compress.CodecStats;
 
 
 import org.gridfour.io.BitInputStore;
 
 /**
  * Provides methods and data elements used to decode data compressed
- * using the G93-LS format based on the methods of Smith and Lewis'
+ * using the Gridfour LSOP format based on the methods of Smith and Lewis'
  * Optimal Predictors.
  * <p>
  * The LS decoder and encoder are separated into separate packages and
@@ -234,7 +234,7 @@ public class LsDecoder08 implements ICompressionDecoder {
 
     @Override
     public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-        ps.println("Codec G93_LS");
+        ps.println("LSOP08");
         if (codecStats == null || nTilesInRaster == 0) {
             ps.format("   Tiles Compressed:  0%n");
             return;

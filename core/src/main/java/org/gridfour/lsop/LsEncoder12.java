@@ -42,10 +42,11 @@ import java.util.zip.Deflater;
 import org.gridfour.compress.HuffmanEncoder;
 import org.gridfour.compress.ICompressionEncoder;
 import org.gridfour.io.BitOutputStore;
+import org.gridfour.util.GridfourConstants;
 
 /**
  * Provides methods and data elements used to encode raster data to be
- * compressed using the G93-LS format based on the methods of Lewis and Smith's
+ * compressed using the LSOP format based on the methods of Lewis and Smith's
  * Optimal Predictor with 12 coefficients.
  * <p>
  * The LS decoder and encoder are separated into separate packages and
