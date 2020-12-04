@@ -134,6 +134,11 @@ public class PackageData {
 
     String inputPath = options.getInputFile().getPath();
     File outputFile = options.getOutputFile();
+    if(outputFile==null){
+        ps.format("Missing specification for output file%n");
+        ps.format("Packaging application terminated%n");
+        return;
+    }
     ps.format("Input file:  %s%n", inputPath);
     ps.format("Output file: %s%n", outputFile.getPath());
     boolean[] matched = new boolean[args.length];

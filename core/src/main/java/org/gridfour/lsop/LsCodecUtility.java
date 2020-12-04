@@ -42,7 +42,7 @@ public class LsCodecUtility {
      * and
      * decoder pair.
      */
-    public static final String LSOP_CODEC_ID = "G93_LSOP12";
+    public static final String LSOP_CODEC_ID = "LSOP12";
 
     /**
      * A static method to adds the LS encoder and decoder classes to
@@ -62,7 +62,7 @@ public class LsCodecUtility {
         if (exclusive) {
             spec.removeAllCompressionCodecs();
         }
-        //spec.addCompressionCodec("G93_LSOP08", LsEncoder08.class, LsDecoder08.class);
+        //spec.addCompressionCodec("LSOP08", LsEncoder08.class, LsDecoder08.class);
         spec.addCompressionCodec(LSOP_CODEC_ID, LsEncoder12.class, LsDecoder12.class);
     }
 

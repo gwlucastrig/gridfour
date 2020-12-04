@@ -36,24 +36,13 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.compress;
 
-import org.gridfour.compress.ICompressionDecoder;
-import org.gridfour.compress.ICompressionEncoder;
-import org.gridfour.compress.PredictorModelLinear;
-import org.gridfour.compress.PredictorModelTriangle;
-import org.gridfour.compress.PredictorModelDifferencingWithNulls;
-import org.gridfour.compress.PredictorModelDifferencing;
-import org.gridfour.compress.PredictorModelType;
-import org.gridfour.compress.HuffmanDecoder;
-import org.gridfour.compress.HuffmanEncoder;
 import java.io.IOException;
 import java.io.PrintStream;
-import org.gridfour.compress.CodecM32;
 import org.gridfour.io.BitInputStore;
 import org.gridfour.io.BitOutputStore;
 import static org.gridfour.util.GridfourConstants.INT4_NULL_CODE;
-import org.gridfour.compress.IPredictorModel;
 
 /**
  * Provides a codec for data compression using Huffman codes and the
@@ -208,11 +197,12 @@ public class CodecHuffman implements ICompressionEncoder, ICompressionDecoder {
 
     @Override
     public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-        ps.println("Codec G93_Huffman");
+        ps.println("Gridfour_Huffman                               Compressed Output    |       Predictor Residuals");
         if (codecStats == null || nTilesInRaster == 0) {
             ps.format("   Tiles Compressed:  0%n");
             return;
         }
+
 
         ps.format("  Predictor                Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy | bits in tree%n");
 
@@ -229,7 +219,7 @@ public class CodecHuffman implements ICompressionEncoder, ICompressionDecoder {
             double avgMCodeLength = stats.getAverageMCodeLength();
             double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
             double entropy = stats.getEntropy();
-            ps.format("   %-20.20s %8d (%4.1f %%)      %4.1f  %12.1f   | %10.1f      %6.1f    %6.1f   | %6.1f/%n",
+            ps.format("   %-20.20s %8d (%4.1f %%)     %5.2f  %12.1f   | %10.1f      %6.1f    %6.2f   | %6.1f%n",
                 label, tileCount, percentTiles,
                 bitsPerSymbol, avgBitsInText,
                 avgMCodeLength,

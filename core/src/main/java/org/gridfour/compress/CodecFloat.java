@@ -30,10 +30,8 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.compress;
 
-import org.gridfour.compress.ICompressionDecoder;
-import org.gridfour.compress.ICompressionEncoder;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -103,7 +101,7 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
     @Override
     public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
         if (wasDataEncoded) {
-            ps.println("Codec G93_Float");
+            ps.println("Gridfour_Float");
             ps.format("   Average bytes per tile, by element%n");
             ps.format("     Sign bits       %12.2f%n", sSignBit.getAvgCount());
             ps.format("     Exp byte        %12.2f%n", sExp.getAvgCount());
@@ -114,7 +112,7 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
             double avgBitsPerSample = sTotal.getAvgCount() * 8.0 / nCellsInTile;
             ps.format("     Bits/Sample     %12.2f%n", avgBitsPerSample);
         } else {
-            ps.println("Codec G93_Float (not used)");
+            ps.println("Gridfour_Float (not used)");
         }
     }
 

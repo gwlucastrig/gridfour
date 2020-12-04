@@ -87,7 +87,7 @@ public class LsHeader {
   /**
    * Packs the metadata ("header") for a LSOP compression into an array of bytes
    *
-   * @param codecIndex the index of the CODEC used for G93 file
+   * @param codecIndex the index of the CODEC as defined by the calling application.
    * @param nCoefficients the number of coefficients
    * @param seed the seed value
    * @param u the compression coefficients, should be dimensioned

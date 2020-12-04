@@ -38,6 +38,9 @@
  */
 package org.gridfour.g93;
 
+import org.gridfour.compress.CodecDeflate;
+import org.gridfour.compress.CodecHuffman;
+import org.gridfour.compress.CodecFloat;
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.ICompressionEncoder;
 import java.awt.geom.Rectangle2D;

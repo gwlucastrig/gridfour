@@ -37,7 +37,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.compress;
 
 import org.gridfour.compress.PredictorModelType;
 
@@ -45,10 +45,8 @@ import org.gridfour.compress.PredictorModelType;
  * A simple container for collecting statistics when analyzing compressed data.
  * <p>
  * This statistics collector is suited to the standard compressors implemented
- * in
- * G93, but may not be applicable to other compressors, particularly those
- * implemented by a third party. This class is provided as a convenience
- * for developers who which to implement their own compressors.
+ * by the Gridfour API. If desired, it may be used for other compressor
+ * implementations.
  */
 public class CodecStats {
 
