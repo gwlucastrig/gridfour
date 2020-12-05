@@ -51,106 +51,106 @@ package org.gridfour.compress;
  */
 public class PredictorModelTriangle implements IPredictorModel {
 
-  int encodedSeed;
+    int encodedSeed;
 
-  @Override
-  public int getSeed() {
-    return encodedSeed;
-  }
-
-  @Override
-  public void decode(
-    int seed,
-    int nRows,
-    int nColumns,
-    byte[] encoding,
-    int offset,
-    int length,
-    int[] output) {
-    CodecM32 mCodec = new CodecM32(encoding, offset, length);
-
-    // The zeroeth row and column are populated using simple differences.
-    // All other columns are populated using the triangle-predictor
-    output[0] = seed;
-    int prior = seed;
-    for (int i = 1; i < nColumns; i++) {
-      prior += mCodec.decode();
-      output[i] = prior;
-    }
-    prior = seed;
-    for (int i = 1; i < nRows; i++) {
-      prior += mCodec.decode();
-      output[i * nColumns] = prior;
+    @Override
+    public int getSeed() {
+        return encodedSeed;
     }
 
-    for (int iRow = 1; iRow < nRows; iRow++) {
-      int k1 = iRow * nColumns;
-      int k0 = k1 - nColumns;
-      for (int i = 1; i < nColumns; i++) {
-        long za = output[k0++];
-        long zb = output[k1++];
-        long zc = output[k0];
-        output[k1] = (int) (mCodec.decode() + (zb + zc - za));
-      }
+    @Override
+    public void decode(
+        int seed,
+        int nRows,
+        int nColumns,
+        byte[] encoding,
+        int offset,
+        int length,
+        int[] output) {
+        CodecM32 mCodec = new CodecM32(encoding, offset, length);
+
+        // The zeroeth row and column are populated using simple differences.
+        // All other columns are populated using the triangle-predictor
+        output[0] = seed;
+        int prior = seed;
+        for (int i = 1; i < nColumns; i++) {
+            prior += mCodec.decode();
+            output[i] = prior;
+        }
+        prior = seed;
+        for (int i = 1; i < nRows; i++) {
+            prior += mCodec.decode();
+            output[i * nColumns] = prior;
+        }
+
+        for (int iRow = 1; iRow < nRows; iRow++) {
+            int k1 = iRow * nColumns;
+            int k0 = k1 - nColumns;
+            for (int i = 1; i < nColumns; i++) {
+                long za = output[k0++];
+                long zb = output[k1++];
+                long zc = output[k0];
+                int prediction = (int) (zb + zc - za);
+                output[k1] = prediction + mCodec.decode();
+            }
+        }
+
     }
 
-  }
+    @Override
+    public int encode(
+        int nRows,
+        int nColumns,
+        int[] values,
+        byte[] encoding) {
 
-  @Override
-  public int encode(
-    int nRows,
-    int nColumns,
-    int[] values,
-    byte[] encoding) {
+        if (nRows < 2 || nColumns < 2) {
+            return -1;
+        }
+        CodecM32 mCodec = new CodecM32(encoding, 0, encoding.length);
+        // The zeroeth row and column are populated using simple differences.
+        // All other grid cells are populated using the triangle-predictor
+        encodedSeed = values[0];
+        long prior = encodedSeed;
+        for (int i = 1; i < nColumns; i++) {
+            long test = values[i];
+            long delta = test - prior;
+            mCodec.encode((int) delta);
+            prior = test;
+        }
 
-    if (nRows < 2 || nColumns < 2) {
-      return -1;
+        prior = encodedSeed;
+        for (int i = 1; i < nRows; i++) {
+            long test = values[i * nColumns];
+            long delta = test - prior;
+            mCodec.encode((int) delta);
+            prior = test;
+        }
+
+        // populate the rest of the grid using the triangle-predictor model
+        for (int iRow = 1; iRow < nRows; iRow++) {
+            int k1 = iRow * nColumns;
+            int k0 = k1 - nColumns;
+            for (int i = 1; i < nColumns; i++) {
+                long za = values[k0++];
+                long zb = values[k1++];
+                long zc = values[k0];
+                int prediction = (int) (zc + zb - za);
+                int residual = values[k1] - prediction;
+                mCodec.encode(residual);
+            }
+        }
+
+        return mCodec.getEncodedLength();
     }
-    CodecM32 mCodec = new CodecM32(encoding, 0, encoding.length);
-    // The zeroeth row and column are populated using simple differences.
-    // All other grid cells are populated using the triangle-predictor
-    encodedSeed = values[0];
-    long prior = encodedSeed;
-    for (int i = 1; i < nColumns; i++) {
-      long test = values[i];
-      long delta = test - prior;
-      mCodec.encode((int) delta);
-      prior = test;
+
+    @Override
+    public boolean isNullDataSupported() {
+        return false;
     }
 
-    prior = encodedSeed;
-    for (int i = 1; i < nRows; i++) {
-      long test = values[i * nColumns];
-      long delta = test - prior;
-      mCodec.encode((int) delta);
-      prior = test;
+    @Override
+    public PredictorModelType getPredictorType() {
+        return PredictorModelType.Triangle;
     }
-
-    // populate the rest of the grid using the triangle-predictor model
-    for (int iRow = 1; iRow < nRows; iRow++) {
-      int k1 = iRow * nColumns;
-      int k0 = k1 - nColumns;
-      for (int i = 1; i < nColumns; i++) {
-        long za = values[k0++];
-        long zb = values[k1++];
-        long zc = values[k0];
-        long zs = values[k1];  // the source value
-        long delta = zs - (zc + zb - za);
-        mCodec.encode((int) delta);
-      }
-    }
-
-    return mCodec.getEncodedLength();
-  }
-
-  @Override
-  public boolean isNullDataSupported() {
-    return false;
-  }
-
-
-  @Override
-  public PredictorModelType getPredictorType() {
-    return PredictorModelType.Triangle;
-  }
 }

@@ -39,6 +39,50 @@
  * Redwood City, CA, pg. 350.  In his book, Mr. Nelson traces the concept
  * back to a technique used in audio data compression systems.
  *
+ * Development note regarding integer arithmetic
+ *
+ *   This implementation depends on the properties of 32-bit integer
+ * addition and subtraction based on the two's-complement format for
+ * negative values. It is critical to note that addition and subtraction
+ * is fully invertible even in the event of integer overflow.  In other words,
+ *
+ *      C = Sample - Prior
+ *      D = Prior + C
+ *      D == Sample even when overflow occurs.
+ * For example, when prior is Integer.MIN_VALUE and Sample is Integer.MAX value:
+ *
+ *       C =  2147483647 - (-2147483648)
+ *
+ * ordinary arithmetic would give a value of C== 2_294_967_296, which would
+ * overflow the 32-bit signed integer data type giving a value of -1.  But,
+ * decause of the properties of two's complement arithmetic,
+ *
+ *      D = (-2147483648) - (-1)
+ *
+ * would also overflow, resulting in a value of 2147483647.
+ *  Three other details about signed 32-bit integers that might be useful
+ *  when reviewing the predictor code are
+ *   1. There is no true subtraction in two's complement arithmetic.
+ *      Given an expressions such as C = A-B, the computer does not actually
+ *      subtract B from A.  Instead, it computes the two's complement of B
+ *      and adds the result to A.  Negative numbers are expressed as the
+ *      two's complement of their positive counterpart.
+ *      While there is a concept of "add with carry", there is never
+ *      a "subtract with borrow".  Any information that gets pushed past
+ *      the high-order bit of a 32 bit integer is lost.
+ *   2. The signed integers are not perfectly symmetrical. The maximum value
+ *      for a signed 32 bit integer is 2147483647, but the minimum value
+ *      is -2147483648. Most negative values
+ *      have a positive equivalent, but -2147483648 does not
+ *      Counterintuitively, if a program negates the minimum value, the
+ *      result is just the minimum value itself.
+ *      In other words,  - (-2147483648)  == -2147483648.
+ *   3. The bit-numbering convention for the Gridfour project is based on
+ *      the corresponding powers-of-two for the bits. So the low-order bit is
+ *      always bit zero, the high-order bit is bit 31.  Not all software projects
+ *      adopt this convention.
+ *
+ *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.compress;
@@ -57,78 +101,78 @@ package org.gridfour.compress;
  */
 public class PredictorModelDifferencing implements IPredictorModel {
 
-  int encodedSeed;
+    int encodedSeed;
 
-  @Override
-  public int getSeed() {
-    return encodedSeed;
-  }
-
-  @Override
-  public int encode(
-    int nRows,
-    int nColumns,
-    int[] values,
-    byte[] output) {
-    CodecM32 mCodec = new CodecM32(output, 0, output.length);
-    encodedSeed = values[0];
-    int prior = encodedSeed;
-    for (int i = 1; i < nColumns; i++) {
-      int test = values[i];
-      int delta = test - prior;
-      mCodec.encode(delta);
-      prior = test;
+    @Override
+    public int getSeed() {
+        return encodedSeed;
     }
 
-    for (int iRow = 1; iRow < nRows; iRow++) {
-      int index = iRow * nColumns;
-      prior = values[index - nColumns];
-      for (int i = 0; i < nColumns; i++) {
-        int test = values[index++];
-        int delta = test - prior;
-        mCodec.encode(delta);
-        prior = test;
-      }
+    @Override
+    public int encode(
+        int nRows,
+        int nColumns,
+        int[] values,
+        byte[] output) {
+        
+        CodecM32 mCodec = new CodecM32(output, 0, output.length);
+        encodedSeed = values[0];
+        int prior = encodedSeed;
+        for (int i = 1; i < nColumns; i++) {
+            int test = values[i];
+            int delta = test - prior;
+            mCodec.encode(delta);
+            prior = test;
+        }
+
+        for (int iRow = 1; iRow < nRows; iRow++) {
+            int index = iRow * nColumns;
+            prior = values[index - nColumns];
+            for (int i = 0; i < nColumns; i++) {
+                int test = values[index++];
+                int delta = test - prior;
+                mCodec.encode(delta);
+                prior = test;
+            }
+
+        }
+
+        return mCodec.getEncodedLength();
 
     }
 
-    return mCodec.getEncodedLength();
+    @Override
+    public void decode(
+        int seed,
+        int nRows,
+        int nColumns,
+        byte[] encoding, int offset, int length,
+        int[] output) {
+        CodecM32 mCodec = new CodecM32(encoding, offset, length);
+        output[0] = seed;
+        int prior = seed;
+        for (int i = 1; i < nColumns; i++) {
+            prior += mCodec.decode();
+            output[i] = prior;
+        }
 
-  }
-
-
-  @Override
-  public void decode(
-    int seed,
-    int nRows,
-    int nColumns,
-    byte[] encoding, int offset, int length,
-    int[] output) {
-    CodecM32 mCodec = new CodecM32(encoding, offset, length);
-    output[0] = seed;
-    int prior = seed;
-    for (int i = 1; i < nColumns; i++) {
-      prior += mCodec.decode();
-      output[i] = prior;
+        for (int iRow = 1; iRow < nRows; iRow++) {
+            int index = iRow * nColumns;
+            prior = output[index - nColumns];
+            for (int iCol = 0; iCol < nColumns; iCol++) {
+                prior += mCodec.decode();
+                output[index++] = prior;
+            }
+        }
     }
 
-    for (int iRow = 1; iRow < nRows; iRow++) {
-      int index = iRow * nColumns;
-      prior = output[index - nColumns];
-      for (int iCol = 0; iCol < nColumns; iCol++) {
-        prior += mCodec.decode();
-        output[index++] = prior;
-      }
+    @Override
+    public boolean isNullDataSupported() {
+        return false;
     }
-  }
 
-  @Override
-  public boolean isNullDataSupported() {
-    return false;
-  }
-
-  @Override
-  public PredictorModelType getPredictorType() {
-      return PredictorModelType.Differencing;
-  }
+    @Override
+    public PredictorModelType getPredictorType() {
+        return PredictorModelType.Differencing;
+    }
 }

@@ -34,6 +34,14 @@
  *   The first two columns are pre-populated using simple differences,
  * then the remainder of the data is filled in using the linear-predictor.
  *
+ * Development note regarding integer arithmetic
+ *
+ * Background information on integer arithmetic (including critical assumptions
+ * about 32-bit integer overflow) is given in PredictorModelDifferencing.java
+ * Not that because the integer multiplication used in the predictor calculations
+ * for this class can overflow 32-bit integers, the calculations are performed
+ * using long (64-bit) integers (but the result is cast to a 32-bit integer).
+ *
  *
  * -----------------------------------------------------------------------
  */
@@ -82,11 +90,12 @@ public class PredictorModelLinear implements IPredictorModel {
 
       //accumulate second differences starting at column 2 for row
       for (int iCol = 2; iCol < nColumns; iCol++) {
-        long delta = mCodec.decode();
-        long c = delta + 2 * b - a;  // delta = c - 2 * b + a;
+        int residual = mCodec.decode();
+        int prediction = (int)(2L * b - a);
+        int c =  prediction + residual;
         a = b;
         b = c;
-        output[index + iCol] = (int) c;
+        output[index + iCol] = c;
       }
     }
   }
@@ -122,9 +131,10 @@ public class PredictorModelLinear implements IPredictorModel {
       long b = values[index + 1];
       //accumulate second differences starting at column 2
       for (int iCol = 2; iCol < nColumns; iCol++) {
-        long c = values[index + iCol];
-        delta = c - 2 * b + a;
-        mCodec.encode((int) delta);
+        int c = values[index + iCol];
+        int prediction = (int)(2L * b - a);
+        int residual = c-prediction;
+        mCodec.encode(residual);
         a = b;
         b = c;
       }
