@@ -206,16 +206,17 @@
                     values (Adobe, 2005).</p>
 
                 <p>As we discuss bits and byte layouts, we will use the following conventions:
-
-                    1. Bits are numbered according to their power of 2.  So the low-order
+				<ol>
+                    <li>Bits are numbered according to their power of 2.  So the low-order
                     bit in a 32-bit integer or floating-point value is bit 0.  The
-                    high order bit is bit 31.
-                    2. Bytes are numbered starting with 0 for the low-order byte and 3
-                    for the high-order byte.
-                    3. The numbering schemes have nothing to do with byte ordering (little-endian
+                    high order bit is bit 31.</li>
+                    <li>Bytes are numbered starting with 0 for the low-order byte and 3
+                    for the high-order byte.</li>
+                    <li>The numbering schemes have nothing to do with byte ordering (little-endian
                     versus big-endian orders). They refer to the numeric positions of the
                     bits or bytes within the value being discussed.  Byte ordering is a necessary
-                    consideration in implementation, but is not considered in this discussion of general idea.
+                    consideration in implementation, but is not considered in this discussion of general idea.</li>
+				</ol>
 
 
                 <p>The TIFF differencing proceeds as follows. For each row, the set of high-order bytes
