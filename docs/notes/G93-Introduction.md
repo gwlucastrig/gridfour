@@ -63,7 +63,8 @@ information in Europe would load the relevant tiles without needing
 to access information from South America.
 
 ![Tiling Scheme](images/PackingData/TileScheme.png)
- In the case of the ETOPO1 data set, the PackageData
+
+In the case of the ETOPO1 data set, the PackageData
 demonstration application specifies a grid of 90 rows by 120 columns.
 In terms of geographic coordinates, the 1-minute resolution
 used in ETOPO1 means that these tiles will cover an area with a span of 
