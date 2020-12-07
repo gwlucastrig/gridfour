@@ -43,6 +43,18 @@ used in data formats such as the TIFF image specification which
 partition large grids into smaller, regularly sized sub-grids
 known as tiles (Adobe, 1992, pg. 68).
 
+The basic idea of tiling a grid can be seen in the image below. In this case,
+a grid consisting of six rows and nine columns is divided into six 3-by-3 tiles.
+![Grid Tiles](images/Genera/TilingScheme.png).
+
+In G93, the size of tiles are arbitrary, though all tiles must be of
+a uniform size). Applications are free to specify tile sizes according
+to their needs. In this case,
+a 2-by-9 tile would have worked just fine. In fact, a 4-by-5 tile size would
+also work, even though the tiles would not evenly divide
+the 6-by-9 master grid. The G93 API would handle the extra cells
+internally and their management would be transparent to the application.
+
 The figure below illustrates how a tiling scheme works.  A collection of surface
 elevation and bathymetry data could be divided into regular
 tiles ten-degrees across. An application requiring access to
@@ -50,9 +62,7 @@ information in Europe would load the relevant tiles without needing
 to access information from South America.
 
 ![Tiling Scheme](images/PackingData/TileScheme.png)
-In G93, the size of tiles are arbitrary (though all tiles must be of
-a uniform size).  Applications are free to specify tile sizes according
-to their needs. In the case of the ETOPO1 data set, the PackageData
+ In the case of the ETOPO1 data set, the PackageData
 demonstration application specifies a grid of 90 rows by 120 columns.
 In terms of geographic coordinates, the 1-minute resolution
 used in ETOPO1 means that these tiles will cover an area with a span of 
