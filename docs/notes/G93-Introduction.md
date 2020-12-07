@@ -45,6 +45,7 @@ known as tiles (Adobe, 1992, pg. 68).
 
 The basic idea of tiling a grid can be seen in the image below. In this case,
 a grid consisting of six rows and nine columns is divided into six 3-by-3 tiles.
+
 ![Grid Tiles](images/General/TilingScheme.png).
 
 In G93, the size of tiles are arbitrary, though all tiles must be of
