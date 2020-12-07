@@ -45,15 +45,15 @@ known as tiles (Adobe, 1992, pg. 68).
 
 The basic idea of tiling a grid can be seen in the image below. In this case,
 a grid consisting of six rows and nine columns is divided into six 3-by-3 tiles.
-![Grid Tiles](images/Genera/TilingScheme.png).
+![Grid Tiles](images/General/TilingScheme.png).
 
 In G93, the size of tiles are arbitrary, though all tiles must be of
-a uniform size). Applications are free to specify tile sizes according
+a uniform size. Applications are free to specify tile sizes according
 to their needs. In this case,
 a 2-by-9 tile would have worked just fine. In fact, a 4-by-5 tile size would
 also work, even though the tiles would not evenly divide
-the 6-by-9 master grid. The G93 API would handle the extra cells
-internally and their management would be transparent to the application.
+the 6-by-9 master grid. The G93 API handles any extra cells
+internally and their management is transparent to the application.
 
 The figure below illustrates how a tiling scheme works.  A collection of surface
 elevation and bathymetry data could be divided into regular
