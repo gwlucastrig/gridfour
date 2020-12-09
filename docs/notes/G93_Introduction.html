@@ -250,7 +250,12 @@
 
                 <p>How much difference does the larger cache make?  With the default "Medium"
                     cache size, the time required to store ETOPO1 in uncompressed format was 237.2 seconds.
-                    With the "Large" size setting, it was only 8.6 seconds.</p>
+                    With the "Large" size setting, it was only 8.6 seconds. The use of a large cache can
+					also be useful when reading data. In testing, we compared the access time
+					using both a Medium and Large cache size
+					for reading the entire 233 million sample set from the G93-formatted version of ETOPO1.
+					Using the Medium cache, the read operation required 69.8 seconds. Using the Large cache,
+					the operation required only 3.6 seconds.</p>
 
                 <p>Here it is worth emphasizing that the need for a larger cache size
                     is due to the pattern-of-access applied in packaging the data.
@@ -467,7 +472,9 @@
                     was 8.6 seconds. As the values in the table show, compressing the data requires more
                     processing and increases the time to process to 68.3 seconds. However, most data compression
                     techniques in use today require far less processing to decompress data than to compress it.
-                    This generalization is true for all the currently implemented Gridfour data compression utilities.</p>
+                    This generalization is also true for all the currently implemented Gridfour data compression utilities.
+					While it took over a minute to compress the ETOPO1 data, the time required to read
+					the entire 233 million points in the compressed data set was only 6.3 seconds.</p>
 
                 <p>Even though the integer-coded GEBCO x 1 and the ETOPO1 products represent elevations with the
                     same precision (as integral meters), the bits per-sample-value for GEBCO x 1
