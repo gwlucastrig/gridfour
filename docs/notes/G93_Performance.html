@@ -59,6 +59,11 @@
                 <p>A discussion of the results from the testing are given in the sections listed below:</p>
                 <ul>
                     <li><a href="#performance-tests">Performance Tests</a></li>
+					<ol>
+					<li><a href="#writing-the-data">Writing the Data</a></li>
+					<li><a href="#reading-the-data">Reading the Data</a></li>
+					<li><a href="#memory-mapped-file-access">Why G93 does not use Memory-Mapped File Access</a></li>
+					</ol>
                     <li><a href="#data-compression">Data Compression</a></li>
                 </ul>
 
@@ -104,10 +109,50 @@
                 </table>
                 <p>The ETOPO1 data is stored as 4-byte integers giving depth/elevation in meters.
                     Its values range from -10803 meters depth to 8333 meters height. The GEBCO_2019
-                    data is stored as floating point values in a moderately compact form.
+                    data is stored as floating point-numbers in a moderately compact form that requires
+					just over 3 bytes for each data value.
                     Its values range from -10880.588 meters to 8613.156 meters.</p>
 
                 <h1 id="performance-tests">Performance Tests</h1>
+				<h2 id="writing-the-data">Writing the Data</h2>
+				<p>The G93 API can be used to simplify storage operations in data collection or analysis applications.
+				In those applications, it serves as a small part of a larger work flow. So it is reasonable
+				to require that the API does not make an undue contribution to the processing time for the overall job.
+				Therefore efficiency considerations were an important part of the G93 design.</p>
+				
+				<p>The time required for G93 to write the test data sets was measured using the
+				PackageData application that is included in the Gridfour software distribution.
+				That application transcribed the original NetCDF-formatted data into a matching
+				G93-formatted file. Naturally, reading a NetCDF file carries its own processing overhead.
+				The time required to access the original data was evaluated using a separate program
+				and removed from the data-writing statistics shown in the table below.</p>
+				
+				<table  border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+				<thead>
+				<tr>
+				<th>Test Set</th>
+				<th>Grid Dimensions</th>
+				<th>G93 File Size</th>
+				<th>Time to Write</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+				<td>ETOPO1</td>
+				<td>10800x21600</td>
+				<td>890 MB</td>
+				<td>6.7 sec.</td>
+				</tr>
+				<tr>
+				<td>GEBCO_2019</td>
+				<td>43200x86400</td>
+				<td>13.9 GB</td>
+				<td>143 sec.</td>
+				</tr>
+				</tbody>
+				</table>
+				
+				
                 <h2 id="reading-the-data">Reading the Data</h2>
                 <p>Both of the test data products are distributed in the well-known NetCDF data format.
                     The data in the products is stored in row-major order, so the most efficient
@@ -229,7 +274,8 @@
      <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = g93.readIntValue(iRow, iCol);
   }
 }
-</code></pre><p>As these code snippets show, the Row-Major and Column-Major patterns
+</code></pre>
+                <p>As these code snippets show, the Row-Major and Column-Major patterns
                     perform a separate read operation for each data point. Because each of these
                     read operations is independent, they involve a overhead
                     both for the Java method call and for the internal arithmetic to compute
@@ -294,7 +340,7 @@
                     <tbody>
                         <tr>
                             <td>NetCDF</td>
-                            <td>2.1</td>
+                            <td>2.6</td>
                             <td>132.2</td>
                             <td>N/A</td>
                         </tr>
@@ -325,7 +371,7 @@
                     defeat both file formts. Had we accessed the G93 and NetCDF files in a completely random
                     pattern for a very large number of data points, we could have achieved equally
                     bad performance for both.</p>
-                <h2 id="why-g93-does-not-use-memory-mapped-file-access">Why G93 Does not use Memory Mapped File Access</h2>
+                <h2 id="memory-mapped-file-access">Why G93 Does not use Memory Mapped File Access</h2>
                 <p>The G93 API does not use Java&#39;s memory-mapped file access. Instead, it
                     uses old-school file read-and-write operations. The reason for this
                     is based on known problems in Java. First, Java does not support

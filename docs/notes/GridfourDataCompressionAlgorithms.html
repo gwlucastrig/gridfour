@@ -274,7 +274,7 @@
                     the high-order bit used to indicate if additional bytes follow.
                     The length of the sequence depends on the magnitude of the residual
                     to be coded. In the worst case, 6 bytes are required to encode
-                    large magnitude residual.</p>
+                    large magnitude residual (1 byte for the introducer, 5 bytes for the content).</p>
                 <p>The M32 coding scheme is effective in the case where the computed residuals
                     tend to be small because it preserves the one-byte-per-value relationship.
                     Again, in the case of larger residuals, the M32 code can actually be longer
@@ -285,7 +285,7 @@
                 <h1 id="compressors">Compressors</h1>
                 <p>By applying the predictive-residual transformations and M32 serialization,
                     the G93 codecs transform the data to a state where it can be processed by
-                    convention compressor methods. While the transformation-serialization process generally
+                    conventional compressor methods. While the transformation-serialization process generally
                     reduces the size of the data (as it did for the ETOPO1 example),
                     its main benefit is that it results in a form with more
                     redundancy than the original. And as the redundancy is increased,
@@ -386,7 +386,7 @@
                     the frequency distribution of symbols in the compressed data more accurately than
                     Huffman, it can achieve better compression ratios than Huffman.
                     Unfortunately, implementing arithmetic coding is more complicated than
-                    implementing Huffman coding.  Arithmetic also encoders tend to require
+                    implementing Huffman coding.  Arithmetic encoders also tend to require
                     more processing time than Huffman.</p>
                 <p>As an experiment, we implemented a compression codes using the Reference Implementation
                     of an adaptive arithmetic encoder (Nayuki, 2020). During the test, we
