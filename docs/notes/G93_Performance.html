@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>G93 Performance</title>
+        <link rel="stylesheet" href="css/text.css" />
+        <link rel="stylesheet" href="css/layout.css" />
+    </head>
+
+
+    <body>
+        <div id="notescontainer">
+            <div id="notesheader">
+                <ul class="link-bar">
+                    <li> <a href="https://gwlucastrig.github.io/gridfour/">Home</a> </li>
+                    <li>|</li>
+                    <li><a href="https://github.com/gwlucastrig/gridfour">Code (Github)</a></li>
+                    <li>|</li>
+                    <li><a href="https://gwlucastrig.github.io/gridfour/notes_index.html">User Notes</a></li>
+                    <li>|</li>
+                </ul>
+                <p>&nbsp;</p>
+            </div>
+
+            <div id="notescontent">
+
+                <p class="title">
+                    G93 Performance for Data Reading, Writing, and Compression
+                </p>
+
+
+
+
+                <h1 id="introduction">Introduction</h1>
+                <p>The primary design goal for Gridfour&#39;s G93 API was to create an API that would
+                    provide a simple and reliable interface for working with grid-based data sources.
+                    And, in designing the G93 file format, we sought to develop a file-format specification
+                    that would be stable across future versions, portable across different operating environments
+                    and implementation languages, and suitable for long-term archiving of data.</p>
+                <p>None of that would matter if the G93 software did not provide acceptable performance.</p>
+                <p>This document describes the results of performance tests for the G93 software that were
+                    aimed at assessing the usefulness of the implementation. The tests involved
+                    performing various patterns of data access on two medium-to-large raster
+                    data products.  The tests were performed on a medium-quality laptop with 16 GB of installed memory
+                    and standard Solid State Drive (SSD).</p>
+
+                <p>In evaluating the Java implementation for G93, we were interested in two
+                    kinds of performance: speed of access and data compression ratios.
+                    Statistics for these performance areas was collected using multiple
+                    tests on large, publicly available data sets. The speed-of-access tests
+                    included the time to write new files and
+                    the time to read their entire content. The data-compression tests
+                    focused on the effectiveness of
+                    data compression for the reduction of storage size.
+                    They also considered the processing overhead required for
+                    applying data compression and decompression.</p>
+
+                <p>A discussion of the results from the testing are given in the sections listed below:</p>
+                <ul>
+                    <li><a href="#performance-tests">Performance Tests</a></li>
+                    <li><a href="#data-compression">Data Compression</a></li>
+                </ul>
+
+                <h2 id="test-data">The Test Data</h2>
+                <p>To evaluate G93 performance, we used two widely used
+                    and readily available geophysical data sets: ETOPO1 and GEBCO_2019.
+                    These products provide world-wide elevation and ocean bottom depth information.
+                    Because they describe a phenomonon that is readily observed in ordinary
+                    experience, they have the advantage of familiarity and immediacy.
+                    The data sets are large enough to present a significant processing
+                    load for a test series. And their content is varied enough thoroughly
+                    exercise the G93's function set.</p>
+
+
+                <p>The following table gives physical details for the test data files. Grid dimensions
+                    are given in number of rows by number of columns.</p>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>File Size</th>
+                            <th>Grid Dimensions</th>
+                            <th># Values</th>
+                            <th>Bits/Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ETOPO1</td>
+                            <td>890 MB</td>
+                            <td>10800x21600</td>
+                            <td>&gt; 233 Million</td>
+                            <td>32.01</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO 2019</td>
+                            <td>11180 MB</td>
+                            <td>43200x86400</td>
+                            <td>&gt; 3.7 Billion</td>
+                            <td>25.18</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>The ETOPO1 data is stored as 4-byte integers giving depth/elevation in meters.
+                    Its values range from -10803 meters depth to 8333 meters height. The GEBCO_2019
+                    data is stored as floating point values in a moderately compact form.
+                    Its values range from -10880.588 meters to 8613.156 meters.</p>
+
+                <h1 id="performance-tests">Performance Tests</h1>
+                <h2 id="reading-the-data">Reading the Data</h2>
+                <p>Both of the test data products are distributed in the well-known NetCDF data format.
+                    The data in the products is stored in row-major order, so the most efficient
+                    pattern of access for reading them is one-row-at-a-time.</p>
+                <p>The G93 data is intended to support efficient data access regardless of
+                    what pattern is used to read or write them. Like the source data, the G93 test files
+                    used for this evaluation were written in a row-major order.  So accessing
+                    the G93 data on grid-point-at-a-time in row-major order would traverse the
+                    file in the order that it was laid out.  Not surprisingly,
+                    sequential access of the G93 files tends to be the fastest pattern of
+                    access.</p>
+                <p>In practice, real-world applications tend to process data from
+                    large grids in blocks of neighboring data points. So they usually focus on a small
+                    subset of the overall collection. The test patterns used for this evaluation
+                    were based on that assumption. Except for the &quot;Tile Load&quot; case,
+                    they involved 100 percent data retrieval.  The &quot;block&quot; tests
+                    used the G93 block API to read multiple values at once (either an entire
+                    row or an entire tile). Other tests read values one-at-a-time.</p>
+                <p>The following table lists timing results for various patterns
+                    of access when reading all data in the indicated files. Times are given in seconds.
+                    Results are given for both the standard (non-compressed) variations of the G93
+                    files and the compressed forms.</p>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>Pattern</th>
+                            <th>ETOPO1</th>
+                            <th>ETOP01 Comp</th>
+                            <th>GEBCO_2019</th>
+                            <th>GEBCO Comp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Row Blocks</td>
+                            <td>2.76</td>
+                            <td>5.52</td>
+                            <td>65.32</td>
+                            <td>103.47</td>
+                        </tr>
+                        <tr>
+                            <td>Row-Major</td>
+                            <td>2.91</td>
+                            <td>5.76</td>
+                            <td>66.83</td>
+                            <td>107.67</td>
+                        </tr>
+                        <tr>
+                            <td>Column-Major</td>
+                            <td>3.29</td>
+                            <td>6.28</td>
+                            <td>96.83</td>
+                            <td>148.27</td>
+                        </tr>
+                        <tr>
+                            <td>Tile Block</td>
+                            <td>1.80</td>
+                            <td>4.74</td>
+                            <td>29.40</td>
+                            <td>77.66</td>
+                        </tr>
+                        <tr>
+                            <td>Tile Load</td>
+                            <td>0.53</td>
+                            <td>3.33</td>
+                            <td>20.81</td>
+                            <td>69.32</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Again, these access-time values reflect how long it takes to read the entire file.
+                    The values cited are rather abstract and, without more information, it may not be clear
+                    how they can be used to estimate the performance of an actual application. To put the
+                    figures in context, it is useful to remember that the ETOPO1 file is
+                    large (233 million points) and the GEBCO 2019 product is larger (3.7 billion points).
+                    Translating the times for the row-major access pattern to number of samples
+                    retrieved per second leads to the following results (all rates in millions
+                    of samples per second):</p>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>ETOPO1</th>
+                            <th>ETOP01 Comp</th>
+                            <th>GEBCO_2019</th>
+                            <th>GEBCO Comp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>80.2 M/s</td>
+                            <td>40.5 M/s</td>
+                            <td>55.9 M/s</td>
+                            <td>34.7 M/s</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h2 id="row-blocks-versus-row-major">Row Blocks versus Row-Major</h2>
+                <p>The Row Blocks test reads each row of data in the source grid in
+                    a single &quot;read&quot;. There are 10800 rows of data in the ETOPO1 product
+                    and 21600 columns. Thus each block-read operation returns 21600 values.
+                    This pattern of access is illustrated by the following code snippet</p>
+                <pre><code>for (int iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
+  <span class="hljs-type">float</span> []block = g93.readBlock(iRow, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, nColsInRaster);
+}
+</code></pre><p>In contrast the Row-Major operation reads the grid points for
+                    each row one value at a time.   Internally, the G93File class
+                    reads the data one tile at a time and stores them in a cache as necessary.
+                    The &quot;read-value&quot; API determines which tile is needed and fetches
+                    it from the cache each time the application requests a value. This pattern
+                    of access is illustrated by the following code snippet:</p>
+                <pre><code><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
+  <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iCol = <span class="hljs-number">0</span>; iCol &lt; nColumnsInRaster; iCol++) {
+     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = g93.readIntValue(iRow, iCol);
+  }
+}
+</code></pre><p>The Column-Major pattern is similar, but uses columns as the outer loop.</p>
+                <pre><code><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iCol = <span class="hljs-number">0</span>; iCol &lt; nColumnsInRaster; iCol++) {
+  <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
+     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = g93.readIntValue(iRow, iCol);
+  }
+}
+</code></pre><p>As these code snippets show, the Row-Major and Column-Major patterns
+                    perform a separate read operation for each data point. Because each of these
+                    read operations is independent, they involve a overhead
+                    both for the Java method call and for the internal arithmetic to compute
+                    an index into the grid and retrieve the associated tile from G93&#39;s
+                    internal tile-cache. This small overhead was multiplied across the
+                    numerous data read operations that were performed by these tests.</p>
+                <p>The difference in data-fetching time between the Row-Major and Column-Major
+                    access pattern is due to the fact that the tiles stored in the
+                    particular G93 files used for this test were themselves written
+                    to the file in row-major order (rows of tiles). So two tiles that
+                    were adjacent in a single row were also adjacent in their file
+                    locations. However, two tiles that were adjacent in a single
+                    column were not adjacent in the file. This the Column-Major
+                    pattern required more file seek-and-fetch operations than the
+                    Row-Major alternative.</p>
+                <p>In theory, the block retrievals should be faster
+                    than the single-point read operations because fewer calls result
+                    in less overhead. As the table above shows, the difference in the
+                    operations was detectable, but not especially impressive. This result suggests
+                    that the g93.readBlock() method may present opportunities for improvement.</p>
+                <h2 id="the-cost-of-reading-data-from-the-file">The Cost of Reading Data from the File</h2>
+                <p>The Tile Load test retrieves just one point for tile. Thus the run time for
+                    the test is essentially just the time required to load read the individual tiles from
+                    the data file.  The Tile Block test follows the same pattern as Tile Load,
+                    but loads the entire content of the tile using the readBlock() method.
+                    So the difference in time for the tests is just the overhead of indexing
+                    and copying the data from the tile to the result array.</p>
+                <p>At present, the Tile Block read times are significantly lower than those
+                    of the Row Block test. Again, this result suggests that there may be
+                    opportunities to optimize the access code for the read routines.</p>
+                <h2 id="access-times-for-g93-versus-netcdf">Access Times for G93 versus NetCDF</h2>
+                <p>As mentioned above, the source data used for the performance tests
+                    described in these notes is distributed in a format called NetCDF.
+                    G93 is not intended to compete with NetCDF. The two data formats
+                    are intended for different purposes and to operate in
+                    different environments. But the Java API for NetCDF is a well-written
+                    module and, as such, provides a good standard for speed of access.
+                    Any raster-based file implementation should be able to operate with performance that
+                    is at least as good as NetCDF. </p>
+                <p>The table below gives accessing times for reading the <em>entire</em> data set for
+                    ETOPO1 and GEBCO_2019, using the Java API for NetCDF and G93 file formats.
+                    Both files can be accessed in random order, but the most efficient way of retrieving
+                    their content is by following a pattern of access established by their underlying
+                    data definition. The NetCDF distributions of the ETOPO1 and GEBCO products
+                    can be accessed most efficiently in row-major order (one complete row at a time).
+                    The G93 format can be accessed most efficiently one complete tile at a time.
+                    So performance statistics for those two patterns are included in the table
+                    below.  Because the NetCDF version of GEBCO_2019 is stored in a semi-compressed
+                    format, the timing values for the compressed version of G93 are
+                    more relevant than the uncompressed version. Finally, to clarify the
+                    differences in behavior between the two API&#39;s, the table repeats the
+                    G93 timing data for row-major access.</p>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>ETOPO1</th>
+                            <th>GEBCO_2019 Compressed</th>
+                            <th>GEBCO_2019</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>NetCDF</td>
+                            <td>2.1</td>
+                            <td>132.2</td>
+                            <td>N/A</td>
+                        </tr>
+                        <tr>
+                            <td>G93 (tiles)</td>
+                            <td>1.8</td>
+                            <td>77.7</td>
+                            <td>29.40</td>
+                        </tr>
+                        <tr>
+                            <td>G93 (rows)</td>
+                            <td>2.9</td>
+                            <td>107.7</td>
+                            <td>66.8</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>The differences in timing reflect the differences in the intention of the
+                    two packages. NetCDF is a widely used standard for distributing data
+                    (it also has support for a number of languages besides Java, including C/C++, C#, and Python).
+                    G93 is intended more for back-end processing for large raster data sets
+                    in cases where the pattern-of-access is arbitrary or unpredictable. When using NetCDF
+                    (at least the Java version), it is often helpful if the pattern of data access
+                    sticks to the underlying organization of the file. For example, when accessing
+                    the NetCDF file in column-major order, the ETOPO1 read operation took
+                    1184.3 seconds to complete while G93 took 3.3 seconds.  Of course, we
+                    need to be a little candid here.  It is possible to devise access patterns that
+                    defeat both file formts. Had we accessed the G93 and NetCDF files in a completely random
+                    pattern for a very large number of data points, we could have achieved equally
+                    bad performance for both.</p>
+                <h2 id="why-g93-does-not-use-memory-mapped-file-access">Why G93 Does not use Memory Mapped File Access</h2>
+                <p>The G93 API does not use Java&#39;s memory-mapped file access. Instead, it
+                    uses old-school file read-and-write operations. The reason for this
+                    is based on known problems in Java. First, Java does not support
+                    memory-mapped file access for files larger than 2.1 gigabytes,
+                    and raster files of that size or larger are common in scientific
+                    applications. Additionally, there are reports that Java does not
+                    always close memory mapped files and clean up resources when
+                    running under Windows. Thus, for the initial implementation,
+                    we decided to avoid memory mapped files.</p>
+                <h1 id="data-compression">Data Compression</h1>
+                <p>Although there are many good general-purpose data compression utilities
+                    available to the software community, raster-based data files tend to
+                    compress only moderately well. For example, consider the compression results for
+                    ETOPO1 using two well-known compression formats, Zip and 7z.  Since the elevation
+                    values in ETOPO1 range from -10803 to 8333, they can be stored comfortably in
+                    a two-byte short integer. There are just over 233 million sample points in ETOPO1.
+                    Storing them as short integers leads to a storage size of 466,560,000 bytes.
+                    Using Zip and 7z compressors on that data yields the following results.</p>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Size (bytes)</th>
+                            <th>Relative Size</th>
+                            <th>Bits/Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ETOPO1 (standard)</td>
+                            <td>466,560,000</td>
+                            <td>100.0 %</td>
+                            <td>16.00</td>
+                        </tr>
+                        <tr>
+                            <td>ETOPO1 Zip</td>
+                            <td>309,100,039</td>
+                            <td>66.3 %</td>
+                            <td>10.60</td>
+                        </tr>
+                        <tr>
+                            <td>ETOPO1 7z</td>
+                            <td>201,653,141</td>
+                            <td>43.2 %</td>
+                            <td>6.92</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>It is also worth nothing that general-purpose compression has the disadvantage
+                    that in order to access any of the data in the file, it is necessary to decompress the whole
+                    thing. For many grid-based applications, only a small portion of a raster file is needed
+                    at any particular time.</p>
+                <p>The G93 API uses standard compression techniques (Huffman coding, Deflate),
+                    but transforms the data so that it is more readily compressed and yields
+                    better compression ratios. Each tile is compressed individually, so
+                    an application that wants only part of the data in the file can
+                    obtain it without decompressing everything else. </p>
+                <p>The G93 file format supports 3 different data formats:</p>
+                <pre><code><span class="hljs-number">1.</span>  Integer (<span class="hljs-number">4</span>-byte integers)
+<span class="hljs-number">2.</span>  Float (<span class="hljs-number">4</span>-byte, <span class="hljs-number">32</span> bit IEEE <span class="hljs-number">754</span> standard floating-point values)
+<span class="hljs-number">3.</span>  Integer-Coded Floats (floating-point values scaled and stored as integers)
+</code></pre><p>The GEBCO data is expressed in a non-integral form. While the data can be stored
+                    as integer-coded-floats, the integer coding requires some loss of precision.
+                    So, to store the data in a lossless form, it needs to be represented using
+                    the 4-byte floating-point format.  While the floating-point representation of the
+                    data preserves all the precision in the original, it requires a different approach
+                    to data compression than the integer forms.  Unfortunately, the G93 floating-point
+                    implementation does not achieve quite as favorable compression ratios as the integer-based
+                    compressors. </p>
+                <p>The table below shows the relative storage size required for different products
+                    and storage options. The entries marked GEBCO x 1, GEBCO x 2, are scaled integer
+                    representations of the original sample points. There are two reasons that the scaled versions
+                    compress more readily than the floating-point. First, the G93 integer
+                    compressors are more powerful than the floating-point compressor. Second,
+                    the scaling operation truncates some of the fractional part of the original
+                    values and, thus, discards some of the information in the original product.</p>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Size (bits/sample)</th>
+                            <th>Number of Samples</th>
+                            <th>Time to Compress (sec)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ETOPO1</td>
+                            <td>4.46</td>
+                            <td>233,280,000</td>
+                            <td>68.3</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO x 1</td>
+                            <td>2.89</td>
+                            <td>3,732,480,000</td>
+                            <td>1252.1</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO x 2</td>
+                            <td>3.56</td>
+                            <td>3,732,480,000</td>
+                            <td>1210.7</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO x 4</td>
+                            <td>4.35</td>
+                            <td>3,732,480,000</td>
+                            <td>1193.7</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO (floats)</td>
+                            <td>15.41</td>
+                            <td>3,732,480,000</td>
+                            <td>748.2</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>ETOPO1 data is stored in the form of integers with a small amount of overhead
+                    for metadata and file-management elements. As table above shows, G93 data compression reduces
+                    the raw data for ETOPO1 from 16 bits per sample to 4.46 bits per sample.  So the storage
+                    required for the data is reduced to about 27.9 % of the original size. </p>
+                <p>When deciding whether to use the native floating-point representation of the GEBCO data
+                    or the more compact integer-scaled float representation,  the main consideration is
+                    how much precision is required for the application that uses it. One can reasonably
+                    ask just how much precision the GEBCO data really requires.  For example, a scaling
+                    factor of 1 essentially rounds the floating-point values to their nearest integers.
+                    In effect, this process reduces the data to depth and elevation given in integer meters.
+                    For ocean data with 1/2 kilometer sample spacing, an accuracy of 1 meter may be more than is
+                    truly required. Even on land, it is unlikely than many of the points in the data set
+                    are accurate to within 1 meter of the actual surface elevation. However, the extra
+                    precision in the floating-point format (or that achieved with a larger scaling factor)
+                    may help reduce data artifacts due to quantization noise. Also, for purposes of this test, we were
+                    interested in how well the algorithm would work, so we applied various
+                    scaling factors as shown in the results above.</p>
+                <h1 id="future-work">Future Work</h1>
+                <p>One item that was not fully explored in this article is the effect of disk speed in read
+                    operations. The testing was, after all, conducted using a system equiped with
+                    a fast solid-state drive. A future investigation will use an USB external disk drive to
+                    see how much extra access time a slower disk requires.</p>
+                <p>Some of the test results above suggest that there may still be opportunities
+                    to improve the access speeds, especially for the block-based file access routines.
+                    Future work will involve a careful review of the code used for the readBlock()
+                    method.</p>
+                <h1 id="conclusion">Conclusion</h1>
+                <p>The figures cited in this article provide a rough guide to estimating
+                    the kind of performance an application designer can expect using the
+                    G93 API. It also gives an indication of the resources that would be needed
+                    to process and store data in G93 format.</p>
+                <p>As with any API, the design of G93 makes assumptions about the way it will
+                    be accessed. Our hope is that those assumptions are broad enough that
+                    G93 will provide acceptable performance for most applications.</p>
+            </div>
+        </div>
+    </body>
+</html>
