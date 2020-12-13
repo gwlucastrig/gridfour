@@ -30,8 +30,6 @@
                 </p>
 
 
-
-
                 <h1 id="introduction">Introduction</h1>
                 <p>The primary design goal for Gridfour&#39;s G93 API was to create an API that would
                     provide a simple and reliable interface for working with grid-based data sources.
@@ -58,13 +56,17 @@
 
                 <p>A discussion of the results from the testing are given in the sections listed below:</p>
                 <ul>
-                    <li><a href="#performance-tests">Performance Tests</a></li>
-					<ol>
-					<li><a href="#writing-the-data">Writing the Data</a></li>
-					<li><a href="#reading-the-data">Reading the Data</a></li>
-					<li><a href="#memory-mapped-file-access">Why G93 does not use Memory-Mapped File Access</a></li>
-					</ol>
+                    <li><a href="#performance-tests">Data-Access Time</a>
+                        <ul>
+                            <li><a href="#performance-at-a-glance">Performance at a Glance</a></li>
+                            <li><a href="#writing-the-data">Writing the Data</a></li>
+                            <li><a href="#reading-the-data">Reading the Data</a></li>
+                            <li><a href="#g93-versus-netcdf">Access times for G93 versus NetCDF</a>
+                            <li><a href="#memory-mapped-file-access">Why G93 does not use Memory-Mapped File Access</a></li>
+                        </ul>
+                    </li>
                     <li><a href="#data-compression">Data Compression</a></li>
+                    <li><a href="#future-work">Future Work</a></li>
                 </ul>
 
                 <h2 id="test-data">The Test Data</h2>
@@ -107,52 +109,104 @@
                         </tr>
                     </tbody>
                 </table>
-                <p>The ETOPO1 data is stored as 4-byte integers giving depth/elevation in meters.
+                <p>Both of the test data sets are available free-of-charge on the web.
+                    Both are available in different formats. For this test, we selected versions
+                    of the files that were stored in the well-known NetCDF data format.
+                    The ETOPO1 data is stored as 4-byte integers giving depth/elevation in meters.
                     Its values range from -10803 meters depth to 8333 meters height. The GEBCO_2019
                     data is stored as floating point-numbers in a moderately compact form that requires
-					just over 3 bytes for each data value.
+                    just over 3 bytes for each data value.
                     Its values range from -10880.588 meters to 8613.156 meters.</p>
 
-                <h1 id="performance-tests">Performance Tests</h1>
-				<h2 id="writing-the-data">Writing the Data</h2>
-				<p>The G93 API can be used to simplify storage operations in data collection or analysis applications.
-				In those applications, it serves as a small part of a larger work flow. So it is reasonable
-				to require that the API does not make an undue contribution to the processing time for the overall job.
-				Therefore efficiency considerations were an important part of the G93 design.</p>
-				
-				<p>The time required for G93 to write the test data sets was measured using the
-				PackageData application that is included in the Gridfour software distribution.
-				That application transcribed the original NetCDF-formatted data into a matching
-				G93-formatted file. Naturally, reading a NetCDF file carries its own processing overhead.
-				The time required to access the original data was evaluated using a separate program
-				and removed from the data-writing statistics shown in the table below.</p>
-				
-				<table  border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
-				<thead>
-				<tr>
-				<th>Test Set</th>
-				<th>Grid Dimensions</th>
-				<th>G93 File Size</th>
-				<th>Time to Write</th>
-				</tr>
-				</thead>
-				<tbody>
-				<tr>
-				<td>ETOPO1</td>
-				<td>10800x21600</td>
-				<td>890 MB</td>
-				<td>6.7 sec.</td>
-				</tr>
-				<tr>
-				<td>GEBCO_2019</td>
-				<td>43200x86400</td>
-				<td>13.9 GB</td>
-				<td>143 sec.</td>
-				</tr>
-				</tbody>
-				</table>
-				
-				
+                <h1 id="performance-tests">Data-Access Time</h1>
+                <h2 id="performance-at-a-glance">Performance at a Glance</h2>
+                <p>We'll being our discussion of G93 performance by providing some of our most useful
+                    information first. The table below is intended to sense of how fast G93 can
+                    read from or write to a data file. The information in the table should provide
+                    a basis for making a rough estimate of the kind of performance that can be expected
+                    for other raster based data sources used in Java applications.</p>
+
+
+                <table  border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none;caption-side:top'>
+                    <caption>Transfer rates in millions of operations per second (M/s)</caption>
+                    <thead>
+                        <tr>
+                            <th>Operation</th>
+                            <th>ETOPO1</th>
+                            <th>ETOP01<br>Compressed</th>
+                            <th>GEBCO 2019</th>
+                            <th>GEBCO 2019<br>Compressed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Read</td>
+                            <td>80.2 M/s</td>
+                            <td>40.5 M/s</td>
+                            <td>55.9 M/s</td>
+                            <td>34.7 M/s</td>
+                        </tr>
+                        <tr>
+                            <td>Write</td>
+                            <td>38.8 M/s</td>
+                            <td> 3.42 M/s</td>
+                            <td>26.1 M/s</td>
+                            <td>4.99 M/s</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>Not surprisingly, the transfer rates for compressed data are substantially
+                    slower than those for uncompressed. Data compression reduces
+                    the amount of data that has to read from or written to an external storage medium
+                    (such as a disk drive), but does not usually make a substantial different in the
+                    time required for file-access operations. The main difference in transfer rates
+                    is due to the extra processor overhead required to compress or decompress data.</p>
+
+                <p>The values in the table above include overhead factors such as the time
+                    require to open or create a file. Naturally, there are other factors that
+                    can influence access times. These are discussed in the sections that follow.
+                    Details of the test methods used to measure performance are also included.</p>
+
+                <h2 id="writing-the-data">Writing the Data</h2>
+                <p>The G93 API can be used to simplify storage operations in data collection or analysis applications.
+                    In those applications, it serves as a small part of a larger work flow. So it is reasonable
+                    to require that the API does not make an undue contribution to the processing time for the overall job.
+                    Therefore efficiency considerations were an important part of the G93 design.</p>
+
+                <p>The time required for G93 to write the test data sets was measured using the
+                    PackageData application that is included in the Gridfour software distribution.
+                    That application transcribed the original NetCDF-formatted data into a matching
+                    G93-formatted file. Naturally, reading a NetCDF file carries its own processing overhead.
+                    The time required to access the original data was evaluated using a separate program
+                    and removed from the data-writing statistics shown in the table below.</p>
+
+                <table  border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                    <thead>
+                        <tr>
+                            <th>Test Set</th>
+                            <th>Grid Dimensions</th>
+                            <th>G93 File Size</th>
+                            <th>Time to Write</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ETOPO1</td>
+                            <td>10800x21600</td>
+                            <td>890 MB</td>
+                            <td>6.7 sec.</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO_2019</td>
+                            <td>43200x86400</td>
+                            <td>13.9 GB</td>
+                            <td>143 sec.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+
                 <h2 id="reading-the-data">Reading the Data</h2>
                 <p>Both of the test data products are distributed in the well-known NetCDF data format.
                     The data in the products is stored in row-major order, so the most efficient
@@ -175,7 +229,8 @@
                     of access when reading all data in the indicated files. Times are given in seconds.
                     Results are given for both the standard (non-compressed) variations of the G93
                     files and the compressed forms.</p>
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none;caption-side:top'>
+                    <caption>Read operations using different access patterns (times in seconds)</caption>
                     <thead>
                         <tr>
                             <th>Pattern</th>
@@ -223,32 +278,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <p>Again, these access-time values reflect how long it takes to read the entire file.
-                    The values cited are rather abstract and, without more information, it may not be clear
-                    how they can be used to estimate the performance of an actual application. To put the
-                    figures in context, it is useful to remember that the ETOPO1 file is
-                    large (233 million points) and the GEBCO 2019 product is larger (3.7 billion points).
-                    Translating the times for the row-major access pattern to number of samples
-                    retrieved per second leads to the following results (all rates in millions
-                    of samples per second):</p>
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
-                    <thead>
-                        <tr>
-                            <th>ETOPO1</th>
-                            <th>ETOP01 Comp</th>
-                            <th>GEBCO_2019</th>
-                            <th>GEBCO Comp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>80.2 M/s</td>
-                            <td>40.5 M/s</td>
-                            <td>55.9 M/s</td>
-                            <td>34.7 M/s</td>
-                        </tr>
-                    </tbody>
-                </table>
+
                 <h2 id="row-blocks-versus-row-major">Row Blocks versus Row-Major</h2>
                 <p>The Row Blocks test reads each row of data in the source grid in
                     a single &quot;read&quot;. There are 10800 rows of data in the ETOPO1 product
@@ -306,7 +336,7 @@
                 <p>At present, the Tile Block read times are significantly lower than those
                     of the Row Block test. Again, this result suggests that there may be
                     opportunities to optimize the access code for the read routines.</p>
-                <h2 id="access-times-for-g93-versus-netcdf">Access Times for G93 versus NetCDF</h2>
+                <h2 id="g93-versus-netcdf">Access Times for G93 versus NetCDF</h2>
                 <p>As mentioned above, the source data used for the performance tests
                     described in these notes is distributed in a format called NetCDF.
                     G93 is not intended to compete with NetCDF. The two data formats
@@ -328,7 +358,8 @@
                     more relevant than the uncompressed version. Finally, to clarify the
                     differences in behavior between the two API&#39;s, the table repeats the
                     G93 timing data for row-major access.</p>
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none;caption-side:top'>
+                    <caption>Read operations for different data formats (times in seconds)</caption>
                     <thead>
                         <tr>
                             <th>Format</th>
@@ -505,9 +536,17 @@
                     are accurate to within 1 meter of the actual surface elevation. However, the extra
                     precision in the floating-point format (or that achieved with a larger scaling factor)
                     may help reduce data artifacts due to quantization noise. Also, for purposes of this test, we were
-                    interested in how well the algorithm would work, so we applied various
+                    interested in how well the algorithm would work across varying degrees of precision in
+                    the converted data. So we applied various
                     scaling factors as shown in the results above.</p>
                 <h1 id="future-work">Future Work</h1>
+                <p>When data compression is applied to a G93 file, it adds a considerable amount
+                    of processing overhead to the data-writing operation. In future work, it may be
+                    possible to improve the throughput of write operations by using a multi-threaded
+                    implementation to handle data compression. Although the current implementation of the G93 API is limited
+                    to a single thread, the structure of its internal data cache could be adapted to
+                    support multiple threads without major revision. A multi-threaded implementation
+                    may be considered for future investigations.</p>
                 <p>One item that was not fully explored in this article is the effect of disk speed in read
                     operations. The testing was, after all, conducted using a system equiped with
                     a fast solid-state drive. A future investigation will use an USB external disk drive to
