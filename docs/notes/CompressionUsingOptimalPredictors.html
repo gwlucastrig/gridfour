@@ -99,39 +99,43 @@
                     be realized several thousands of times when applied to the entire data set.</p>
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
-                    <tr>
-                        <th>Product</th>
-                        <th>Grid Spacing</th>
-                        <th>Cells in Grid</th>
-                        <th>Standard</th>
-                        <th>With LSOP</th>
-                        <th>Savings</th>
-                    </tr>
-                    <tr>
-                        <td> ETOPO1</td>
-                        <td>1 minute</td>
-                        <td>233 Million</td>
-                        <td>4.40 bps</td>
-                        <td>3.66 bps</td>
-                        <td>20.6 MB</td>
-                    </tr>
-                    <tr>
-                        <td>GEBCO 2020 </td>
-                        <td>15 seconds </td>
-                        <td>3.7 Billion</td>
-                        <td>3.08 bps </td>
-                        <td>2.87 bps</td>
-                        <td>71.2 MB</td>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Grid Spacing</th>
+                            <th>Cells in Grid</th>
+                            <th>Standard</th>
+                            <th>With LSOP</th>
+                            <th>Savings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td> ETOPO1</td>
+                            <td>1 minute</td>
+                            <td>233 Million</td>
+                            <td>4.40 bps</td>
+                            <td>3.66 bps</td>
+                            <td>20.6 MB</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO 2020 </td>
+                            <td>15 seconds </td>
+                            <td>3.7 Billion</td>
+                            <td>3.08 bps </td>
+                            <td>2.87 bps</td>
+                            <td>71.2 MB</td>
+                        </tr>
 
-                    <tr>
-                        <td>SRTM (Paducah, Kentucky)</td>
-                        <td>1 second </td>
-                        <td>12.9 Million</td>
-                        <td>2.23 bps </td>
-                        <td>1.92 bps</td>
-                        <td>0.48 MB</td>
-                    </tr>
+                        <tr>
+                            <td>SRTM (Paducah, Kentucky)</td>
+                            <td>1 second </td>
+                            <td>12.9 Million</td>
+                            <td>2.23 bps </td>
+                            <td>1.92 bps</td>
+                            <td>0.48 MB</td>
+                        </tr>
+                    </tbody>
                 </table>
 
 
@@ -160,35 +164,39 @@
                     be. To give a fair comparison, I divided the size of the ETOPO1 source file by two.</p>
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
-                    <tr>
-                        <th>Product</th>
-                        <th>Grid Dimensions</th>
-                        <th># Values</th>
-                        <th>Source Size</th>
-                        <th>Compressed Size</th>
-                    </tr>
-                    <tr>
-                        <td>ETOP01</td>
-                        <td>10800 x 21600</td>
-                        <td>&#62;233 Million</td>
-                        <td>446.3 MB (890.1 MB)</td>
-                        <td>101.63 MB (22.84%)</td>
-                    </tr>
-                    <tr>
-                        <td>GEBCO 2020</td>
-                        <td>43200 x 86400</td>
-                        <td>&#62;3.7 Billion</td>
-                        <td>7119.1 MB </td>
-                        <td>1279.06 MB (17.97 %)</td>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Grid Dimensions</th>
+                            <th># Values</th>
+                            <th>Source Size</th>
+                            <th>Compressed Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>ETOP01</td>
+                            <td>10800 x 21600</td>
+                            <td>&#62;233 Million</td>
+                            <td>446.3 MB (890.1 MB)</td>
+                            <td>101.63 MB (22.84%)</td>
+                        </tr>
+                        <tr>
+                            <td>GEBCO 2020</td>
+                            <td>43200 x 86400</td>
+                            <td>&#62;3.7 Billion</td>
+                            <td>7119.1 MB </td>
+                            <td>1279.06 MB (17.97 %)</td>
+                        </tr>
 
-                    <tr>
-                        <td>SRTM (Paducah, Kentucky)</td>
-                        <td>3600 x 3600</td>
-                        <td>&#62;12.9 million</td>
-                        <td>25.3 MB </td>
-                        <td>2.99 MB (11.8 %)</td>
-                    </tr>
+                        <tr>
+                            <td>SRTM (Paducah, Kentucky)</td>
+                            <td>3600 x 3600</td>
+                            <td>&#62;12.9 million</td>
+                            <td>25.3 MB </td>
+                            <td>2.99 MB (11.8 %)</td>
+                        </tr>
+                    </tbody>
                 </table>
 
                 <p>One of the trends that is apparent in the tables above is that data sets with denser grid tend
@@ -213,33 +221,38 @@
                     NASA and the U.S. government have generously provided the results of this survey for international public use
                     (<a href="https://lpdaac.usgs.gov/products/astgtmv003">NASA, 2020</a>). The SRTM data
                     is available in various forms. The results in the table below are based on the analysis of data
-                    issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc (about
-                    30 meters spacing at the equator). The data is limited to terrestrial (land) areas and includes
-                    14277 separate data files (based on a search at the
+                    issued in GeoTIFF file format in 1-degree squares with a grid-spacing of 1 second of arc. This
+                    configuration leads to a 3600x3600 grid with a cell size of about 30 meters at the equator.
+                    The grid's horizontal spacing is less at higher latitudes due to longitude convergence. The data is limited
+                    to terrestrial (land) areas and includes 14277 separate data files (that count is based on a search at the
                     USGS <a href="https://earthexplorer.usgs.gov/">Earth Explorer</a> website).
-                    NASA names its SRTM files based on the southwest corner of the
-                    area of coverage. As a reference, the entries in the table below are labeled with
-                    the names of places that lie within the bounds of the 1-degree square area of
-                    coverage for the associated SRTM file. The degree to which SRTM data compresses depends
+                    NASA names its SRTM files using the coordinates of the southwest corner of the
+                    area of coverage. To provide a more recognizable identification, the SRTM files in the table
+                    below are labeled with the names of places that lie within their 1-degree areas of
+                    coverage. The degree to which SRTM data compresses depends
                     on the variability of the source data. But for many of the sample files, the
                     method of Optimal Predictors achieves better than a 8-to-1 reduction in the side
                     of the data set.</p>
 
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
-                    <tr>
-                        <th>Data Area</th>
-                        <th>Bits per Elevation</th>
-                        <th>File Name (SE Corner)</th>
-                    </tr>
-                    <tr><td>Sioux Falls, South Dakota, USA</td>   <td>1.7366</td><td>n43_w097_1arc_v3.tif</td></tr>
-                    <tr><td>Paducah Kentucky, USA</td>            <td>1.9142</td><td>n37_w089_1arc_v3.tif</td></tr>
-                    <tr><td>Pontypridd, Wales</td>                <td>1.7761</td><td>n51_w004_1arc_v3.tif</td></tr>
-                    <tr><td>Padua, Italy</td>                     <td>2.2329</td><td>n45_e011_1arc_v3.tif</td></tr>
-                    <tr><td>Poloniny National Park, Slovakia</td> <td>1.9771</td><td>n49_e022_1arc_v3.tif</td></tr>
-                    <tr><td>Atacama Desert, Chile</td>            <td>2.0978</td><td>s24_w070_1arc_v3.tif</td></tr>
-                    <tr><td>Olduvai Gorge, Tanzania</td>          <td>2.2823</td><td>s03_e035_1arc_v3.tif</td></tr>
-                    <tr><td>Auckland, New Zealand</td>            <td>1.2539</td><td>s37_e174_1arc_v3.tif</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Data Area</th>
+                            <th>Bits per Elevation</th>
+                            <th>File Name (SE Corner)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Sioux Falls, South Dakota, USA</td>   <td>1.7366</td><td>n43_w097_1arc_v3.tif</td></tr>
+                        <tr><td>Paducah Kentucky, USA</td>            <td>1.9142</td><td>n37_w089_1arc_v3.tif</td></tr>
+                        <tr><td>Pontypridd, Wales</td>                <td>1.7761</td><td>n51_w004_1arc_v3.tif</td></tr>
+                        <tr><td>Padua, Italy</td>                     <td>2.2329</td><td>n45_e011_1arc_v3.tif</td></tr>
+                        <tr><td>Poloniny National Park, Slovakia</td> <td>1.9771</td><td>n49_e022_1arc_v3.tif</td></tr>
+                        <tr><td>Atacama Desert, Chile</td>            <td>2.0978</td><td>s24_w070_1arc_v3.tif</td></tr>
+                        <tr><td>Olduvai Gorge, Tanzania</td>          <td>2.2823</td><td>s03_e035_1arc_v3.tif</td></tr>
+                        <tr><td>Auckland, New Zealand</td>            <td>1.2539</td><td>s37_e174_1arc_v3.tif</td></tr>
+                    </tbody>
                 </table>
 
                 <h2>Access Speed</h2>
@@ -399,39 +412,43 @@
                     over the ETOPO1 and GEBCO 2020 data sets and a selected SRTM file.</p>
 
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
-                    <tr>
-                        <th>&nbsp;</th>
-                        <th>ETOPO1</th>
-                        <th>GEBCO 2020</th>
-                        <th>SRTM (Paducah, Kentucky)</th>
-                    </tr>
-                    <tr>
-                        <td>Mean error predicted values</td>
-                        <td>-6.74E-5</td>
-                        <td> 8.99E-6</td>
-                        <td> 3.59E-6</td>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <th>&nbsp;</th>
+                            <th>ETOPO1</th>
+                            <th>GEBCO 2020</th>
+                            <th>SRTM (Paducah, Kentucky)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Mean error predicted values</td>
+                            <td>-6.74E-5</td>
+                            <td> 8.99E-6</td>
+                            <td> 3.59E-6</td>
+                        </tr>
 
-                    <tr>
-                        <td>Mean absolute error</td>
-                        <td>4.78</td>
-                        <td>1.74</td>
-                        <td>0.88</td>
-                    </tr>
+                        <tr>
+                            <td>Mean absolute error</td>
+                            <td>4.78</td>
+                            <td>1.74</td>
+                            <td>0.88</td>
+                        </tr>
 
-                    <tr>
-                        <td>Percent integer residuals with zero value</td>
-                        <td>25.3 %</td>
-                        <td>43.4 %</td>
-                        <td>51.9 %</td>
-                    </tr>
+                        <tr>
+                            <td>Percent integer residuals with zero value</td>
+                            <td>25.3 %</td>
+                            <td>43.4 %</td>
+                            <td>51.9 %</td>
+                        </tr>
 
-                    <tr>
-                        <td>Avg. bits/sample</td>
-                        <td>3.66</td>
-                        <td>2.87</td>
-                        <td>1.92</td>
-                    </tr>
+                        <tr>
+                            <td>Avg. bits/sample</td>
+                            <td>3.66</td>
+                            <td>2.87</td>
+                            <td>1.92</td>
+                        </tr>
+                    </tbody>
                 </table>
 
                 <p>When I discussed the ideas behind the Optimal Predictor method, I mentioned that the constraint
@@ -731,8 +748,8 @@
                     Data was downloaded from the USGS Earth Explorer web site at <a href="https://earthexplorer.usgs.gov/">https://earthexplorer.usgs.gov/</a>.
                 </p>
 
-				<p>National Institute of Standards and Technology [NIST]. 2012. <i>JAMA: A Java Matrix Package</i>. Accessed December 2020 from 
-				<a href="https://math.nist.gov/javanumerics/jama/">https://math.nist.gov/javanumerics/jama/</a>
+                <p>National Institute of Standards and Technology [NIST]. 2012. <i>JAMA: A Java Matrix Package</i>. Accessed December 2020 from
+                    <a href="https://math.nist.gov/javanumerics/jama/">https://math.nist.gov/javanumerics/jama/</a>
 
                 <p>Patterson, Tom. (2020). <i>100-meter Natural Earth Map Data</i>. Accessed September 2020 from <a href="http://shadedrelief.com/NE_100m/">http://shadedrelief.com/NE_100m/</a>
 

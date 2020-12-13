@@ -70,8 +70,8 @@
                 </ul>
 
                 <h2 id="test-data">The Test Data</h2>
-                <p>To evaluate G93 performance, we used two widely used
-                    and readily available geophysical data sets: ETOPO1 and GEBCO_2019.
+                <p>We evaluated G93 performance using two well-known and easily obtained
+                    geophysical data sets: ETOPO1 and GEBCO_2019.
                     These products provide world-wide elevation and ocean bottom depth information.
                     Because they describe a phenomonon that is readily observed in ordinary
                     experience, they have the advantage of familiarity and immediacy.
@@ -120,7 +120,7 @@
 
                 <h1 id="performance-tests">Data-Access Time</h1>
                 <h2 id="performance-at-a-glance">Performance at a Glance</h2>
-                <p>We'll being our discussion of G93 performance by providing some of our most useful
+                <p>We'll begin our discussion of G93 performance by providing some of our most useful
                     information first. The table below is intended to sense of how fast G93 can
                     read from or write to a data file. The information in the table should provide
                     a basis for making a rough estimate of the kind of performance that can be expected
@@ -128,7 +128,7 @@
 
 
                 <table  border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none;caption-side:top'>
-                    <caption>Transfer rates in millions of operations per second (M/s)</caption>
+                    <caption>Transfer rates in millions of grid cells per second (M/s)</caption>
                     <thead>
                         <tr>
                             <th>Operation</th>
@@ -158,8 +158,8 @@
 
                 <p>Not surprisingly, the transfer rates for compressed data are substantially
                     slower than those for uncompressed. Data compression reduces
-                    the amount of data that has to read from or written to an external storage medium
-                    (such as a disk drive), but does not usually make a substantial different in the
+                    the number of bytes that have to be read from or written to an external storage medium
+                    (such as a disk drive), but does not usually make a substantial difference in the
                     time required for file-access operations. The main difference in transfer rates
                     is due to the extra processor overhead required to compress or decompress data.</p>
 
@@ -461,17 +461,26 @@
                     an application that wants only part of the data in the file can
                     obtain it without decompressing everything else. </p>
                 <p>The G93 file format supports 3 different data formats:</p>
-                <pre><code><span class="hljs-number">1.</span>  Integer (<span class="hljs-number">4</span>-byte integers)
-<span class="hljs-number">2.</span>  Float (<span class="hljs-number">4</span>-byte, <span class="hljs-number">32</span> bit IEEE <span class="hljs-number">754</span> standard floating-point values)
-<span class="hljs-number">3.</span>  Integer-Coded Floats (floating-point values scaled and stored as integers)
-</code></pre><p>The GEBCO data is expressed in a non-integral form. While the data can be stored
+
+                <ol>
+                    <li>Integer (4-byte integers)</li>
+                    <li>Float (4-byte, 32-bit IEEE-754 standard floating-point values)</li>
+                    <li>Integer-coded Float (floating-point values scaled and stored as integers)</li>
+                </ol>
+
+
+                <p>The GEBCO data is expressed in a non-integral form. While the data can be stored
                     as integer-coded-floats, the integer coding requires some loss of precision.
                     So, to store the data in a lossless form, it needs to be represented using
                     the 4-byte floating-point format.  While the floating-point representation of the
                     data preserves all the precision in the original, it requires a different approach
-                    to data compression than the integer forms.  Unfortunately, the G93 floating-point
-                    implementation does not achieve quite as favorable compression ratios as the integer-based
-                    compressors. </p>
+                    to data compression than the integer forms.</p>
+                <p>Unfortunately, the G93 floating-point implementation does not achieve quite
+                    as favorable compression ratios as the integer-based compressors. Floating-point
+                    numbers simply do not present the kind of redundancy in their form that facilitates
+                    data compression. On the other hand, G93's lossless floating-point compression
+                    is as good as any solution currently to be found.</p>
+
                 <p>The table below shows the relative storage size required for different products
                     and storage options. The entries marked GEBCO x 1, GEBCO x 2, are scaled integer
                     representations of the original sample points. There are two reasons that the scaled versions
@@ -479,6 +488,7 @@
                     compressors are more powerful than the floating-point compressor. Second,
                     the scaling operation truncates some of the fractional part of the original
                     values and, thus, discards some of the information in the original product.</p>
+
                 <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
                     <thead>
                         <tr>
