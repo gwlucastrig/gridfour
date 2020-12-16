@@ -1,6 +1,6 @@
 /*
-  960 Grid System ~ Text CSS.
-  Learn more ~ http://960.gs/
+  The specifications below are adapted from 960 Grid System ~ Text CSS.
+  More information and a truly beautiful website is available at http://960.gs/
 
   Licensed under GPL and MIT.
 */
@@ -9,72 +9,82 @@
 ----------------------------------------------------------------------------------------------------*/
 
 body {
-  font: 13px/1.5 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+    font: 16px/1.5 Georgia, Serif ;
 }
 
 pre,
 code {
-  font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+    font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+
+p.title {
+	font:30px/1.25  "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+	font-weight: bold;
+	color: #4F81BD;
+	margin-top: 60px;
+	margin-left: 30px;
+	margin-bottom: 90px;
+}
+
+p.title_small {
+	font-size:30px;
+	font-weight: bold;
+	color: #4F81BD;
+
 }
 
 hr {
-  border: 0 solid #ccc;
-  border-top-width: 1px;
-  clear: both;
-  height: 0;
+    border: 0 solid #ccc;
+    border-top-width: 1px;
+    clear: both;
+    height: 0;
 }
 
 /* `Headings
 ----------------------------------------------------------------------------------------------------*/
-
+ 
 h1 {
-  font-size: 25px;
+    font-size: 23px;
 }
 
 h2 {
-  font-size: 23px;
+    font-size: 21px;
 }
 
 h3 {
-  font-size: 21px;
+    font-size: 19px;
 }
 
 h4 {
-  font-size: 19px;
+    font-size: 17px;
 }
 
 h5 {
-  font-size: 17px;
+    font-size: 15px;
 }
 
 h6 {
-  font-size: 15px;
+    font-size: 13px;
 }
 
 /* `Spacing
 ----------------------------------------------------------------------------------------------------*/
 
 ol {
-  list-style: decimal;
+    list-style: decimal;
 }
 
 ul {
-  list-style: disc;
+    list-style: disc;
 }
 
 li {
-  margin-left: 30px;
+    margin-left: 30px;
 }
 
 p,
 dl,
 hr,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
 ol,
 ul,
 pre,
@@ -82,65 +92,126 @@ table,
 address,
 fieldset,
 figure {
-  margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: #4F81BD;
+	margin-top: 40px;
+	margin-bottom: 1px;
+}
+
+p.blockquote {
+	margin-left: 30px;
+	margin-right:30px;
+}
+ 
+
 li.spaciousList {
-	padding-bottom:13px;
+    padding-bottom:13px;
 }
 
 li.box-list-row{
-	border-style:solid;
-	border-width:1px;
-	border-color:LightGray;
-	border-top:none;
-	list-style-type:none;
-	padding: 10px 10px 10px 10px;
+    border-style:solid;
+    border-width:1px;
+    border-color:LightGray;
+    border-top:none;
+    list-style-type:none;
+    padding: 10px 10px 10px 10px;
 }
 
 
 li.box-list-row:first-of-type {
-	font-size: 17px;
-	font-weight: bold;
-	border-style:solid;
-	border-width:1px;
-	border-color:LightGray;
-	list-style-type:none;
-	border-top-left-radius:6px;
-	border-top-right-radius:6px;
-}
+    font-size: 17px;
+    font-weight: bold;
+    border-style:solid;
+    border-width:1px;
+    border-color:LightGray;
+    list-style-type:none;
+    border-top-left-radius:6px;
+    border-top-right-radius:6px;
 
-li.box-list-row:last-of-type {
-	border-bottom-left-radius:6px;
-	border-bottom-right-radius:6px;
 }
 
 a.box-link:link{
-	color: #0366d6;  
-	text-decoration:none;
-	font-weight:bold;
+    color: #0366d6;  
+    text-decoration:none;
+    font-weight:bold;
 }
 a.box-link:hover{
-	text-decoration:underline
+    text-decoration:underline;
 }
 
+
+.link-bar {
+    font:  16px/1.25 "Helvetica Neue", Arial, "Liberation Sans", FreeSans, sans-serif;
+    list-style-type: none;
+    overflow: hidden;
+    float: left;
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+}
+ 
+
+.link-bar li {
+    font-weight:normal;
+    display: inline; 
+    padding: 0px 0px 0px 0px;
+	 margin-left: 5px;
+	 margin-right: 5px;
+}
+
+.link-bar ul {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+}
+
+.link-bar li:first-of-type {
+    font-weight:normal;
+    padding: 0px 0px 0px 0px;
+		 margin-left: 0px;
+	 margin-right: 5px;
+}
+
+.link-bar a {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+    color: #0366d6;  
+    text-decoration:none;
+}
+
+.link-bar a:hover{
+    text-decoration:underline;
+} 
+
+
 a.top-link:first-of-type:link{
-	color: #0366d6;  
-	text-decoration:none;
-	font-weight:bold;
-	padding-left:0px;
-	padding-right:15px;
+    color: #0366d6;  
+    text-decoration:none;
+    font-weight:bold;
+    padding-left:0px;
+    padding-right:15px;
 }
 a.top-link:first-of-type:hover{
-	text-decoration:underline
+    text-decoration:underline;
 } 
 
 a.top-link:link{
-	color: #0366d6;  
-	text-decoration:none;
-	font-weight:bold;
-	padding: 15px 15px;
+    color: #0366d6;  
+    text-decoration:none;
+    font-weight:bold;
+    padding: 15px 15px;
 }
 a.top-link:hover{
-	text-decoration:underline
+    text-decoration:underline
 }
+
+.flow-r {
+    float: left;
+}
+
