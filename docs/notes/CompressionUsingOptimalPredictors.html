@@ -17,7 +17,7 @@
                     <li>|</li>
                     <li><a href="https://github.com/gwlucastrig/gridfour">Code (Github)</a></li>
                     <li>|</li>
-                    <li><a href="https://gwlucastrig.github.io/gridfour/notes_index.html">User Notes</a></li>
+                    <li><a href="https://gwlucastrig.github.io/gridfour/notes/index.html">User Notes</a></li>
                     <li>|</li>
                 </ul>
                 <p>&nbsp;</p>
@@ -89,7 +89,11 @@
                     a resolution of 1 second of arc (about  30 meters spacing at the equator).</p>
 
                 <p>The table below shows the results of data compression results for
-                    the ETOPO1 and GEBCO 2020 data sets and a typical SRTM file (the Paducah sample identified below).
+                    the ETOPO1 and GEBCO 2020 data sets and an SRTM file.
+					The SRTM file includes the city of Paducah, Kentucky (KY) USA,
+					and was selected both because of its representative terrain. It was also selected because
+					it was featured in Kidner & Smith's 2003 overview paper. As such, it provides
+					a good basis for comparison between the their research results and the Gridfour implementation.
                     Storage sizes are given in bits per sample (bps). The "savings" column shows
                     the amount by which the output data file was reduced when the standard compression
                     technique was supplemented with LSOP.
@@ -98,7 +102,7 @@
                     such files in the overall collection. So the the small savings for a single file would
                     be realized several thousands of times when applied to the entire data set.</p>
 
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                <table>
                     <thead>
                         <tr>
                             <th>Product</th>
@@ -128,7 +132,7 @@
                         </tr>
 
                         <tr>
-                            <td>SRTM (Paducah, Kentucky)</td>
+                            <td>SRTM (Paducah, KY)</td>
                             <td>1 second </td>
                             <td>12.9 Million</td>
                             <td>2.23 bps </td>
@@ -163,7 +167,7 @@
                     But the raw ETOPO1 data set uses four-byte integers. So its file size is actually twice as large as it needs to
                     be. To give a fair comparison, I divided the size of the ETOPO1 source file by two.</p>
 
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                <table>
                     <thead>
                         <tr>
                             <th>Product</th>
@@ -190,7 +194,7 @@
                         </tr>
 
                         <tr>
-                            <td>SRTM (Paducah, Kentucky)</td>
+                            <td>SRTM (Paducah, KY)</td>
                             <td>3600 x 3600</td>
                             <td>&#62;12.9 million</td>
                             <td>25.3 MB </td>
@@ -235,7 +239,7 @@
                     of the data set.</p>
 
 
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                <table>
                     <thead>
                         <tr>
                             <th>Data Area</th>
@@ -411,13 +415,13 @@
                 <p>The following table gives some general statistics for the prediction using the 12-coefficient configuration
                     over the ETOPO1 and GEBCO 2020 data sets and a selected SRTM file.</p>
 
-                <table border=1 cellspacing=0 cellpadding=10 style='border-collapse:collapse;border:none'>
+                <table>
                     <thead>
                         <tr>
                             <th>&nbsp;</th>
                             <th>ETOPO1</th>
                             <th>GEBCO 2020</th>
-                            <th>SRTM (Paducah, Kentucky)</th>
+                            <th>SRTM (Paducah, KY)</th>
                         </tr>
                     </thead>
                     <tbody>

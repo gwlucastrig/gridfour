@@ -17,7 +17,7 @@
                     <li>|</li>
                     <li><a href="https://github.com/gwlucastrig/gridfour">Code (Github)</a></li>
                     <li>|</li>
-                    <li><a href="https://gwlucastrig.github.io/gridfour/notes_index.html">User Notes</a></li>
+                    <li><a href="https://gwlucastrig.github.io/gridfour/notes/index.html">User Notes</a></li>
                     <li>|</li>
                     <li><a href="ElevationGeoTiff2.html">Elevation GeoTIFFs: Part 2</a></li>
                     <li>|</li>
@@ -195,130 +195,48 @@
                     2019) identifies the following custom elements that are used in Cloud Optimized
                     GeoTIFF products</p>
 
-                <table border=1 cellspacing=0 cellpadding=0
-                       style='border-collapse:collapse;border:none'>
+                <table>
+				<thead>
                     <tr>
-                        <td width=184 valign=top style='width:110.1pt;border:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Tag</p>
-                        </td>
-                        <td width=210 valign=top style='width:1.75in;border:solid windowtext 1.0pt;
-                            border-left:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Type</p>
-                        </td>
-                        <td width=390 valign=top style='width:233.75pt;border:solid windowtext 1.0pt;
-                            border-left:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Description</p>
-                        </td>
+                        <td >Tag</td>
+                        <td >Type</td>
+                        <td >Description</td>
                     </tr>
+					</thead>
+					<tbody>
                     <tr>
-                        <td width=184 valign=top style='width:110.1pt;border:solid windowtext 1.0pt;
-                            border-top:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>GeoKeyDirectoryTag (34735)</p>
-                        </td>
-                        <td width=210 valign=top style='width:1.75in;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Short Integer [4xN]</p>
-                        </td>
-                        <td width=390 valign=top style='width:233.75pt;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>N sets of 4 elements (key, reference, length, value/position) that
+                        <td>GeoKeyDirectoryTag (34735)</td>
+                        <td>Short Integer [4xN]</td>
+                        <td>N sets of 4 elements (key, reference, length, value/position) that
                                 provide either integer codes for single-valued options or references to other
-                                tags for non-integral specifications.</p>
-                        </td>
+                                tags for non-integral specifications. </td>
                     </tr>
                     <tr>
-                        <td width=184 valign=top style='width:110.1pt;border:solid windowtext 1.0pt;
-                            border-top:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>GeoDoubleParamsTag (34736)</p>
-                        </td>
-                        <td width=210 valign=top style='width:1.75in;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Double [N]</p>
-                        </td>
-                        <td width=390 valign=top style='width:233.75pt;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>N parameters given as double-precision floating-point values,
-                                including Earth radius, flattening, etc.</p>
-                        </td>
+					<td>GeoDoubleParamsTag (34736)</td>
+                        <td>Double [N]</td>
+                        <td >N parameters given as double-precision floating-point values,
+                                including Earth radius, flattening, etc. </td>
                     </tr>
                     <tr>
-                        <td width=184 valign=top style='width:110.1pt;border:solid windowtext 1.0pt;
-                            border-top:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>GeoAsciiParamsTag (34737)</p>
-                        </td>
-                        <td width=210 valign=top style='width:1.75in;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>ASCII [N]</p>
-                        </td>
-                        <td width=390 valign=top style='width:233.75pt;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>N characters forming ASCII strings</p>
-                        </td>
+                        <td>GeoAsciiParamsTag (34737)</td>
+                        <td>ASCII [N] </td>
+                        <td>N characters forming ASCII strings.</td>
                     </tr>
                     <tr>
-                        <td width=184 valign=top style='width:110.1pt;border:solid windowtext 1.0pt;
-                            border-top:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>ModelTiepointTag</p>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>(33922)</p>
-                        </td>
-                        <td width=210 valign=top style='width:1.75in;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Double [6xN]</p>
-                        </td>
-                        <td width=390 valign=top style='width:233.75pt;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>N sets of 6 elements (i, j, k, x, y, z), associating raster or pixel
+                        <td>ModelTiepointTag (33922)</td>
+                        <td>Double [6xN]</td>
+                        <td>N sets of 6 elements (i, j, k, x, y, z), associating raster or pixel
                                 coordinates (i, j, j) to Cartesian “model” coordinates (x, y, z).  In the
                                 GeoTIFF raster space, the i coordinate refers to column and the j coordinate
                                 refers to row. For rotated or distorted images, multiple tie points may be
-                                required. Only one tiepoint is used for Cloud Optimized GeoTIFF products.</p>
-                        </td>
+                                required. Only one tiepoint is used for Cloud Optimized GeoTIFF products.</td>
                     </tr>
                     <tr>
-                        <td width=184 valign=top style='width:110.1pt;border:solid windowtext 1.0pt;
-                            border-top:none;padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>ModelPixelScaleTag (33550)</p>
-                        </td>
-                        <td width=210 valign=top style='width:1.75in;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>Double [3]</p>
-                        </td>
-                        <td width=390 valign=top style='width:233.75pt;border-top:none;border-left:
-                            none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;
-                            padding:0in 5.4pt 0in 5.4pt'>
-                            <p style='margin-bottom:0in;margin-bottom:.0001pt;line-height:
-                               normal'>3 elements (x, y, z) given equivalent distance between pixels (x, y,
-                                z).</p>
-                        </td>
+                        <td>ModelPixelScaleTag (33550)</td>
+                        <td>Double [3]</td>
+                        <td>3 elements (x, y, z) given equivalent distance between pixels (x, y, z).</td>
                     </tr>
+					</tbody>
                 </table>
 
                 <p>The key specification in a GeoTIFF is the GeoKeyDirectoryTag.
