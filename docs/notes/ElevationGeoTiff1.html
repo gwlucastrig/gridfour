@@ -94,8 +94,12 @@
                     striking when you consider that it is only a reduced-scale version of the
                     original. In order to fit in on this page, we needed to shrink it down by a
                     factor of 12. To give a better sense of the quality of the source data, the figure below shows
-					a close-up view of the image rendered at its full resolution. The color techniques used to create this image are
-                    discussed in <a href="https://gwlucastrig.github.io/gridfour/notes/ElevationGeoTiff2.html">Part 2 of this article</a>.
+					a close-up view of the image rendered at its full resolution.
+					The lake and river features are derived from a surface-water Shapefile. But, the road and building features
+					that are visible in the image are derived purely from the elevation data.
+					Their presence gives some idea of the true resolution of the USGS data set.
+					The color techniques used to create this image are discussed in 
+					<a href="https://gwlucastrig.github.io/gridfour/notes/ElevationGeoTiff2.html">Part 2 of this article</a>.
                 </p>
 
                 <figure>
@@ -336,55 +340,30 @@ ModelPixelScaleTag
 
                 <p>Where</p>
 
-                <p> <span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:5.0pt'><img width=150 height=25
-                           src="ElevationGeoTiff1_files/image003.png"></span> are the tiepoint
-                    specifications from the source file</p>
+                <p class="mathtext"> <img class="mathimage" width=150 height=25 src="ElevationGeoTiff1_files/image003.png">
+				are the tiepoint specifications from the source file</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:5.0pt'><img width=103 height=25
-                           src="ElevationGeoTiff1_files/image004.png"></span> are the coordinates for an arbitrary
-                    point of interest in the raster</p>
+                <p class="mathtext"><img class="mathimage" width=103 height=25  src="ElevationGeoTiff1_files/image004.png">
+						   are the coordinates for an arbitrary point of interest in the raster</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:4.5pt'><img width=44 height=25
-                           src="ElevationGeoTiff1_files/image005.png"></span> are the scaling factors from
-                    the ModelPixelScaleTag</p>
+                <p class="mathtext"><img class="mathimage" width=44 height=25 src="ElevationGeoTiff1_files/image005.png">
+				are the scaling factors from  the ModelPixelScaleTag</p>
 
                 <p>Then</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=167 height=25 src="ElevationGeoTiff1_files/image006.png"></span></p>
+                <p class="mathtext"><img width=167 height=25 src="ElevationGeoTiff1_files/image006.png"></p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=168 height=25 src="ElevationGeoTiff1_files/image007.png"></span></p>
+                <p class="mathtext"><img  width=168 height=25 src="ElevationGeoTiff1_files/image007.png"></p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=119 height=45 src="ElevationGeoTiff1_files/image008.png"></span></p>
+                <p class="mathtext"><img width=119 height=45 src="ElevationGeoTiff1_files/image008.png"></p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=120 height=44 src="ElevationGeoTiff1_files/image009.png"></span></p>
+                <p class="mathtext><img  width=120 height=44 src="ElevationGeoTiff1_files/image009.png"></p>
 
                 <p>These relationships can be written in matrix form as</p>
 
-                <p style='text-align:justify'>&nbsp;</p>
-
-                <p style='text-align:justify'><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=283 height=63 src="ElevationGeoTiff1_files/image010.png"></span></p>
-
-                <p style='text-align:justify'>&nbsp;</p>
-
-                <p style='text-align:justify'><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=330 height=90 src="ElevationGeoTiff1_files/image011.png"></span></p>
+                <p class="mathtext"><img  width=283 height=63 src="ElevationGeoTiff1_files/image010.png"></p>
+				
+                <p class="mathtext"><img width=330 height=90 src="ElevationGeoTiff1_files/image011.png"></p>
 
 
                 <p>The matrix form is useful because it is easily coded using Java’s
@@ -477,13 +456,9 @@ ModelPixelScaleTag
                     can be used to compute the unit normal vector to the surface at the
                     interpolation point.</p>
 
-                <p>Let <span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:4.5pt'><img width=25 height=25
-                           src="ElevationGeoTiff1_files/image013.png"></span> and <span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:4.5pt'><img width=25 height=25
-                           src="ElevationGeoTiff1_files/image014.png"></span> be the slopes of the
+                <p>Let <img class="mathimage" width=25 height=25 src="ElevationGeoTiff1_files/image013.png">
+				 and <img class="mathimage" width=25 height=25 src="ElevationGeoTiff1_files/image014.png">
+				    be the slopes of the
                     elevation surface in the directions of the x and y axes. If we wish we may
                     apply an arbitrary exaggeration factor to these values as described above (in
                     which case the values for the slopes would be adjusted, but the algebra below
@@ -491,41 +466,30 @@ ModelPixelScaleTag
                     coordinate axes, vectors tangent to the surface at the point where they are
                     computed are given by</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=117 height=25 src="ElevationGeoTiff1_files/image015.png"></span></p>
+                <p class="mathtext"><img width=117 height=25 src="ElevationGeoTiff1_files/image015.png"> </p>
 
                 <p>And</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=113 height=25 src="ElevationGeoTiff1_files/image016.png"></span></p>
+                <p class="mathtext"><img width=113 height=25 src="ElevationGeoTiff1_files/image016.png"></p>
 
                 <p>The unit normal vector to the surface is computed from the
-                    cross product of the tangent vectors:<span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:4.5pt'><img width=4 height=25
-                           src="ElevationGeoTiff1_files/image017.png"></span></p>
+                    cross product of the tangent vectors:</p>
+					<p class="mathtext"><img width=4 height=25 src="ElevationGeoTiff1_files/image017.png"></p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=289 height=56 src="ElevationGeoTiff1_files/image018.png"></span></p>
+                <p class="mathtext"><img width=289 height=56 src="ElevationGeoTiff1_files/image018.png"></p>
 
                 <p>The diffuse reflection model (Lambertian reflectance)
                     computes intensity of illumination based on the cosine of the angle between the
                     surface normal vector and a vector pointing toward the illumination source. For
                     the images shown above, we placed the light source in the northwest direction
                     with an elevation of 60 degrees above the horizon. We used that information to
-                    construct a unit vector <span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif";
-                        position:relative;top:4.5pt'><img width=9 height=25
-                           src="ElevationGeoTiff1_files/image019.png"></span> pointing toward the
+                    construct a unit vector 
+					<img class="mathimage" width=9 height=25  src="ElevationGeoTiff1_files/image019.png">
+					pointing toward the
                     illumination source. So the cosine of the angle between the surface normal and
                     the illumination vector is just the dot product:</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=100 height=25 src="ElevationGeoTiff1_files/image020.png"></span></p>
+                <p class="mathtext"><img width=100 height=25 src="ElevationGeoTiff1_files/image020.png"></p>
 
                 <p>When the surface normal is pointing more than 90 degrees
                     away from the light source, we assume that the feature is entirely in shadow
@@ -534,11 +498,9 @@ ModelPixelScaleTag
                     lighting) to 1.0 (fully ambient lighting), the computation for the illumination
                     coefficient <i>L</i> at a point on the modeled surface is just</p>
 
-                <p><span
-                        style='font-size:11.0pt;line-height:115%;font-family:"Calibri","sans-serif"'><img
-                            width=167 height=25 src="ElevationGeoTiff1_files/image021.png"></span></p>
+                <p class="mathtext"><img width=167 height=25 src="ElevationGeoTiff1_files/image021.png"></p>
 
-                <p>L is a value in the range 0 to 1.  When building the
+                <p>The value of <i>L</i> is in the range 0 to 1.  When building the
                     shaded-relief rendering, we simply multiply the RGB values for each pixel by
                     its corresponding illumination coefficient.</p>
 

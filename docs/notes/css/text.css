@@ -106,7 +106,14 @@ p.blockquote {
 	margin-right:30px;
 }
  
+p.mathtext {
+	text-indent: 2em;
+}
 
+img.mathimage {
+	vertical-align: middle;
+}
+ 
 li.spaciousList {
     padding-bottom:13px;
 }
