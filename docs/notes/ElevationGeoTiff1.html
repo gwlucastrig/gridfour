@@ -67,20 +67,36 @@
                     <a href="https://gwlucastrig.github.io/gridfour/">Gridfour open-source software project</a>.
                 </p>
 
+				<p>This articles covers a lot of material, including a discussion of the USGS products,
+				some background on the GeoTIFF standard, and an introduction to the algorithms for
+				shaded-relief rendering. If you want, you can jump to the sections of interest
+				using the following links.<p>
+				<ul>
+				<li><a href="#san-jacinto">The San Jacinto data sample</a> provides an overview of the
+				data sample used for the discussion that follows.</li>
+				
+				<li><a href="#tiff-file-format">The GeoTIFF format</a> gives an introduction
+				to the GeoTIFF file format, the way it organizes imagery and metadata, and the
+				way the U.S. Geological Society uses it to distribute their data.</li>
+				
+				<li><a href="#shaded-relief-algorithm">The Shaded-relief Algorithm</a> describes
+				the surface illumination models used to create shading and lighting effects
+				from elevation data.</li>
+				
+				<li><a href="#additional-resources">Additional resources</a> Provides links
+				to additional information on shaded-reflief techniques and locations
+				where you can obtain the USGS Cloud Optimized GeoTIFF data.</li>
+				
+				</ul>
+				
+				
+				<h2 id="san-jacinto">The San Jacinto data sample</h2>
                 <p>Let’s take a look at what the USGS products have to offer. 
                     The picture below is a shaded-relief rendering of elevation data for part of
                     Riverside County in Southern California. It includes the
                     San Jacinto Mountains, the towns of Beaumont and Palm Springs, and the
                     Coachella Valley.  The sample area runs about 100 kilometers (60 miles) north
-                    and south and 85 kilometers (50 miles) east and west. The source GeoTIFF is
-                    based on a geographic coordinate system (latitude and longitude) and covers an
-                    a 1-degree square with an north-east corner at 34N/117W. It is given as a raster (grid)
-                    covering 10812-by-10812 sample points. The cell spacing is one-third
-                    second of arc (about 10.3 meters between rows, 8.5 meters between columns).
-                    That spacing equates to 10800-by-10800 cells for a 1-degree tile, but the USGS adds
-                    6 additional rows and columns of padding to each side of the tile so that it
-                    product overlaps somewhat with adjacent tiles. The motivation for
-                    this overlap is discussed below (see <a href="#optimized_how">What makes it an optimized GeoTIFF?</a>).
+                    and south and 85 kilometers (50 miles) east and west.
                 </p>
 
 
@@ -90,16 +106,15 @@
                 </figure>
 
 
-                <p>The detail in the San Jacinto Mountains image is especially
+                <p>The level of detail in the San Jacinto Mountains image is especially
                     striking when you consider that it is only a reduced-scale version of the
                     original. In order to fit in on this page, we needed to shrink it down by a
                     factor of 12. To give a better sense of the quality of the source data, the figure below shows
-					a close-up view of the image rendered at its full resolution.
-					The lake and river features are derived from a surface-water Shapefile. But, the road and building features
-					that are visible in the image are derived purely from the elevation data.
+					a close-up view of the image rendered at its full resolution. The figure shows a small section
+					of the overall data set taken from the lower-right corner of the image.
+					The lake and river features are derived from a surface-water Shapefile. But the road features
+					and building footprints that are visible in the image are derived purely from the elevation data.
 					Their presence gives some idea of the true resolution of the USGS data set.
-					The color techniques used to create this image are discussed in 
-					<a href="https://gwlucastrig.github.io/gridfour/notes/ElevationGeoTiff2.html">Part 2 of this article</a>.
                 </p>
 
                 <figure>
@@ -109,12 +124,32 @@
 
 
                 <p>Both images shown above were rendered using a technique called <i>shaded-relief</i>.
-                    The algorithm used to produce it is described below.  You can find more information about the art of
-                    shaded-relief rendering as well as a collection of truly beautiful images at Tom
-                    Patterson’s Shaded Relief website at <a href="http://www.shadedrelief.com/">http://www.shadedrelief.com/</a>
+                    The algorithm used to produce the effect is described
+					<a href="#shaded-relief-algorithm">below</a>. The color techniques used for the second image are discussed in 
+					<a href="https://gwlucastrig.github.io/gridfour/notes/ElevationGeoTiff2.html">Part 2 of this series of articles.</a>.
                 </p>
+	
+					<h3>The San Jacinto data at-a-glance</h3>
+					<ul>
+					<li>Covers an area located in Riverside County in Southern California.</li>
+					<li>Includes the towns of Beaumont, Banning, Palm Springs, and the Coachella Valley.</li>
+					<li>Organized by geographic coordinates (latitude, longitude)</li>
+					<li>Covers a one-degree square area from 33N/117W to 34N/118W.</li>
+					<li>Grid spacing is one-third second of arc (about 10.3 meters between rows, 8.5 meters between columns)</li>
+					<li>Grid dimensions are 10812 rows by 10812 columns, or about 117 million raster cells.</li>
+					<li>Elevations range from 70.3 meters (230 ft) below mean sea level to 3291.5 meters (10799 ft) above</li> 
+					<li>Average elevation is 763 meters (2503 ft) MSL</li>
+					</ul>
+					
+					<p>With a raster spacing of on-third second of arc, we would expect a one-degree square grid
+					to have 10800-by-10800 cells.  The Cloud Optimized GeoTIFF products include 12 extra rows
+					and columns of grid cells.  These extra cells overlap adjacent data areas. So the true upper-left corner of the
+					San Jacinto sample is not 34N/117W, but is actually a small distance to its northwest.
+					This overlap is intended to ensure continuity when performing surface analysis and rendering.
+					More detail on this design choice is provided below (see <a href="#optimized_how">What makes it an optimized GeoTIFF?</a>).</p> 
 
-                <h2>How a TIFF file is organized</h2>
+
+                <h2 id="tiff-file-format">The GeoTIFF format</h2>
 
                 <p>The Tagged Image File Format (TIFF) is an unusual graphics
                     format in that it can bundle imagery and grid-based data as well as extensive metadata
@@ -392,7 +427,7 @@ ModelPixelScaleTag
                     ).
                 </p>
 
-                <h2>The shaded-relief algorithm</h2>
+                <h2 id="shaded-relief-algorithm">The shaded-relief algorithm</h2>
 
                 <p>The shaded-relief effect is accomplished by combining
                     elevation data with a simple diffuse illumination model.  In the model, we
@@ -572,6 +607,8 @@ ModelPixelScaleTag
                     See also PDF document accessed May 2020 from <a
                         href="https://cdn.earthdata.nasa.gov/conduit/upload/12428/19-008r4.pdf">https://cdn.earthdata.nasa.gov/conduit/upload/12428/19-008r4.pdf</a></p>
 
+				<p>Patterson, Tom. (2019). Shaded Relief. Website accessed December 2020 from <a href="http://www.shadedrelief.com/">http://www.shadedrelief.com/</a>.
+
                 <p>U.S. Census Bureau. (2019). Tiger/Line® Shapefiles: Roads.
                     Website accessed May 2020 from <a
                         href="https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2019&amp;layergroup=Roads">https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2019&amp;layergroup=Roads</a></p>
@@ -582,14 +619,18 @@ ModelPixelScaleTag
                         href="https://www.usgs.gov/news/usgs-digital-elevation-models-dem-switching-new-distribution-format">https://www.usgs.gov/news/usgs-digital-elevation-models-dem-switching-new-distribution-format</a>
                 </p>
 
-                <h2>Additional references</h2>
+                <h2 id="additional-resources">Additional resources</h2>
 
                 <p>The following pages discuss the shaded-relief algorithm. They provide tutorials, example images,
                     and additional links to useful data sources.
 
                 <ul>
-                    <li>Tom Patterson’s Shaded Relief website at <a href="http://www.shadedrelief.com/"> http://www.shadedrelief.com/</a></li>
-                    <li>More discussion and resources at <a href="http://www.reliefshading.com/">http://www.reliefshading.com/</a></li>
+                    <li>You can find more information about the art of
+                    shaded-relief rendering as well as a collection of truly beautiful images at Tom
+                    Patterson’s <i>Shaded Relief</i> website at <a href="http://www.shadedrelief.com/">http://www.shadedrelief.com/</a></li>
+                    <li>The <i>Relief Shading</i> website provides additional examples of cartographic techniques at
+					<a href="http://www.reliefshading.com/">http://www.reliefshading.com/</a>. The website also
+					provides a large number of references to other on-line articles describing algorithms for shaded relief rendering.</li>
                 </ul>
 
                 <h2>Data sources</h2>
