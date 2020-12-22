@@ -50,7 +50,26 @@
                 <p>In this article, we will explore ways of adding color to
                     shaded-relief imagery through the use of simple elevation-based palettes as
                     well as more realistic techniques using supplemental data sources. We will take
-                    these techniques one step at a time. But before we get started, let’s take a
+                    these techniques one step at a time. The text that follows includes the following sections:</p>
+					<ul>
+					<li><a class="box-link" href="#assigning-color-by-elevation">Assigning color by elevation</a> examines
+					the pro's and con's of assigning color to an image strictly on the basis of elevation.</li>
+					
+					<li><a class="box-link" href="#land-cover-color">Adding land-cover color values from a GeoTIFF</a> shows
+					how using an external land-cover product can improve the appearance of a shaded-relief image.</li>
+					
+					<li><a class="box-link" href="#surface-water">Surface water and shapefiles</a> discusses ways to
+					improve the accuracy of surface water depiction by using supplemental shapefiles</li>
+					
+					<li><a class="box-link" href="#color-models">Color models</a> illustrates the effects of
+					applying different color models when blending colors.</li>
+					
+					<li><a class="box-link" href="#dealing-with-shoreline">Dealing with shoreline and coastal areas</a>
+					offers techniques for addressing some of the problems that can arise near the transition from land to sea.</li>
+					</ul>
+
+
+                   <p>But before we get started, let’s take a
                     look at the kind of result we can expect. </p>
 
                 <p>The picture below shows a color-enhanced rendering of the
@@ -84,7 +103,7 @@
                     features come from Shapefile (polygon) data sources downloaded from the U.S.
                     Geological Survey National Atlas (USGS, 2020).</p>
 
-                <h2>Using color-coded elevation</h2>
+                <h2 id="assigning-color-by-elevation">Assigning color by elevation</h2>
 
                 <p>Lacking access to supplemental data sources, it is feasible
                     to add color to a shaded-relief image strictly on the basis of elevation. To do
@@ -142,7 +161,7 @@
                 </figure>
 
 
-                <h2>Adding land-cover color values from a GeoTIFF</h2>
+                <h2 id="land-cover-color">Adding land-cover color values from a GeoTIFF</h2>
 
                 <p>Let's see what we can do to improve the depiction of the San Jacinto data sample.
                     The first thing we’re going to take care of is the depiction
@@ -293,7 +312,7 @@
                 </figure>
 
 
-                <h2>Surface water and shapefiles</h2>
+                <h2 id="surface-water">Surface water and shapefiles</h2>
 
                 <p>You may be wondering why Mr. Patterson decided to omit
                     surface water from his land-cover imagery. It turns out that removing
@@ -316,7 +335,7 @@
                     product (Tinfour, 2020).   The results were shown in the larger-scale image
                     that introduced this article.</p>
 
-                <h3>Color models</h3>
+                <h2 id="color-models">Color models</h2>
 
                 <p>The Natural Earth Land-Cover GeoTIFF uses a conventional RGB
                     (Red-Green-Blue) color model. If you look through the DemoCOG code, you may be
@@ -343,7 +362,7 @@
                 </figure>
 
 
-                <h2>Dealing with shoreline and coastal area</h2>
+                <h2 id="dealing-with-shoreline">Dealing with shoreline and coastal areas</h2>
 
                 <p>Although the San Jacinto data set includes a number of
                     interesting features, it lies well inland and does not include shoreline or

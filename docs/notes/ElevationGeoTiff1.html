@@ -79,7 +79,7 @@
 				to the GeoTIFF file format, the way it organizes imagery and metadata, and the
 				way the U.S. Geological Society uses it to distribute their data.</li>
 				
-				<li><a class="box-link" href="#shaded-relief-algorithm">The Shaded-relief Algorithm</a> describes
+				<li><a class="box-link" href="#shaded-relief-algorithm">The Shaded-relief algorithm</a> describes
 				the surface illumination models used to create shading and lighting effects
 				from elevation data.</li>
 				
@@ -141,7 +141,7 @@
 					<li>Average elevation is 763 meters (2503 ft) MSL</li>
 					</ul>
 					
-					<p>With a raster spacing of on-third second of arc, we would expect a one-degree square grid
+					<p>With a raster spacing of one-third second of arc, we would expect a one-degree square grid
 					to have 10800-by-10800 cells.  The Cloud Optimized GeoTIFF products include 12 extra rows
 					and columns of grid cells.  These extra cells overlap adjacent data areas. So the true upper-left corner of the
 					San Jacinto sample is not 34N/117W, but is actually a small distance to its northwest.
@@ -442,7 +442,7 @@ ModelPixelScaleTag
                     pointing in the direction of the light source. At angles greater than 90
                     degrees, we assume that the surface receives no direct illumination from the
                     light source. To prevent these “backside” features from going completely dark,
-                    the model assumes a certain arbitrary amount of ambient lighting that provides
+                    the model assumes an application-specified amount of ambient lighting that provides
                     uniform illumination in all directions.</p>
 
                 <p style='margin-left:.5in'><strong>Note:</strong> Be a little careful if you search
@@ -553,7 +553,7 @@ ModelPixelScaleTag
                     and must be stitched together using pieces from multiple files.</p>
 
                 <p>The second optimizing element is the overlap from one-degree file to the
-                    next. Earlier in this article we mentioned that even though the one third second
+                    next. Earlier in this article we mentioned that even though the one-third second
                     of arc resolution of the Cloud-Optimized GeoTIFF products would result in
                     a 10800-by-10800 raster grid for a one-degree tile, the actual resolution
                     was 10812-by-10812. Each file in the Cloud-Optimized GeoTIFF offerings
