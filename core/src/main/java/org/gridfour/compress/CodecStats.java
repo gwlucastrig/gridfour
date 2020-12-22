@@ -39,8 +39,6 @@
  */
 package org.gridfour.compress;
 
-import org.gridfour.compress.PredictorModelType;
-
 /**
  * A simple container for collecting statistics when analyzing compressed data.
  * <p>
