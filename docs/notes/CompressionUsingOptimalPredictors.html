@@ -59,22 +59,41 @@
                     technique itself. The second discusses implementation details for a Java-based API
                     that is available through the Gridfour Software Project. One of the goals of the
                     Gridfour project is to explore data compression techniques for raster (grid) based data sources.
-                    To that end, we have created a file format called G93 that provides a testbed for
+                    To that end, we have created an software library called G93 that provides a testbed for
                     experimenting with compression techniques. While the second part of this article does
                     touch on G93, the focus of these notes is the Optimal Predictor technique itself.
                     Therefore, I've tried to limit the discussion of Gridfour-specific elements to those
                     details that relate directly to creating a viable Optimal Predictor implementation.
                     Part 3 of the article concludes with a brief note on ideas for future work.</p>
+                    
+                <p>If you prefer, you can jump to the sections of interest using the following links.</p>
                 <ul>
-                    <li><a href="#Part_1">Part 1: Optimal Predictors</a></li>
-                    <li><a href="#Part_2">Part 2: Implementation Details</a></li>
-                    <li><a href="#Part_3">Part 3: Future Work</a></li>
+                    <li><a class="box-link" href="#Part_1">Part 1: Optimal Predictors</a>
+                    <ul>
+                        <li><a class="box-link" href="#performance">Performance:</a>
+                               Indicates the performance you can expect using Optimal Predictors.</li>
+                        <li><a class="box-link" href="#theory">How it works:</a>
+                               Provides background concepts and theory for the technique.</li>
+                    </ul>
+                    </li>
+                    <li><a class="box-link" href="#Part_2">Part 2: Implementation Details</a>
+                    <ul>
+                        <li><a class="box-link" href="#design-and-layout">Design Choices and Storage Layout:</a>
+                        Describes the geometry used for the predictor and shows how storage elements are configured
+                        in the output data encoding.</li>
+                        <li><a class="box-link" href="#floating-point">Floating-point Operations:</a>
+                         Discusses how floating-point operations are implemented to ensure numeric stability and
+                         portability across different programming languages and operating systems.</li>
+                    </ul>
+                    </li>
+                    <li><a class="box-link" href="#Part_3">Part 3: Future Work</a></li>
+                    <li><a class="box-link" href="#references">References</a></li>
                 </ul>
 
                 <a id="Part_1"><br></a>
                 <h1>Part 1: Optimal Predictors</h1>
 
-                <h2>Performance</h2>
+                <h2 id="performance">Performance</h2>
                 <p>There are two factors to consider when assessing the performance of a data compression technique:
                     compression ratios and access speed. Since the motivation for implementing Optimal Predictors
                     was to improve the data compression ratios for the Gridfour library, we will being with that.</p>
@@ -90,10 +109,10 @@
 
                 <p>The table below shows the results of data compression results for
                     the ETOPO1 and GEBCO 2020 data sets and an SRTM file.
-					The SRTM file includes the city of Paducah, Kentucky (KY) USA,
-					and was selected both because of its representative terrain. It was also selected because
-					it was featured in Kidner & Smith's 2003 overview paper. As such, it provides
-					a good basis for comparison between the their research results and the Gridfour implementation.
+                    The SRTM file includes the city of Paducah, Kentucky (KY) USA,
+                    and was selected both because of its representative terrain. It was also selected because
+                    it was featured in Kidner & Smith's 2003 overview paper. As such, it provides
+                    a good basis for comparison between the their research results and the Gridfour implementation.
                     Storage sizes are given in bits per sample (bps). The "savings" column shows
                     the amount by which the output data file was reduced when the standard compression
                     technique was supplemented with LSOP.
@@ -279,10 +298,10 @@
                     Optimal Predictor algorithm for the reduction of data storage size.</p>
 
 
-                <h2>How it works</h2>
+                <h2 id="theory">How it works</h2>
                 <p>The concept of using predictive algorithms to improve data compression was introduced
                     in a previous article in this series
-                    <a href="https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms">(Lucas, 2019)</a>
+                    <a href="https://gwlucastrig.github.io/gridfour/notes/GridfourDataCompressionAlgorithms.html">(Lucas, 2019)</a>
                     In practice, raster data often compresses
                     poorly when processed by conventional data compressors such as Huffman coding or
                     the popular Deflate algorithm used in the zip format. Predictive algorithms implement
@@ -493,7 +512,7 @@
                     required that the core module incorporate a small number of classes from the public-domain
                     <i>JAMA Java Matrix Project </i>(NIST, 2012).</p>
 
-                <h2>Computational Considerations</h2>
+                <h2 id="design-and-layout">Design Choices and Storage Layout</h2>
 
                 <p>As noted above, the current Gridfour implementation uses the 12-coefficient variation. If you refer to the source code
                     for the implementation, you will note that the data elements and predictor coefficients are assigned
@@ -594,7 +613,7 @@
     Entropy for input data 6.64 bits/sample
                 </pre>
 
-                <h3>Floating-point Operations</h3>
+                <h3 id="floating-point">Floating-point Operations</h3>
                 <p>The predictor used in the LSOP compressor is based on floating-point arithmetic. Writing the code
                     for the LSOP predictor, encoder, and decoder, required strict attention to the way computer
                     systems and the Java programming language perform floating-point operations.
@@ -625,9 +644,10 @@
                 </pre>
 
                 <p>The compression codec must be specified before a file is created. As noted above, the LsEncoder12 class depends on
-                    the Apache Common Math library. Once a file is created and fully populated, the encoder and the math library
-                    are no longer needed. So an application that access a G93 file on a read-only basis does not need to
-                    include these resources.</p>
+                    the JAMA matrix package. Once a file is created and fully populated, the encoder and the math library
+                    are no longer needed. So an application that accesses an LSOP-compressed data file on a read-only basis does not need to
+                    include these resources. Similarly, an application written in an alternate programming
+                    language would not have to implement a matrix algebra package in order to read LSOP-compressed data.</p>
 
                 <a id="Part_3"><br></a>
                 <h1>Future Work</h1>
@@ -733,7 +753,7 @@
                     for both arithmetic coding and rANS could be achieved.</p>
 
 
-                <h1>References</h1>
+                <h1 id="references">References</h1>
                 <p>Gibbons, Jeremy. (2019). "Coding with Asymmetric Numeral Systems (long version)". Accessed November 2019
                     from <a href="http://www.cs.ox.ac.uk/jeremy.gibbons/publications/asymm-long.pdf">http://www.cs.ox.ac.uk/jeremy.gibbons/publications/asymm-long.pdf</a></p>
 
