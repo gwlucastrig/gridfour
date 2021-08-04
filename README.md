@@ -1,7 +1,7 @@
 # The Gridfour Software Project
 Tools for raster data including scientific and geophysical applications.
 
-For detailed notes on using the Gridfour software, please visit our [User Notes](https://gwlucastrig.github.io/gridfour/notes/index.html) page.
+For detailed notes on using the Gridfour software, please visit our [Project Development, Concepts, and User Notes](https://gwlucastrig.github.io/gridfour/notes/index.html) page.
 
 ## Background
 Although there are many tools for image processing and gridded-data applications,
