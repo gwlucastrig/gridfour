@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>The G93 API for Raster Data</title>
+        <title>The GVRS API for Raster Data</title>
         <link rel="stylesheet" href="css/text.css" />
         <link rel="stylesheet" href="css/layout.css" />
     </head>
@@ -26,23 +26,24 @@
             <div id="notescontent">
 
                 <p class="title">
-                    G93: A Fast, File-Based API for Managing Raster Data
+                    GVRS: A Fast, File-Based API for Managing Raster Data
                 </p>
 
 
 
                 <h1>Introduction</h1>
 
-                <p>Gridfour's G93 file-based API helps Java applications manage raster (grid) data in situations
+                <p>The Gridfour Virtual Raster System (GVRS) is a file-backed API that
+                    helps Java applications manage raster (grid) data in situations
                     where the size of the data exceeds what could reasonably be kept in memory.  To do so,
                     it provides utilities that allow an application to seamlessly swap blocks of the grid
-                    between memory and data files. The G93 library and file format also provide a way of
+                    between memory and data files. The GVRS library and file format also provide a way of
                     storing raster data in files that can be shared between applications or used
                     across multiple application runs. And, in cases where storage space or
-                    transmission bandwidth is limited, G93 provides built-in data compression
+                    transmission bandwidth is limited, GVRS provides built-in data compression
                     that can reduce storage requirements by at least a factor of four.</p>
 
-                <p>This article gives an introduction to the Java API for G93 and offers
+                <p>This article gives an introduction to the Java API for GVRS and offers
                     example code showing how to use it in your own applications.  As usual,
                     code for the applications described in this article is available from the
                     <a href="https://github.com/gwlucastrig/gridfour">Gridfour Software Project</a>.
@@ -85,12 +86,12 @@
                     <figcaption>Figure 1 &ndash; A tiling scheme divides a master grid into uniformly sized sub-gribs.</figcaption>
                 </figure>
 
-                <p>In G93, the size of tiles are arbitrary, though all tiles must be of
+                <p>In GVRS, the size of tiles are arbitrary, though all tiles must be of
                     a uniform size. Applications are free to specify tile sizes according
                     to their needs. In this case,
                     a 2-by-9 tile would have worked just fine. In fact, a 4-by-5 tile size would
                     also work, even though the tiles would not evenly divide
-                    the 6-by-9 master grid. The G93 API handles any extra cells
+                    the 6-by-9 master grid. The GVRS API handles any extra cells
                     internally and their management is transparent to the application.</p>
 
                 <p>The figure below illustrates how a tiling scheme works.  A collection of surface
@@ -114,27 +115,27 @@
                     good data compression results and provides a convenient size
                     for access.</p>
 
-                <p>Tiling is a core feature of the G93 API and deeply involved
+                <p>Tiling is a core feature of the GVRS API and deeply involved
                     in all its operations.  In fact, even a small grid is treated
                     as being tiled, though it is completely reasonable to specify
                     a tile size that matches that of the entire grid.</p>
 
-                <p>A few other details about G93 tiling are worth noting:</p>
+                <p>A few other details about GVRS tiling are worth noting:</p>
                 <ol>
                     <li>Tiles can be written or read in any order.</li>
                     <li>Not all tiles in the specification need to be populated with
                         data. The overhead for empty tiles is small.</li>
-                    <li>The G93 compression logic treats each tile as a separate
+                    <li>The GVRS compression logic treats each tile as a separate
                         block of data that is compressed individually, without
                         reference to other tiles.</li>
-                    <li>A key feature of the G93 file API is that it maintains an
+                    <li>A key feature of the GVRS file API is that it maintains an
                         in-memory cache to store tiles for rapid access.</li>
                 </ol>
 
 
-                <h2>Creating a G93 File</h2>
-                <p>The G93 library is a tool for both creating raster files and accessing them.
-                    Writing a G93 file is a 3 step process:</p>
+                <h2>Creating a GVRS File</h2>
+                <p>The GVRS library is a tool for both creating raster files and accessing them.
+                    Writing a GVRS file is a 3 step process:</p>
 
                 <ol>
                     <li>A specification is created giving the grid and tile size parameters.
@@ -152,7 +153,7 @@
                     application (with some simplifications applied for the sake of
                     this discussion).   PackageData extracts elevation and bathymetry
                     values from the ETOPO1 and GEBCO products, and stores the information
-                    in a G93 file with optional data compression.  Both ETOPO1 and GEBCO
+                    in a GVRS file with optional data compression.  Both ETOPO1 and GEBCO
                     are distributed in a file format called NetCDF. We have posted an
                     article that provides background information on NetCDF files as well
                     as details for reading their content at
@@ -162,7 +163,7 @@
                 <p>The parameters for the number of rows and columns in the grid are based on the
                     dimensions of the source data.  The number of rows and columns in the
                     tile were chosen because they seemed well suited to the needs of an application
-                    that might use the G93 file.</p>
+                    that might use the GVRS file.</p>
 
                 <pre>
 	NetcdfFile ncfile = NetcdfFile.open(filePathToSourceETOPO1);
@@ -174,24 +175,24 @@
 	int nColsInTile = 120;
 
 	// Create a specification for the overall grid and tiling.
-	G93FileSpecification spec
-            = new G93FileSpecification(nRowsInGrid, nColsInGrid, nRowsInTile, nColsInTile);
+	GvrsFileSpecification spec
+            = new GvrsFileSpecification(nRowsInGrid, nColsInGrid, nRowsInTile, nColsInTile);
 
 
-	// Create a G93-formatted file for output
-	File outputFile = new File("ETOPO1.g93");
-	G93File g93File = new G93File(outputFile, spec);
+	// Create a GVRS-formatted file for output
+	File outputFile = new File("ETOPO1.gvrs");
+	GvrsFile gvrsFile = new GvrsFile(outputFile, spec);
                 </pre>
 
-                <p>When a G93 file is created, the metadata from the specification object is used to populate
+                <p>When a GVRS file is created, the metadata from the specification object is used to populate
                     the header file.  Some of this metadata is immutable and must be fully specified before
                     the output file is created, other elements can be adjusted after the file is opened.
                     We will look at some of these setting later on.</p>
 
                 <h2>Storing Data</h2>
-                <p>As shown in the code block below, storing data in a G93 file is a relatively straightforward process.
+                <p>As shown in the code block below, storing data in a GVRS file is a relatively straightforward process.
                     In fact, most of complexity in the code example comes from accessing the NetCDF data
-                    rather than writing the G93.  The example reads data from the source file one
+                    rather than writing the GVRS.  The example reads data from the source file one
                     row at a time.  This is the most efficient pattern for accessing the ETOPO1 file.</p>
 
                 <pre>
@@ -207,16 +208,16 @@
 		// Read one row of data from the NetCDF file.
 		// The data will be stored in a NetCDF "Array" object.
 		// Then loop on each column, obtain the elevation/bathymetry data
-		// and store it in G93.   ETOPO1 stores data as integers.
+		// and store it in GVRS.   ETOPO1 stores data as integers.
 		// GEBCO_2019 stores it as doubles.
 		Array array = z.read(readOrigin, readShape);.
 		for (int iCol = 0; iCol < nColsInGrid; iCol++) {
 			int sample = array.getInt(iCol);
-			g93.storeValue(iRow, iCol, sample);
+			gvrs.storeValue(iRow, iCol, sample);
 		}
 	}
-	g93.flush();
-	g93.close();
+	gvrs.flush();
+	gvrs.close();
                 </pre>
 
                 <p>The snippet above would work just fine, except that it might be a little
@@ -224,8 +225,8 @@
                     stored to the data file requires swapping tiles in and out of memory.
                     Because there are 21600 columns in the master grid and 120 columns in each tile,
                     there are 21600/120 = 180 tiles in each row of the tiling scheme. So in order
-                    to keep an entire row of the master-grid data in memory, the G93 API
-                    needs to keep 180 tiles in its cache. But, by default, the G93 cache size
+                    to keep an entire row of the master-grid data in memory, the GVRS API
+                    needs to keep 180 tiles in its cache. But, by default, the GVRS cache size
                     is only 16 tiles in size.  And 16 tiles is not wide enough to hold an
                     entire row of data. Because the storage process scans
                     one-row-at-a-time, the cache has to drop and load tiles 180 times per
@@ -235,12 +236,12 @@
                     using the following adjustment before storing the data.</p>
 
                 <pre>
-    g93.setTileCacheSize(G93CacheSize.Large);
+    gvrs.setTileCacheSize(GvrsCacheSize.Large);
                 </pre>
 
-                <p>The adjustment is applied after the G93File is opened, but before the
+                <p>The adjustment is applied after the GvrsFile is opened, but before the
                     application starts to access data. The "Large" cache size adjustment
-                    tells G93 to adjust the size of the
+                    tells GVRS to adjust the size of the
                     cache so that it is large enough to store an entire row (or entire column)
                     of tiles.  Tiles use 4 bytes per each value stored in memory. Because this
                     example code specifies a tile size of 90-by-120 grid values, an entire row
@@ -253,7 +254,7 @@
                     With the "Large" size setting, it was only 8.6 seconds. The use of a large cache can
 					also be useful when reading data. In testing, we compared the access time
 					using both a Medium and Large cache size
-					for reading the entire 233 million sample set from the G93-formatted version of ETOPO1.
+					for reading the entire 233 million sample set from the GVRS-formatted version of ETOPO1.
 					Using the Medium cache, the read operation required 69.8 seconds. Using the Large cache,
 					the operation required only 3.6 seconds.</p>
 
@@ -262,41 +263,41 @@
                     Had the packaging process populated a single tile at a time
                     (rather than spanning an entire row of tiles), the increased tile
                     cache size would not have been required. This consideration applies
-                    both when writing data and when reading data for a G93 file.</p>
+                    both when writing data and when reading data for a GVRS file.</p>
 
                 <h1>Other Settings</h1>
 
                 <h2>Run-time Settings</h2>
                 <p>By run-time settings, we are referring to those parameters that can be set using
-                    access methods for the G93File class after a G93File is opened. These parameters
+                    access methods for the GvrsFile class after a GvrsFile is opened. These parameters
                     are not part of the file definition and are not stored between sessions.</p>
 
                 <p>We already introduced the tile-cache size and described how it can affect run-time
                     performance. The other setting of interest is</p>
 
                 <pre>
-	g93.setIndexCreationEnabled(boolean enabled);
+	gvrs.setIndexCreationEnabled(boolean enabled);
                 </pre>
 
-                <p>When writing data to a G93 file, we have the option of telling G93 to write
+                <p>When writing data to a GVRS file, we have the option of telling GVRS to write
                     an index file when the file is closed. The index file is a companion data file
-                    written with the sample root name as the G93 file and the file extension ".g9x".
+                    written with the sample root name as the GVRS file and the file extension ".g9x".
                     The index carries information about the location of tiles within the
-                    G93 file.  Without the index, the G93File class has to perform a scan of
-                    the full file at start-up. Since G93 files can be quite large, such
+                    GVRS file.  Without the index, the GvrsFile class has to perform a scan of
+                    the full file at start-up. Since GVRS files can be quite large, such
                     scans can take a few seconds (more on slow file systems).  The availablity of
                     an index expedites that process considerably. Again, the index file is optional.
-                    If it was accidentally deleted, the G93 API would be able to open
+                    If it was accidentally deleted, the GVRS API would be able to open
                     the main file just fine.</p>
 
                 <h2>Specification Settings</h2>
                 <p>In addition to the overall grid size and tiling scheme specifications,
-                    there are a number of other settings that can be stored in a G93 file header
+                    there are a number of other settings that can be stored in a GVRS file header
                     when it is created.  These settings are supplied through calls to the
-                    G93FileSpecification class' access methods.</p>
+                    GvrsFileSpecification class' access methods.</p>
 
                 <h3>Coordinate System</h3>
-                <p>The main G93File API allows an application to read and write raster data
+                <p>The main GvrsFile API allows an application to read and write raster data
                     values by supplying the row and column indices for the values of interest.
                     Many real-world applications depend on a horizontal coordinate system
                     that relate these values not to grid coordinates, but real-valued
@@ -320,8 +321,8 @@
                     geographic coordinates could be constructed:</p>
 
                 <pre>
-    G93FileSpecification spec
-            = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
+    GvrsFileSpecification spec
+            = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
 	double h = 1.0/60.0;  // one minute spacing, 1/60th of a degree
     spec.setGeographicCoordinates(
              -90+h/2,   // south, first row in grid
@@ -339,8 +340,8 @@
                     coordinates using the following</p>
 
                 <pre>
-    G93FileSpecification spec
-            = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
+    GvrsFileSpecification spec
+            = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setCartesianCoordinates(
             0,   // x coordinate of first column in grid
             0,   // y coordinate of first row in grid
@@ -362,7 +363,7 @@
             0);  // y coordinate of last row in grid
                 </pre>
 
-                <p>The G93File class implements methods for mapping Cartesian or Geographic coordinates
+                <p>The GvrsFile class implements methods for mapping Cartesian or Geographic coordinates
                     to grid coordinates and vice versus.  These are shown below:</p>
 
                 <pre>
@@ -377,13 +378,13 @@
                     and column values the process. This feature is intended to support data value interpolation.</p>
 
                 <h2>Data definition: dimension and data type.</h2>
-                <p>G93Files can process either scalar values or vector values. For example, surface elevation
+                <p>GvrsFiles can process either scalar values or vector values. For example, surface elevation
                     is a scalar value. But ocean currents or surface winds have both direction and magnitude
-                    and are usually treated as vectors.  For G93, scalar values are said to be of dimension 1.
+                    and are usually treated as vectors.  For GVRS, scalar values are said to be of dimension 1.
                     A vector such as Earth surface wind data would be of dimension 2.  Higher dimension data is
                     also supported.</p>
 
-                <p>G93Files also allow the specification of integer data or floating point values.</p>
+                <p>GvrsFiles also allow the specification of integer data or floating point values.</p>
 
                 <p>The data type and dimension are specified using one of the following calls:</p>
 
@@ -396,11 +397,11 @@
                 <p>The scale and offset values specified as part of the integer-scaled-float model are used
                     in cases where floating point values are to be converted to integers for internal storage.
                     While this approach can result in reduced precision for the input data, it has advantages
-                    when compressing the data. The G93 implementations of integer compression attain
+                    when compressing the data. The GVRS implementations of integer compression attain
                     better compression ratios than the implementation for floating-point values.
                     If data compression is not required, the integer-scaled option has little advantage.
                     However, it is worth noting that this format is sometimes encountered in raster data
-                    formats used for publicly available data sources and the G93 equivalent may be useful
+                    formats used for publicly available data sources and the GVRS equivalent may be useful
                     in handling such source.</p>
 
                 <p>Scale and offset are treated as follows:</p>
@@ -419,9 +420,9 @@
 
                 <p>Data compression is an interesting topic and is discussed in more
                     detail elsewhere in these notes (see
-                    <a href="https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms">Gridfour Raster Data Compression Algorithms</a>
+                    <a href="https://gwlucastrig.github.io/gridfour/notes/GridfourDataCompressionAlgorithms.html">Gridfour Raster Data Compression Algorithms</a>
                     and
-                    <a href="file:///C:/Users/gwluc/Documents/junk/docs/notes/LosslessCompressionForFloatingPointData.html">Lossless Compression for Floating Point Data</a>).
+                    <a href="https://gwlucastrig.github.io/gridfour/notes/LosslessCompressionForFloatingPointData.html">Lossless Compression for Floating Point Data</a>).
                     Here, we simply note it's impact
                     on the storage for ETOPO1 and GEBCO_2019 data.  In its native, uncompressed form,
                     ETOPO1 data is stored as a 4-byte integer. GEBCO_2019 is stored as
@@ -487,24 +488,24 @@
 
 
                 <h2>Adding Supplemental Content with Variable-Length Records</h2>
-                <p>In order to maintain a simple design, the G93 API presents a deliberately
+                <p>In order to maintain a simple design, the GVRS API presents a deliberately
                     minimal feature set. Even so, we recognize that many users have application-specific
                     requirements for the product. In some cases, users may wish to attach supplemental
-                    data to a G93 file. This requirement can be met through the use of the
+                    data to a GVRS file. This requirement can be met through the use of the
                     Variable-Length Record feature.</p>
 
                 <p>Variable-Length Records (VLRs) are blocks of text or binary data that can be
-                    stored as part of a G93 file. The G93 API treats these elements as <i>opaque</i> and
+                    stored as part of a GVRS file. The GVRS API treats these elements as <i>opaque</i> and
                     does not perform any operation related to their content. These elements may be
                     stored or retrieved using identification tags provided by the application.</p>
 
                 <p>The ETOPO1 and GEBCO products provide an example of how this feature may be used.
                     Both data sets are based on geophysical information and, naturally, there are
                     industry standards for specifying metadata related to their content.
-                    Because G93 is intended to be a general-purpose utility,
+                    Because GVRS is intended to be a general-purpose utility,
                     adding direct support for such standards is outside its scope. However, the PackageData
                     demonstration application implements code for storing relevant metadata in a
-                    G93 file.</p>
+                    GVRS file.</p>
 
                 <p>The metadata bundled with the demonstration code is based on the <i>Well-Known Text (WKT)</i> standard
                     which is supported by many Geographic Information Systems. Well-Known Text files provide
@@ -515,14 +516,14 @@
                     their product web sites. For the demo, we used the information to create a
                     file called GlobalMSL.prj that contains metadata in WKT format.</p>
 
-                <p>Variable-Length Records are stored using a call to the G93File class' storeVariableLengthRecord()
+                <p>Variable-Length Records are stored using a call to the GvrsFile class' storeVariableLengthRecord()
                     method as shown in the following code snippet:</p>
 
                 <pre>
     byte []b; // an array of bytes containing the WKT data
 
-    g93.storeVariableLengthRecord(
-            "G93_Projection",
+    gvrs.storeVariableLengthRecord(
+            "GVRS_Projection",
             2111,
             "WKT Projection Metadata",
             b, 0, b.length, true);
@@ -531,40 +532,40 @@
                 <p>The first two arguments in the call provide application-defined identification
                     keys for the variable-length text.  The last argument indicates that the payload (content)
                     for the VLR is a text product. An application wishing to fetch the information
-                    from the G93 file would do so by calling</p>
+                    from the GVRS file would do so by calling</p>
 
                 <pre>
-    VariableLengthRecord vlr = g93.getVariableLengthRecord("G93_Projection", 2111);
+    VariableLengthRecord vlr = gvrs.getVariableLengthRecord("Gvrs_Projection", 2111);
     String payloadText = vlr.readPayloadText();
                 </pre>
 
                 <p>The method that fetches the VLR is named "get" because the record identifications
-                    are loaded from a G93 file when it is initially opened. So the method simply gets
+                    are loaded from a GVRS file when it is initially opened. So the method simply gets
                     the identification from memory. However, the method that fetches the text
                     is named "read" because a file-read operation is needed to retrieve it.</p>
 
                 <p>As mentioned above, the assignment of the identification string and numeric
-                    value (in this case, "G93_Projection" and 2111) are arbitrary and are defined
+                    value (in this case, "Gvrs_Projection" and 2111) are arbitrary and are defined
                     by the application. The parameters used for this example are based on the LAS file
                     standard that are used for terrestrial Lidar data sets. For background on Lidar systems,
                     see <a href="https://oceanservice.noaa.gov/facts/lidar.html">What is Lidar?</a>
                     at the National Oceanic and Atmospheric Administration web site.
                     The LAS standard defines a data structure called "Variable Length Record"
-                    which was the model for the G93 implementation.  LAS uses the identifications
+                    which was the model for the GVRS implementation.  LAS uses the identifications
                     LASF_Projection, 2111 for Well-Known Text.</p>
 
                 <p>At present, there is no registry or official standard for specifying
-                    identification strings in G93. The development of such a resource would
-                    depend on much wider adoption of G93 than is currently the case.</p>
+                    identification strings in GVRS. The development of such a resource would
+                    depend on much wider adoption of GVRS than is currently the case.</p>
 
                 <h1>Conclusion</h1>
                 <p>The information given in this wiki article should be enough to get you
-                    started using G93.  The use of many of the functions described above
+                    started using GVRS.  The use of many of the functions described above
                     is demonstrated in the <a href="https://github.com/gwlucastrig/gridfour/blob/master/demo/src/main/java/org/gridfour/demo/globalDEM/PackageData.java">PackageData.java</a>
                     application included in the Gridfour software distribution.</p>
 
-                <p>The G93 API is still under development. While it has undergone quite a bit of testing, it has seen
-                    very little actual use. If you encounter issues using G93, please let us know.
+                <p>The GVRS API is still under development. While it has undergone quite a bit of testing, it has seen
+                    very little actual use. If you encounter issues using GVRS, please let us know.
                     Also, if you identify new features or enhancements you would like added to the API,
                     we welcome your suggestions.</p>
 

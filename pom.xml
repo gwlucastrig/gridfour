@@ -9,7 +9,7 @@
 
   <groupId>org.gridfour</groupId>
   <artifactId>Gridfour</artifactId>
-  <version>0.5-SNAPSHOT</version>
+  <version>0.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <name>Gridfour</name>

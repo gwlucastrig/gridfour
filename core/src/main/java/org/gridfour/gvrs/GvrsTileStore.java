@@ -43,7 +43,7 @@
  * of free space to create blocks large enough to store data.
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -57,9 +57,9 @@ import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
  * Provides utilities for managing file resources related to the storage and
- * access of tiles and supplemental records in a G93 file
+ * access of tiles and supplemental records in a GVRS file
  */
-class G93TileStore {
+class GvrsTileStore {
 
     private static class FreeNode {
 
@@ -76,7 +76,7 @@ class G93TileStore {
     private static final int RECORD_HEADER_SIZE = 12;  // 3 4-byte integers
     private static final int MIN_FREE_BLOCK_SIZE = 1024;
 
-    private final G93FileSpecification spec;
+    private final GvrsFileSpecification spec;
     private final CodecMaster codecMaster;
     private final BufferedRandomAccessFile braf;
     private final long basePosition;
@@ -91,8 +91,8 @@ class G93TileStore {
     LinkedHashMap<VariableLengthRecord, VariableLengthRecord> vlrRecordMap
         = new LinkedHashMap<>();
 
-    G93TileStore(
-        G93FileSpecification spec,
+    GvrsTileStore(
+        GvrsFileSpecification spec,
         CodecMaster rasterCodec,
         BufferedRandomAccessFile braf,
         long filePosTileStore) {
@@ -523,7 +523,7 @@ class G93TileStore {
         int nColsOfTiles = idxraf.leReadInt();
         int nTilesInTable = nRowsOfTiles * nColsOfTiles;
         if (nTilesInTable != tilePositions.length) {
-            throw new IOException("G93 file and index file do not match");
+            throw new IOException("Gvrs file and index file do not match");
         }
         for (int i = 0; i < nTilesInTable; i++) {
             tilePositions[i] = idxraf.leReadInt();

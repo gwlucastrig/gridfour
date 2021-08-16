@@ -37,25 +37,25 @@
                     by the Gridfour raster (grid) data compression implementation.</p>
                 <p>One of the goals for the Gridfour software is to provide a testbed for developers who are investigating
                     data-compression techniques for grid-based data. To that end, the Gridfour API
-                    includes an implementation of a file format named G93 which provides a file-based
+                    includes an implementation of a file format named GVRS which provides a file-based
                     system for storing gridded data. Gridfour supports compression through the use of
                     custom <em>codec</em> (coder-decoder) classes that are included in its software
-                    distribution. These codecs may be used through the G93 file API or in stand-alone mode
+                    distribution. These codecs may be used through the GVRS file API or in stand-alone mode
                     depending on the requirements of the applications that use them.  Developers may
                     also leverage the Gridfour API to write their own custom codecs.
                     To illustrate how a compression codec could be implemented, Gridfour provides codecs based on the well-known
                     Huffman coding (Huffman, 1952) and Deflate algorithms (Deutsch, 1996).  </p>
                 <p>The Gridfour implementations provide moderate data compression with good
                     access speed, but there is certainly room for improvement.
-                    The algorithms used in the current G93 file management software are based on work that
-                    was conducted in 1993 for a project called Gem93 (the name &quot;G93&quot; was chosen as a tribute to that work).
+                    The algorithms used in the current GVRS file management software are based on work that
+                    was conducted in 1993 for a project called Gem93 (the name &quot;GVRS&quot; was chosen as a tribute to that work).
                     Clearly, the state of the art has advanced since that time. Many interesting techniques
                     that could be applied to compressing raster data are now available. The information
                     in this document is presented with the hope that it will assist researchers and
                     developers in their own efforts to find newer and even more effective data
                     compression techniques for raster data sets.</p>
-                <h2 id="g93-data-formats">G93 Data Formats</h2>
-                <p>The G93 API supports 3 different formats for storing data:</p>
+                <h2 id="gvrs-data-formats">GVRS Data Formats</h2>
+                <p>The GVRS API supports 3 different formats for storing data:</p>
                 <ol>
                     <li>Integer</li>
                     <li>Float</li>
@@ -69,9 +69,9 @@
                     can discard some of the precision of the input float values (depending on
                     the scaling factor and the precision of the input data).  So it is, in
                     effect, a lossy representation. But, because the integer-coded float approach
-                    is used for a number of publically available geophysical data sets, the G93 API
+                    is used for a number of publically available geophysical data sets, the GVRS API
                     implements logic to support it directly.</p>
-                <p>The G93 API implements lossless (non-lossy) data compression algorithms for both
+                <p>The GVRS API implements lossless (non-lossy) data compression algorithms for both
                     integer and floating-point data.  The implementations for the two are much different.
                     In particular, the floating-point data compression does not take advantage of
                     the predictor methods described below. In general, floating-point data tends
@@ -92,7 +92,7 @@
                     to mountainous regions, to sheer drop offs along the Continental Shelf.
                     And, finally, terrain data is something that is familiar to our readers
                     and easily visualized.</p>
-                <p>It should, however, be noted that G93 is intended to be a general-purpose utility
+                <p>It should, however, be noted that GVRS is intended to be a general-purpose utility
                     for processing many different kinds of grid-based data sets. It is not limited
                     to geographic or geophysical information and is certainly not limited to
                     Digital Elevation Models (DEMs). The choice of ETOPO1 was a matter of convenience
@@ -101,13 +101,13 @@
                 <p>The grid specification for many raster data files is large enough that it is often
                     impractical to store the entire content in memory. Even with a relatively compact
                     representation using short integers, the ETOPO1 data set would require close to
-                    500 megabytes of memory. So the G93 File format partitions large rasters using a tiling
+                    500 megabytes of memory. So the GVRS File format partitions large rasters using a tiling
                     scheme. In a tiling scheme, the grid is divided into a series of regularly sized
                     subgrids as illustrated in the figure below.</p>
                 <p><img src="images/General/TilingScheme.png" alt="Tiling Scheme"> </p>
                 <p>From the perspective of data compression, the tiling scheme presents two influencial features.
                     First, because tiles must be accessed independently, they are compressed individually rather
-                    than as a set. In G93, tiles are compressed on a case-by-case basis. This is significant because
+                    than as a set. In GVRS, tiles are compressed on a case-by-case basis. This is significant because
                     in many data sets, the statistical properties of the data tends to vary across the
                     domain of the data. Data compression techniques thrive on redundancy and self-similarity
                     in the source data. But raster data sets with larger grids allow more room for variation
@@ -151,7 +151,7 @@
                     point minus that of its predecessor.  The compressed form of the raster
                     data consisted of an initial <em>seed</em> value followed by a sequence of delta
                     values that could be used to recover the original representation.
-                    In G93, this technique is referred to as a Differencing Predictor Model.
+                    In GVRS, this technique is referred to as a Differencing Predictor Model.
                     Other data compression implementations sometimes refer to it as a <em>differencing technique</em>.
                     In the original Gem93 project, the Differencing Predictor approach was inspired by
                     a description of audio delta pulse code modulation in
@@ -187,12 +187,12 @@
                     from the end of one row to the beginning of the next. If taken in sequence,
                     these two sample points will not be spatially correlated. </p>
                 <p>In practice, this requirement for special handling is easily met. In the uncompressed form,
-                    G93 stores grid points in row-major order (one row at a time). So in most cases,
+                    GVRS stores grid points in row-major order (one row at a time). So in most cases,
                     the predecessor of a grid point is just the sample that preceded it in the row.
                     There is, however, one edge case that requires special handling. In row-major order,
                     the grid point that follows the last point in a row is the first point in the next row.
                     So, a predictor-residual based on the Differencing Model needs to implement
-                    special handling for that transition. In G93, the following rules are applied:</p>
+                    special handling for that transition. In GVRS, the following rules are applied:</p>
                 <ol>
                     <li>The first grid point in the first row of a tile is treated as a &quot;seed&quot; value.</li>
                     <li>The difference value for each point in a row, except the first, is computed using the grid point that preceded it.</li>
@@ -201,13 +201,13 @@
                 <p>The figure below illustrates the pattern.  The seed value is shown as a solid dot,
                     the delta values are all shown as circles. The arrows indicate which samples are
                     paired together to compute delta values.</p>
-                <p><img src="images/G93Compression/CompressionPatternDifferencing.png" alt="Pattern for Differencing-Model Predictive Resolution Transform"></p>
+                <p><img src="images/GVRS_Compression/CompressionPatternDifferencing.png" alt="Pattern for Differencing-Model Predictive Resolution Transform"></p>
                 <p>It is worth noting that the use of the Differencing Model for raster data is not unique to this project.
                     It is used in a number of specifications including the GRIB2 raster data format
                     (NCEP 2005, table 5.6) and the TIFF image format
                     (Adobe, 1992, p. 64, &quot;Section 14: Differencing Predictor&quot;).</p>
                 <h2 id="other-predictor-models">Other Predictor Models</h2>
-                <p>The current version of G93 implements two additional predictor models:
+                <p>The current version of GVRS implements two additional predictor models:
                     the Linear Predictor and the Triangle Predictor.</p>
                 <p>The Linear Predictor model predicts that the data varies as a linear function. The value
                     for the next sample in a sequence is predicted using a straight-line computed from the two
@@ -220,18 +220,18 @@
                     The vertical coordinate of the points are assigned the values Z<sub>A</sub>, Z<sub>B</sub>, and Z<sub>C</sub> respectively.
                     By treating the grid as having a fixed spacing between columns, <em>s</em>, and a fixed spacing between rows, <em>t</em>,
                     the prediction computation is simplified to Z<sub>P</sub> = Z<sub>B</sub>+Z<sub>C</sub>-Z<sub>A</sub>.</p>
-                <p><img src="images/G93Compression/CompressionPatternTriangle.png" alt="Pattern for Triangle-Model Predictive-Residual Transform"></p>
+                <p><img src="images/GVRS_Compression/CompressionPatternTriangle.png" alt="Pattern for Triangle-Model Predictive-Residual Transform"></p>
                 <p>To see how this relationship is derived, start by taking each sample and the predicted
                     point as vectors:</p>
-                <p><img src="images/G93Compression/TriangleAlgebra1.png" alt="Variables for triangle predictor"> </p>
+                <p><img src="images/GVRS_Compression/TriangleAlgebra1.png" alt="Variables for triangle predictor"> </p>
                 <p>From linear algebra, we can compute the normal to a plane and locate a point on that plane
                     using the following:</p>
-                <p><img src="images/G93Compression/TriangleAlgebra2.png" alt="Variables for triangle predictor"> </p>
+                <p><img src="images/GVRS_Compression/TriangleAlgebra2.png" alt="Variables for triangle predictor"> </p>
                 <p>When we solve for Z<sub>P</sub>, the <em>x</em>, <em>y</em>, <em>s</em>, and <em>t</em> variables cancel out and we find
                     the simple computation used by the Triangle Predictor model.</p>
                 <p>Both the Linear and the Triangle Predictor require special handling to initialize
                     the grid before applying the prediction computations. In the case of the Linear
-                    Predictor, G93 uses the seed value and the pattern established for the Differencing
+                    Predictor, GVRS uses the seed value and the pattern established for the Differencing
                     Predictor to pre-populate the first two columns of the grid. In the case of the
                     Triangle Predictor, the first row and first column are populated using same approach.
                     Once the grid is initialized, the specific predictors
@@ -240,7 +240,7 @@
                 <p>Once the residuals are computed using a predictor-residual model,
                     they are passed to compression processes based on conventional data
                     compression algorithms such as the Huffman and Deflate techniques
-                    described above.  Both the custom Huffman implementation included with the G93 code base
+                    described above.  Both the custom Huffman implementation included with the GVRS code base
                     and the Deflate API provided as part of the standard Java library
                     are designed to process bytes. But the predictive-residual models produce output
                     in the form of integers. So in order to use them to process
@@ -254,7 +254,7 @@
                     of the residuals are quite small (using the Triangle Predictor, 87.9 percent
                     of the residuals computed for ETOPO1 have an absolute value less than 15).
                     So using 4 bytes to store these small values would be wasteful.</p>
-                <p>To serialize the residuals, G93 uses a scheme that it calls the M32 code.
+                <p>To serialize the residuals, GVRS uses a scheme that it calls the M32 code.
                     M32 is an integer-to-byte coding scheme that adjusts the number of bytes
                     in the output to reflect the magnitude of each term in the input.
                     In that regard, it uses an approach similar to that used for the widely used UTF-8 character encoding.
@@ -280,23 +280,23 @@
                     Again, in the case of larger residuals, the M32 code can actually be longer
                     than the 4 bytes needed for a simple integer. Fortunately, a good predictor
                     will produce small residuals. In fact, in the elevation data sets used when developing
-                    G93, the average length of the M32 code sequences is
+                    GVRS, the average length of the M32 code sequences is
                     about 1.013 bytes per grid value.</p>
                 <h1 id="compressors">Compressors</h1>
                 <p>By applying the predictive-residual transformations and M32 serialization,
-                    the G93 codecs transform the data to a state where it can be processed by
+                    the GVRS codecs transform the data to a state where it can be processed by
                     conventional compressor methods. While the transformation-serialization process generally
                     reduces the size of the data (as it did for the ETOPO1 example),
                     its main benefit is that it results in a form with more
                     redundancy than the original. And as the redundancy is increased,
                     the data becomes more suitable for processing by conventional data compression techniques.</p>
-                <p>As noted above, the two codecs currently implemented in G93 are based
+                <p>As noted above, the two codecs currently implemented in GVRS are based
                     on the Huffman coding and Deflate algorithms. API’s that support
                     Deflate are available in most popular software environments and
-                    programming languages. G93 uses the Deflate class provided by
+                    programming languages. GVRS uses the Deflate class provided by
                     the standard Java API.  For the simpler Huffman coding,
-                    G93 uses a custom implementation.</p>
-                <p>During the compression phase, the current implementation of G93 attempts
+                    GVRS uses a custom implementation.</p>
+                <p>During the compression phase, the current implementation of GVRS attempts
                     to compress data using both codecs and all three predictive-residual transformations.
                     It then selects the serialized form that produces the smallest output size.
                     In testing with ETOPO1, the Deflate algorithm was selected in
@@ -335,7 +335,7 @@
                     this tendency of the statistical properties of data to change across
                     a data set is referred to as <em>non-stationarity</em>.</p>
                 <p>These two considerations have a direct bearing on the size of the tiles specified
-                    when creation a G93 file to cover a raster product with non-uniform behavior.
+                    when creation a GVRS file to cover a raster product with non-uniform behavior.
                     A larger tile size reduces the amount of symbol-table overhead compared
                     to the length of the encoded data. But a larger tile also allows
                     for more non-stationarity and thus dilutes the effectiveness of
@@ -344,11 +344,11 @@
                     choice may require some experimentation. In working with elevation data sets,
                     we have found that a tile size in the range of 10 to 40 thousand grid
                     cells tends is usually a good place to start.</p>
-                <h3 id="how-g93-stores-the-huffman-tree">How G93 Stores the Huffman Tree</h3>
+                <h3 id="how-gvrs-stores-the-huffman-tree">How GVRS Stores the Huffman Tree</h3>
                 <p>In the classic Huffman algorithm, the symbol-frequency table is used to create
                     a tree structure that serves as a mechanism for encoding or decoding
                     the compressed data. Although many implementations store the frequency data directly,
-                    the G93 implementation gains efficiency by storing the structure of the tree itself
+                    the GVRS implementation gains efficiency by storing the structure of the tree itself
                     rather than retaining the actual frequency data.</p>
                 <p>In the storage phase of processing, the Huffman tree is created using
                     the classic algorithm. Once established, the tree is stored according
@@ -356,7 +356,7 @@
                     root node of the tree.</p>
                 <pre><code><span class="hljs-number">1.</span> Introduce <span class="hljs-keyword">with</span> sequence <span class="hljs-keyword">with</span> <span class="hljs-keyword">an</span> unsigned <span class="hljs-keyword">byte</span> indicating <span class="hljs-keyword">the</span> <span class="hljs-built_in">number</span>
    <span class="hljs-keyword">of</span> unique symbols, N, <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> tree. Since there will never be <span class="hljs-literal">zero</span> symbols
-   <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> tree, G93 stores <span class="hljs-keyword">the</span> <span class="hljs-built_in">value</span> N<span class="hljs-number">-1</span> <span class="hljs-keyword">in</span> this <span class="hljs-keyword">byte</span>. Thus <span class="hljs-literal">one</span> <span class="hljs-keyword">byte</span> is sufficient
+   <span class="hljs-keyword">in</span> <span class="hljs-keyword">the</span> tree, GVRS stores <span class="hljs-keyword">the</span> <span class="hljs-built_in">value</span> N<span class="hljs-number">-1</span> <span class="hljs-keyword">in</span> this <span class="hljs-keyword">byte</span>. Thus <span class="hljs-literal">one</span> <span class="hljs-keyword">byte</span> is sufficient
    <span class="hljs-built_in">to</span> represent all possible symbol counts <span class="hljs-keyword">for</span> <span class="hljs-keyword">a</span> M32 representation.
 <span class="hljs-number">2.</span> Traverse <span class="hljs-keyword">the</span> Huffman tree starting <span class="hljs-built_in">from</span> <span class="hljs-keyword">the</span> root node <span class="hljs-keyword">using</span> RecusiveStore(rootNode)
 <span class="hljs-number">3.</span> RecursiveStore(node)
@@ -420,9 +420,9 @@
                     of implementation and clarity of code, so lacks some optimizations that
                     would tend to complicate or obscure the logic. So, there may be opportunities
                     for reducing the processing time. Arithmetic coding may be the subject
-                    of future investigation for the G93 project.  </p>
+                    of future investigation for the GVRS project.  </p>
                 <h1 id="future-work">Future Work</h1>
-                <p>The introduction to this wiki page made the claim that the G93 package is intended
+                <p>The introduction to this wiki page made the claim that the GVRS package is intended
                     to serve as a testbed for investigators and software developers who wish to
                     experiment with their own solutions for raster data compression. We hope that by
                     describing the current implementations, we demonstrated some of the reasons that
@@ -434,11 +434,11 @@
                     the use of wavelet functions. Data compression continues to be an area
                     of active interest in the software community, and we fully expect that
                     new techniques are waiting to be discovered.</p>
-                <p>The G93 project is especially interested in lossless, or nearly lossless, techniques
-                    for compressing real-valued data.  The current G93 implementation implements compression
+                <p>The GVRS project is especially interested in lossless, or nearly lossless, techniques
+                    for compressing real-valued data.  The current GVRS implementation implements compression
                     for floating point data, but the results are not as successful as they are for integers.</p>
                 <p>If you are investigating raster-based data compression, we wish you the best
-                    of luck and hope that insights from G93 can help you on your way. And, as always,
+                    of luck and hope that insights from GVRS can help you on your way. And, as always,
                     we welcome your ideas and suggestions.</p>
                 <h1 id="references">References</h1>
                 <p>Adobe Systems, Inc. (1992). <em>TIFF Revision 6.0 Final – June 3, 1992</em>. Retrieved January 2020 from <a href="https://www.adobe.io/open/standards/TIFF.html">https://www.adobe.io/open/standards/TIFF.html</a></p>

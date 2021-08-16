@@ -41,46 +41,46 @@
                     at analyzing and understanding data stored in raster form.</p>
                 <h1 id="our-inspiration">Our Inspiration</h1>
                 <p>Recently, there has been a lot of news about the <a href="https://seabed2030.gebco.net/">Seabed 2030 Project</a> . That ambitious
-                    undertaking aims to map 100 percent of the ocean floor by 2030.To put that in perspective,
+                    undertaking aims to map 100 percent of the ocean floor by 2030. To put that in perspective,
                     the project organizers estimate that, today, only about 20 percent of the world&#39;s oceans are fully
-                    mapped (see <a href="https://seabed2030.gebco.net/faq/#q4">Seabed 2030, FAQ</a>).So there&#39;s a lot of work to be done
+                    mapped (see <a href="https://seabed2030.gebco.net/faq/#q4">Seabed 2030, FAQ</a>). So there&#39;s a lot of work to be done
                     in the next decade.</p>
                 <p>One thing is certain, the existence of projects like Seabed 2030 will result in massive collections
-                    of grid-based (raster) data sets.Seabed 2030 itself will include about 7.6 billion grid points <a href="#note1">&#91;1&#93;</a>.
+                    of grid-based (raster) data sets. Seabed 2030 itself will include about 7.6 billion grid points <a href="#note1">&#91;1&#93;</a>.
                     There is a need for software libraries that can assist in
                     the processing of that data. In particular, we see a need for more efficient techniques for storage
-                    and data compression for grid data.That need inspired us to create Gridfour.</p>
+                    and data compression for grid data. That need inspired us to create Gridfour.</p>
                 <h1 id="an-old-idea-made-new">An Old Idea Made New</h1>
-                <p>The first module created for the Gridfour Software Project is the G93 grid-based data
-                    compression and file management module.Gridfour&#39;s G93 API helps Java applications
+                <p>The first module created for the Gridfour Software Project is the Gridfour Virtual Raster System (GVRS).
+				    GVRS is a grid-based data compression and file management module. The GVRS API helps Java applications
                     manage raster (grid) data in situations where the size of the data exceeds what
                     could reasonably be kept in memory. It also provides a file-based utility for
                     the persistent storage of data between runs. And, finally, it includes custom
                     data compression that significantly reduces the storage size required for
                     raster data. </p>
-                <p>The algorithms used in G93 have been around for a long time
+                <p>Some of the algorithms used in GVRS have been around for a long time
                     They were originally developed for a project named Gem93 that was
-                    completed in 1993 (we&#39;ve named our file format &quot;G93&quot; in its honor).Gem93 included
-                    a number of tools for working with raster data, among them a lossless data compression technique
+                    completed in 1993. Gem93 included a number of tools for working with raster data, among them a lossless data compression technique
                     inspired by the work of Kidner and Smith (1992). You can read more about them at our wiki page
                     <a href="https://gwlucastrig.github.io/gridfour/notes/GridfourDataCompressionAlgorithms.html">Lossless Raster Compression Algorithms</a>.</p>
                 <p>Of course, the state of the art has advanced quite a bit since 1993. And although
-                    the Gridfour is based on old ideas, we hope that our G93 library will provide
+                    the foundation for GVRS comes from old ideas, we hope you find that our API provides a fresh take
+					on their implementation. We intend GVRS library to provide
                     a convenient tool for investigators developing new techniques for compressing
-                    geophysical and scientific data in raster form.G93 makes it very easy to
+                    geophysical and scientific data in raster form. GVRS makes it very easy to
                     extend the Gridfour code and add new data compression capabilities &#40; to see
                     just how easy it is, visit our wiki page on
                     <a href="https://github.com/gwlucastrig/gridfour/wiki/How-to-Register-a-Custom-Data-Compressor">Custom Data Compressors</a> &#41;.
                     Our hope is that by providing this tool, investigators will be able to
                     focus on their own research and leave the details of file-management to
-                    the G93 tools.</p>
+                    the GVRS tools.</p>
                 <h3 id="help-wanted">Help Wanted</h3>
-                <p>We are finishing up the initial implementation of G93.We are looking for
+                <p>We are finishing up the initial implementation of GVRS. We are looking for
                     developers interested in porting it to additional languages
                     (such as C#, C++, Rust) and creating Python bindings. We are also looking for
                     users with ideas for new features and how to apply the library. </p>
                 <h1 id="things-to-come">Things to Come</h1>
-                <p>The Gridfour Software Project is still in its infancy.There is a lot
+                <p>The Gridfour Software Project is still in its infancy. There is a lot
                     of opportunity for new ideas and new software development. In the future
                     we hope to include implementations of contouring, statistical analysis,
                     and physical modeling logic to our collection. We are also building tools to
@@ -91,11 +91,11 @@
                 <p>Finally, we end with a picture that was created using the Gridfour API and a set of elevation
                     and bathymetry data taken from the GEBCO_2019 global data set. The picture
                     shows a shaded-relief rendering of the Island of Hokkaido, Japan.
-                    GEBCO_2019 was one of the data sets used for the initial G93 implementation and a good example of the
-                    potential of systems like it. Color-coding was based on elevation obtained from a G93 file
+                    GEBCO_2019 was one of the data sets used for the initial GVRS implementation and a good example of the
+                    potential of systems like it. Color-coding was based on elevation obtained from a GVRS file
                     and shading was computed using the surface normal obtained with Gridfour's B-Spline raster interpolation class.
-                    The G93 data compression reduces the size of this data set down to about 17.2 percent of
-                    its original size (see <a href="https://gwlucastrig.github.io/gridfour/notes/G93_Performance.html">G93 Performance</a>
+                    The GVRS data compression reduces the size of this data set down to about 17.2 percent of
+                    its original size (see <a href="https://gwlucastrig.github.io/gridfour/notes/Gvrs_Performance.html">GVRS Performance</a>
                     for more details). Future work may bring about more improvements.</p>
 
                 <figure>

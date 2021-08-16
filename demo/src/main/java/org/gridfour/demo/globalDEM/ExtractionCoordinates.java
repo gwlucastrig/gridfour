@@ -37,7 +37,7 @@ package org.gridfour.demo.globalDEM;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.util.Angle;
 import ucar.ma2.Array;
 import ucar.nc2.Variable;
@@ -199,7 +199,7 @@ class ExtractionCoordinates {
    * @param ps a valid print stream
    * @param spec a valid specification populated using this instance.
    */
-  void checkSpecificationTransform(PrintStream ps, G93FileSpecification spec) {
+  void checkSpecificationTransform(PrintStream ps, GvrsFileSpecification spec) {
     for (int i = 0; i < cLat.length; i++) {
       double[] g = spec.mapGeographicToGrid(cLat[i], lonColMin);
       double absDelta = Math.abs(g[0] - i);

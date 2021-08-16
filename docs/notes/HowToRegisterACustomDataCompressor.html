@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>G93 Custom Data Compressors</title>
+        <title>GVRS Custom Data Compressors</title>
         <link rel="stylesheet" href="css/text.css" />
         <link rel="stylesheet" href="css/layout.css" />
     </head>
@@ -27,16 +27,16 @@
 
                 <p class="title">
                     How to Register a Custom Data Compressor<br>
-                    with the G93 API
+                    with the GVRS API
                 </p>
 
                 <h1 id="introduction">Introduction</h1>
-                <p>One of the motivations for creating the Gridfour G93 API was to assist investigators
+                <p>One of the motivations for creating the Gridfour GVRS API was to assist investigators
                     who were experimenting with different techniques for compressing raster data.
-                    To that end, G93 makes it easy to register new data-compression classes with
-                    the existing API so that you can add custom compression functions to G93 without
+                    To that end, GVRS makes it easy to register new data-compression classes with
+                    the existing API so that you can add custom compression functions to GVRS without
                     modifying any of the existing API.</p>
-                <p>Currently, G93 uses two internal compression modules: one based on Huffman codes and
+                <p>Currently, GVRS uses two internal compression modules: one based on Huffman codes and
                     one based on the well-known Deflate library. For this article, we will explore adding
                     a new compression module based on BZip2. For general data compression applications,
                     BZip2 can produce somewhat better results than Deflate, though it does require more
@@ -46,41 +46,41 @@
                     any secondary dependencies to a Java application. The Core module is pure Java code and
                     depends only on the standard Java API. The Core module has no external dependencies. But, because BZip2
                     is not part of the standard Java API, adding it to the Core would have required allowing
-                    an external dependency. To work around that restriction the G93 file specification allows an application
+                    an external dependency. To work around that restriction the GVRS file specification allows an application
                     to register compression classes that belong to libraries external to Core.</p>
                 <h2 id="implementing-a-bzip2-compressor">Implementing a BZip2 Compressor</h2>
                 <p>Suppose we were to write a compression class called CodecBZip2 that depended on the
                     compression utilities in the Apache Compression Library (commons-compress-1.19.jar or more recent
-                    versions). The class could be written by implementing the Gridfour interface IG93CompressorCodec:</p>
+                    versions). The class could be written by implementing the Gridfour interface IGvrsCompressorCodec:</p>
                 <pre>
-    public class CodecBzip2 implements IG93CompressorCodec {
+    public class CodecBzip2 implements IGvrsCompressorCodec {
         public CodecBzip2(){
         }
         // methods from interface as appropriate
     }
                 </pre>
                 <p>We&#39;ll discuss more about the implementation below. For now, let&#39;s look at how the compression could
-                    be added to a G93File object.</p>
+                    be added to a GvrsFile object.</p>
                 <pre>
-    G93FileSpecification spec = new G93FileSpecification(nRows, nCols, 90, 120);
+    GvrsFileSpecification spec = new GvrsFileSpecification(nRows, nCols, 90, 120);
     spec.addCompressionCodec("BZip2", CodecBzip2.class);  // BZip2 is an arbitrary name for the compressor
     spec.setDataCompressionEnabled(true);
 
-    File outputFile = new File("Test.g93");
-    G93File g93 = new G93File(outputFile, spec);
-    g93.setTileCacheSize(G93CacheSize.Large);
-    g93.setIndexCreationEnabled(true);
+    File outputFile = new File("Test.gvrs");
+    GvrsFile gvrs = new GvrsFile(outputFile, spec);
+    gvrs.setTileCacheSize(GvrsCacheSize.Large);
+    gvrs.setIndexCreationEnabled(true);
                 </pre>
 
 
-                <p>That&#39;s it. When the API goes to store the data for the G93 file, it constructs an instance
+                <p>That&#39;s it. When the API goes to store the data for the GVRS file, it constructs an instance
                     of the CodecBZip2 class using the default constructor, and then uses that instance to perform data compression.
                     Naturally, this approach leads to three important requirements for a supplemental compressor:</p>
                 <ol>
-                    <li>G93 must be able to construct an instance using the default constructor and that instance must be fully
+                    <li>GVRS must be able to construct an instance using the default constructor and that instance must be fully
                         initialized and ready for operations when initialized.</li>
                     <li>The Java Virtual Machine (JVM) must be able to find the class supplied as a supplemental compressor in its classpath.</li>
-                    <li>The supplemental compressor must implement the interface IG93CompressorCodec.</li>
+                    <li>The supplemental compressor must implement the interface IGvrsCompressorCodec.</li>
                 </ol>
                 <h2 id="does-bzip2-make-things-better-">Does BZip2 Make Things Better?</h2>
                 <p>For this article, I implemented the CodecBZip2 class and ran it on the ETOPO1 data set that has been
@@ -119,9 +119,9 @@
                     to compress data, than to decompress it. So the extra processing for compression would be
                     a one-time expense for the data producer, but would not affect the data consumers.</p>
                 <p>Details of how the Gridfour compressors work will be the subject of a future
-                    wiki article. For now, it is sufficient to note that G93 compresses the tiles
+                    wiki article. For now, it is sufficient to note that GVRS compresses the tiles
                     in a data file individually. Each time a tile is written to the file,
-                    G93 tries each registered compression method and picks the one that yields
+                    GVRS tries each registered compression method and picks the one that yields
                     the largest reduction in data storage size.</p>
                 <p>Each of the existing compression methods uses <em>Predictive-Transform</em> methods
                     to improve the compressability of the data. There are 3 predictive-transform models
@@ -134,19 +134,19 @@
                     been used, BZip2 was preferred. </p>
                 <p>The following statistics were issued through a call to</p>
                 <pre>
-    g93.summarize(System.<span class="hljs-keyword">out</span>, <span class="hljs-literal">true</span>)
+    gvrs.summarize(System.<span class="hljs-keyword">out</span>, <span class="hljs-literal">true</span>)
                 </pre>
-                <p>which was invoked after the storage of the G93 output file was complete.
+                <p>which was invoked after the storage of the GVRS output file was complete.
                     The times-used column indicates the number of tiles (and the percent of all tiles)
                     for which a particular method was selected. </p>
                 <pre>
-    Codec G93_Huffman
+    Codec Gvrs_Huffman
        Predictor                Times Used        bits/sym   entropy     avg bits in tree/tile
        Differencing              393 ( 1.8 %)      1.9         2.3          205.4/20487.5
        Linear                   1572 ( 7.3 %)      2.9         2.9          744.3/30985.3
        Triangle                 3956 (18.3 %)      3.7         4.0          773.9/39829.3
        DifferencingWithNulls       0 ( 0.0 %)      0.0         0.0            0.0/0.0
-    Codec G93_Deflate
+    Codec Gvrs_Deflate
        Predictor               Times Used         bits/sym   entropy     avg bits per tile
        Differencing              205 ( 0.9 %)      1.6         2.0         17037.2
        Linear                    179 ( 0.8 %)      5.3         5.6         56868.0
@@ -167,7 +167,7 @@
                     Java Deflate API with calls to the Apache Compress BZip2 API.</p>
                 <p>However, it is important to note that the fact that we chose to simply refactor
                     an existing module doesn&#39;t mean that all alternate compression techniques
-                    need to do the same thing. One of the ideas of G93 is to provide as much room
+                    need to do the same thing. One of the ideas of GVRS is to provide as much room
                     for experimentation and variation as possible. So if you do wish to write your own
                     compressor variation, feel free to do things differently. </p>
                 <h1 id="conclusion">Conclusion</h1>
@@ -177,7 +177,7 @@
                     compressors to extend the capabilities of the Gridfour Core library.</p>
                 <p>If you choose to conduct your own investigations, we look forward to hearing
                     about your results. Who knows?  Perhaps you may discover techniques that
-                    substantially reduce the storage required for G93-based data products.</p>
+                    substantially reduce the storage required for GVRS-based data products.</p>
 
             </div>
         </div>

@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>G93 Performance</title>
+        <title>GVRS Performance</title>
         <link rel="stylesheet" href="css/text.css" />
         <link rel="stylesheet" href="css/layout.css" />
     </head>
@@ -26,24 +26,24 @@
             <div id="notescontent">
 
                 <p class="title">
-                    G93 Performance for Data Reading, Writing, and Compression
+                    GVRS Performance for Data Reading, Writing, and Compression
                 </p>
 
 
                 <h1 id="introduction">Introduction</h1>
-                <p>The primary design goal for Gridfour&#39;s G93 module was to create an API that would
+                <p>The primary design goal for Gridfour&#39;s GVRS module was to create an API that would
                     provide a simple and reliable interface for working with grid-based data sources.
-                    And, in designing the G93 file format, we sought to develop a file-format specification
+                    And, in designing the GVRS file format, we sought to develop a file-format specification
                     that would be stable across future versions, portable across different operating environments
                     and implementation languages, and suitable for long-term archiving of data.</p>
-                <p>None of that would matter if the G93 software did not provide acceptable performance.</p>
-                <p>This document describes the results of performance tests for the G93 software that were
+                <p>None of that would matter if the GVRS software did not provide acceptable performance.</p>
+                <p>This document describes the results of performance tests for the GVRS software that were
                     aimed at assessing the usefulness of the implementation. The tests involved
                     performing various patterns of data access on two medium-to-large raster
                     data products.  The tests were performed on a medium-quality laptop with 16 GB of installed memory
                     and standard Solid State Drive (SSD).</p>
 
-                <p>In evaluating the Java implementation for G93, we were interested in two
+                <p>In evaluating the Java implementation for GVRS, we were interested in two
                     kinds of performance: speed of access and data compression ratios.
                     Statistics for these performance areas was collected using multiple
                     tests on large, publicly available data sets. The speed-of-access tests
@@ -61,8 +61,8 @@
                             <li><a href="#performance-at-a-glance">Performance at a Glance</a></li>
                             <li><a href="#writing-the-data">Writing the Data</a></li>
                             <li><a href="#reading-the-data">Reading the Data</a></li>
-                            <li><a href="#g93-versus-netcdf">Access times for G93 versus NetCDF</a>
-                            <li><a href="#memory-mapped-file-access">Why G93 does not use Memory-Mapped File Access</a></li>
+                            <li><a href="#gvrs-versus-netcdf">Access times for GVRS versus NetCDF</a>
+                            <li><a href="#memory-mapped-file-access">Why GVRS does not use Memory-Mapped File Access</a></li>
                         </ul>
                     </li>
                     <li><a href="#data-compression">Data Compression</a></li>
@@ -70,14 +70,14 @@
                 </ul>
 
                 <h2 id="test-data">The Test Data</h2>
-                <p>We evaluated G93 performance using two well-known and easily obtained
+                <p>We evaluated GVRS performance using two well-known and easily obtained
                     geophysical data sets: ETOPO1 and GEBCO_2019.
                     These products provide world-wide elevation and ocean bottom depth information.
                     Because they describe a phenomonon that is readily observed in ordinary
                     experience, they have the advantage of familiarity and immediacy.
                     The data sets are large enough to present a significant processing
                     load for a test series. And their content is varied enough thoroughly
-                    exercise the G93's function set.</p>
+                    exercise the GVRS's function set.</p>
 
 
                 <p>The following table gives physical details for the test data files. Grid dimensions
@@ -120,8 +120,8 @@
 
                 <h1 id="performance-tests">Data-Access Time</h1>
                 <h2 id="performance-at-a-glance">Performance at a Glance</h2>
-                <p>We'll begin our discussion of G93 performance by providing some of our most useful
-                    information first. The table below is intended to sense of how fast G93 can
+                <p>We'll begin our discussion of GVRS performance by providing some of our most useful
+                    information first. The table below is intended to sense of how fast GVRS can
                     read from or write to a data file. The information in the table should provide
                     a basis for making a rough estimate of the kind of performance that can be expected
                     for other raster based data sources used in Java applications.</p>
@@ -169,15 +169,15 @@
                     Details of the test methods used to measure performance are also included.</p>
 
                 <h2 id="writing-the-data">Writing the Data</h2>
-                <p>The G93 API can be used to simplify storage operations in data collection or analysis applications.
+                <p>The GVRS API can be used to simplify storage operations in data collection or analysis applications.
                     In those applications, it serves as a small part of a larger work flow. So it is reasonable
                     to require that the API does not make an undue contribution to the processing time for the overall job.
-                    Therefore efficiency considerations were an important part of the G93 design.</p>
+                    Therefore efficiency considerations were an important part of the GVRS design.</p>
 
-                <p>The time required for G93 to write the test data sets was measured using the
+                <p>The time required for GVRS to write the test data sets was measured using the
                     PackageData application that is included in the Gridfour software distribution.
                     That application transcribed the original NetCDF-formatted data into a matching
-                    G93-formatted file. Naturally, reading a NetCDF file carries its own processing overhead.
+                    GVRS-formatted file. Naturally, reading a NetCDF file carries its own processing overhead.
                     The time required to access the original data was evaluated using a separate program
                     and removed from the data-writing statistics shown in the table below.</p>
 
@@ -186,7 +186,7 @@
                         <tr>
                             <th>Test Set</th>
                             <th>Grid Dimensions</th>
-                            <th>G93 File Size</th>
+                            <th>GVRS File Size</th>
                             <th>Time to Write</th>
                         </tr>
                     </thead>
@@ -211,23 +211,23 @@
                 <p>Both of the test data products are distributed in the well-known NetCDF data format.
                     The data in the products is stored in row-major order, so the most efficient
                     pattern of access for reading them is one-row-at-a-time.</p>
-                <p>The G93 data is intended to support efficient data access regardless of
-                    what pattern is used to read or write them. Like the source data, the G93 test files
+                <p>The GVRS data is intended to support efficient data access regardless of
+                    what pattern is used to read or write them. Like the source data, the GVRS test files
                     used for this evaluation were written in a row-major order.  So accessing
-                    the G93 data on grid-point-at-a-time in row-major order would traverse the
+                    the GVRS data on grid-point-at-a-time in row-major order would traverse the
                     file in the order that it was laid out.  Not surprisingly,
-                    sequential access of the G93 files tends to be the fastest pattern of
+                    sequential access of the GVRS files tends to be the fastest pattern of
                     access.</p>
                 <p>In practice, real-world applications tend to process data from
                     large grids in blocks of neighboring data points. So they usually focus on a small
                     subset of the overall collection. The test patterns used for this evaluation
                     were based on that assumption. Except for the &quot;Tile Load&quot; case,
                     they involved 100 percent data retrieval.  The &quot;block&quot; tests
-                    used the G93 block API to read multiple values at once (either an entire
+                    used the GVRS block API to read multiple values at once (either an entire
                     row or an entire tile). Other tests read values one-at-a-time.</p>
                 <p>The following table lists timing results for various patterns
                     of access when reading all data in the indicated files. Times are given in seconds.
-                    Results are given for both the standard (non-compressed) variations of the G93
+                    Results are given for both the standard (non-compressed) variations of the GVRS
                     files and the compressed forms.</p>
                 <table>
                     <caption>Read operations using different access patterns (times in seconds)</caption>
@@ -285,23 +285,23 @@
                     and 21600 columns. Thus each block-read operation returns 21600 values.
                     This pattern of access is illustrated by the following code snippet</p>
                 <pre><code>for (int iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
-  <span class="hljs-type">float</span> []block = g93.readBlock(iRow, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, nColsInRaster);
+  <span class="hljs-type">float</span> []block = gvrs.readBlock(iRow, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, nColsInRaster);
 }
 </code></pre><p>In contrast the Row-Major operation reads the grid points for
-                    each row one value at a time.   Internally, the G93File class
+                    each row one value at a time.   Internally, the GvrsFile class
                     reads the data one tile at a time and stores them in a cache as necessary.
                     The &quot;read-value&quot; API determines which tile is needed and fetches
                     it from the cache each time the application requests a value. This pattern
                     of access is illustrated by the following code snippet:</p>
                 <pre><code><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
   <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iCol = <span class="hljs-number">0</span>; iCol &lt; nColumnsInRaster; iCol++) {
-     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = g93.readIntValue(iRow, iCol);
+     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = gvrs.readIntValue(iRow, iCol);
   }
 }
 </code></pre><p>The Column-Major pattern is similar, but uses columns as the outer loop.</p>
                 <pre><code><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iCol = <span class="hljs-number">0</span>; iCol &lt; nColumnsInRaster; iCol++) {
   <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
-     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = g93.readIntValue(iRow, iCol);
+     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = gvrs.readIntValue(iRow, iCol);
   }
 }
 </code></pre>
@@ -309,12 +309,12 @@
                     perform a separate read operation for each data point. Because each of these
                     read operations is independent, they involve a overhead
                     both for the Java method call and for the internal arithmetic to compute
-                    an index into the grid and retrieve the associated tile from G93&#39;s
+                    an index into the grid and retrieve the associated tile from GVRS&#39;s
                     internal tile-cache. This small overhead was multiplied across the
                     numerous data read operations that were performed by these tests.</p>
                 <p>The difference in data-fetching time between the Row-Major and Column-Major
                     access pattern is due to the fact that the tiles stored in the
-                    particular G93 files used for this test were themselves written
+                    particular GVRS files used for this test were themselves written
                     to the file in row-major order (rows of tiles). So two tiles that
                     were adjacent in a single row were also adjacent in their file
                     locations. However, two tiles that were adjacent in a single
@@ -325,7 +325,7 @@
                     than the single-point read operations because fewer calls result
                     in less overhead. As the table above shows, the difference in the
                     operations was detectable, but not especially impressive. This result suggests
-                    that the g93.readBlock() method may present opportunities for improvement.</p>
+                    that the gvrs.readBlock() method may present opportunities for improvement.</p>
                 <h2 id="the-cost-of-reading-data-from-the-file">The Cost of Reading Data from the File</h2>
                 <p>The Tile Load test retrieves just one point for tile. Thus the run time for
                     the test is essentially just the time required to load read the individual tiles from
@@ -336,28 +336,28 @@
                 <p>At present, the Tile Block read times are significantly lower than those
                     of the Row Block test. Again, this result suggests that there may be
                     opportunities to optimize the access code for the read routines.</p>
-                <h2 id="g93-versus-netcdf">Access Times for G93 versus NetCDF</h2>
+                <h2 id="gvrs-versus-netcdf">Access Times for GVRS versus NetCDF</h2>
                 <p>As mentioned above, the source data used for the performance tests
                     described in these notes is distributed in a format called NetCDF.
-                    G93 is not intended to compete with NetCDF. The two data formats
+                    GVRS is not intended to compete with NetCDF. The two data formats
                     are intended for different purposes and to operate in
                     different environments. But the Java API for NetCDF is a well-written
                     module and, as such, provides a good standard for speed of access.
                     Any raster-based file implementation should be able to operate with performance that
                     is at least as good as NetCDF. </p>
                 <p>The table below gives accessing times for reading the <em>entire</em> data set for
-                    ETOPO1 and GEBCO_2019, using the Java API for NetCDF and G93 file formats.
+                    ETOPO1 and GEBCO_2019, using the Java API for NetCDF and GVRS file formats.
                     Both files can be accessed in random order, but the most efficient way of retrieving
                     their content is by following a pattern of access established by their underlying
                     data definition. The NetCDF distributions of the ETOPO1 and GEBCO products
                     can be accessed most efficiently in row-major order (one complete row at a time).
-                    The G93 format can be accessed most efficiently one complete tile at a time.
+                    The GVRS format can be accessed most efficiently one complete tile at a time.
                     So performance statistics for those two patterns are included in the table
                     below.  Because the NetCDF version of GEBCO_2019 is stored in a semi-compressed
-                    format, the timing values for the compressed version of G93 are
+                    format, the timing values for the compressed version of GVRS are
                     more relevant than the uncompressed version. Finally, to clarify the
                     differences in behavior between the two API&#39;s, the table repeats the
-                    G93 timing data for row-major access.</p>
+                    GVRS timing data for row-major access.</p>
                 <table>
                     <caption>Read operations for different data formats (times in seconds)</caption>
                     <thead>
@@ -376,13 +376,13 @@
                             <td>N/A</td>
                         </tr>
                         <tr>
-                            <td>G93 (tiles)</td>
+                            <td>GVRS (tiles)</td>
                             <td>1.8</td>
                             <td>77.7</td>
                             <td>29.40</td>
                         </tr>
                         <tr>
-                            <td>G93 (rows)</td>
+                            <td>GVRS (rows)</td>
                             <td>2.9</td>
                             <td>107.7</td>
                             <td>66.8</td>
@@ -392,18 +392,18 @@
                 <p>The differences in timing reflect the differences in the intention of the
                     two packages. NetCDF is a widely used standard for distributing data
                     (it also has support for a number of languages besides Java, including C/C++, C#, and Python).
-                    G93 is intended more for back-end processing for large raster data sets
+                    GVRS is intended more for back-end processing for large raster data sets
                     in cases where the pattern-of-access is arbitrary or unpredictable. When using NetCDF
                     (at least the Java version), it is often helpful if the pattern of data access
                     sticks to the underlying organization of the file. For example, when accessing
                     the NetCDF file in column-major order, the ETOPO1 read operation took
-                    1184.3 seconds to complete while G93 took 3.3 seconds.  Of course, we
+                    1184.3 seconds to complete while GVRS took 3.3 seconds.  Of course, we
                     need to be a little candid here.  It is possible to devise access patterns that
-                    defeat both file formts. Had we accessed the G93 and NetCDF files in a completely random
+                    defeat both file formts. Had we accessed the GVRS and NetCDF files in a completely random
                     pattern for a very large number of data points, we could have achieved equally
                     bad performance for both.</p>
-                <h2 id="memory-mapped-file-access">Why G93 Does not use Memory Mapped File Access</h2>
-                <p>The G93 API does not use Java&#39;s memory-mapped file access. Instead, it
+                <h2 id="memory-mapped-file-access">Why GVRS Does not use Memory Mapped File Access</h2>
+                <p>The GVRS API does not use Java&#39;s memory-mapped file access. Instead, it
                     uses old-school file read-and-write operations. The reason for this
                     is based on known problems in Java. First, Java does not support
                     memory-mapped file access for files larger than 2.1 gigabytes,
@@ -455,12 +455,12 @@
                     that in order to access any of the data in the file, it is necessary to decompress the whole
                     thing. For many grid-based applications, only a small portion of a raster file is needed
                     at any particular time.</p>
-                <p>The G93 API uses standard compression techniques (Huffman coding, Deflate),
+                <p>The GVRS API uses standard compression techniques (Huffman coding, Deflate),
                     but transforms the data so that it is more readily compressed and yields
                     better compression ratios. Each tile is compressed individually, so
                     an application that wants only part of the data in the file can
                     obtain it without decompressing everything else. </p>
-                <p>The G93 file format supports 3 different data formats:</p>
+                <p>The GVRS file format supports 3 different data formats:</p>
 
                 <ol>
                     <li>Integer (4-byte integers)</li>
@@ -475,16 +475,16 @@
                     the 4-byte floating-point format.  While the floating-point representation of the
                     data preserves all the precision in the original, it requires a different approach
                     to data compression than the integer forms.</p>
-                <p>Unfortunately, the G93 floating-point implementation does not achieve quite
+                <p>Unfortunately, the GVRS floating-point implementation does not achieve quite
                     as favorable compression ratios as the integer-based compressors. Floating-point
                     numbers simply do not present the kind of redundancy in their form that facilitates
-                    data compression. On the other hand, G93's lossless floating-point compression
+                    data compression. On the other hand, GVRS's lossless floating-point compression
                     is as good as any solution currently to be found.</p>
 
                 <p>The table below shows the relative storage size required for different products
                     and storage options. The entries marked GEBCO x 1, GEBCO x 2, are scaled integer
                     representations of the original sample points. There are two reasons that the scaled versions
-                    compress more readily than the floating-point. First, the G93 integer
+                    compress more readily than the floating-point. First, the GVRS integer
                     compressors are more powerful than the floating-point compressor. Second,
                     the scaling operation truncates some of the fractional part of the original
                     values and, thus, discards some of the information in the original product.</p>
@@ -532,7 +532,7 @@
                     </tbody>
                 </table>
                 <p>ETOPO1 data is stored in the form of integers with a small amount of overhead
-                    for metadata and file-management elements. As table above shows, G93 data compression reduces
+                    for metadata and file-management elements. As table above shows, GVRS data compression reduces
                     the raw data for ETOPO1 from 16 bits per sample to 4.46 bits per sample.  So the storage
                     required for the data is reduced to about 27.9 % of the original size. </p>
                 <p>When deciding whether to use the native floating-point representation of the GEBCO data
@@ -550,10 +550,10 @@
                     the converted data. So we applied various
                     scaling factors as shown in the results above.</p>
                 <h1 id="future-work">Future Work</h1>
-                <p>When data compression is applied to a G93 file, it adds a considerable amount
+                <p>When data compression is applied to a GVRS file, it adds a considerable amount
                     of processing overhead to the data-writing operation. In future work, it may be
                     possible to improve the throughput of write operations by using a multi-threaded
-                    implementation to handle data compression. Although the current implementation of the G93 API is limited
+                    implementation to handle data compression. Although the current implementation of the GVRS API is limited
                     to a single thread, the structure of its internal data cache could be adapted to
                     support multiple threads without major revision. A multi-threaded implementation
                     may be considered for future investigations.</p>
@@ -568,11 +568,11 @@
                 <h1 id="conclusion">Conclusion</h1>
                 <p>The figures cited in this article provide a rough guide to estimating
                     the kind of performance an application designer can expect using the
-                    G93 API. It also gives an indication of the resources that would be needed
-                    to process and store data in G93 format.</p>
-                <p>As with any API, the design of G93 makes assumptions about the way it will
+                    GVRS API. It also gives an indication of the resources that would be needed
+                    to process and store data in GVRS format.</p>
+                <p>As with any API, the design of GVRS makes assumptions about the way it will
                     be accessed. Our hope is that those assumptions are broad enough that
-                    G93 will provide acceptable performance for most applications.</p>
+                    GVRS will provide acceptable performance for most applications.</p>
             </div>
         </div>
     </body>

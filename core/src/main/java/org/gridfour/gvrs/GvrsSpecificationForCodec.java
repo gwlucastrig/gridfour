@@ -37,7 +37,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,19 +46,19 @@ import java.util.List;
 /**
  * Provides a simple container for compression codec specifications.
  */
-public class G93SpecificationForCodec {
+public class GvrsSpecificationForCodec {
 
     private final String identification;
     private final Class<?> codec;
     private final int index;
 
-    private G93SpecificationForCodec() {
+    private GvrsSpecificationForCodec() {
         identification = null;
         codec = null;
         index = 0;
     }
 
-    G93SpecificationForCodec(String identification, Class<?> codec, int index) {
+    GvrsSpecificationForCodec(String identification, Class<?> codec, int index) {
         this.identification = identification;
         this.codec = codec;
         this.index = index;
@@ -92,8 +92,8 @@ public class G93SpecificationForCodec {
         return index;
     }
 
-    public static List<G93SpecificationForCodec> parseSpecificationString(String string) throws IOException {
-        List<G93SpecificationForCodec> csList = new ArrayList<>();
+    public static List<GvrsSpecificationForCodec> parseSpecificationString(String string) throws IOException {
+        List<GvrsSpecificationForCodec> csList = new ArrayList<>();
         String codecID = null;
         int mode = 0;
         StringBuilder sb = new StringBuilder();
@@ -105,7 +105,7 @@ public class G93SpecificationForCodec {
                     String path = sb.toString();
                     try {
                         Class<?> codec = Class.forName(path);
-                        csList.add(new G93SpecificationForCodec(codecID, codec, index++));
+                        csList.add(new GvrsSpecificationForCodec(codecID, codec, index++));
                     } catch (ClassNotFoundException ex) {
                         throw new IOException(
                             "Codec specification " + codecID

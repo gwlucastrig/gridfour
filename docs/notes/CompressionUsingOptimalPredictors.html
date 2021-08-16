@@ -59,9 +59,9 @@
                     technique itself. The second discusses implementation details for a Java-based API
                     that is available through the Gridfour Software Project. One of the goals of the
                     Gridfour project is to explore data compression techniques for raster (grid) based data sources.
-                    To that end, we have created an software library called G93 that provides a testbed for
+                    To that end, we have created an software library called GVRS that provides a testbed for
                     experimenting with compression techniques. While the second part of this article does
-                    touch on G93, the focus of these notes is the Optimal Predictor technique itself.
+                    touch on GVRS, the focus of these notes is the Optimal Predictor technique itself.
                     Therefore, I've tried to limit the discussion of Gridfour-specific elements to those
                     details that relate directly to creating a viable Optimal Predictor implementation.
                     Part 3 of the article concludes with a brief note on ideas for future work.</p>
@@ -163,7 +163,7 @@
 
 
                 <p>In order to manage large raster data sets such as ETOPO1 and GEBCO_2020, the Gridfour library's
-                    G93 file format divides the overall collection into subsets called "tiles". For the test results
+                    GVRS file format divides the overall collection into subsets called "tiles". For the test results
                     given above, the partitioning scheme was specified to use tiles 120 rows high and 240 columns wide.
                     Each tile is compressed independently. When a tile is compressed, the Gridfour library uses a <i>brute force</i>
                     method for compressing the data: it reduces the tile using one of the three standard predictors
@@ -536,7 +536,7 @@
                     The steps are as follows:</p>
                 <ol>
                     <li>The first row and first column are populated using the standard Differencing predictor
-                        (see  <a href="https://gwlucastrig.github.io/gridfour/notes/G93-Compression-Algorithms">Lucas, 2019</a>)</li>
+                        (see  <a href="https://gwlucastrig.github.io/gridfour/notes/GVRS-Compression-Algorithms">Lucas, 2019</a>)</li>
                     <li>The second row and second column are then populated using the simple Triangle predictor.
                         The Triangle predictor itself requires an initialization, which is why the first step
                         in the process depends on the Differencing predictor to populate the first row and column</li>
@@ -588,7 +588,7 @@
                     to and average of about 1.9 (post-predictor, pre-Huffman/Deflate compression).</p>
 
                 <pre>
-    Codec G93_LSOP12                    Compression Output           Predictor Residuals
+    Codec Gvrs_LSOP12                    Compression Output           Predictor Residuals
       Huffman (399 tiles, 99.8%)
        Phase                           bits/sym    bits/tile  |  len (bytes)   avg-unique  entropy
          Outer rows/columns               2.6        2755.2   |     1072.0        13.9       2.4
@@ -617,7 +617,7 @@
                 <p>The predictor used in the LSOP compressor is based on floating-point arithmetic. Writing the code
                     for the LSOP predictor, encoder, and decoder, required strict attention to the way computer
                     systems and the Java programming language perform floating-point operations.
-                    One of the most important considerations in the design of the G93 file format is that data created on one
+                    One of the most important considerations in the design of the GVRS file format is that data created on one
                     system, or in one development environment (Java, C/C++, .NET, etc.), can be accessed software
                     running on another. In order to support that goal, it essential that the floating-point
                     arithmetic needed for the Optimal Predictor be reproducible in a consistent manner.</p>
@@ -629,17 +629,17 @@
 
 
                 <h3>Configuring a File to use Optimal Predictors</h3>
-                <p>During construction of a G93 file, the parameters for a file are specified using the G93FileSpecification class
-                    (see <a href="https://gwlucastrig.github.io/gridfour/notes/How-to-Package-Data-Using-the-G93-Library">How to Package Data Using the G93 Library</a>.)
+                <p>During construction of a GVRS file, the parameters for a file are specified using the GvrsFileSpecification class
+                    (see <a href="https://gwlucastrig.github.io/gridfour/notes/How-to-Package-Data-Using-the-GVRS-Library">How to Package Data Using the GVRS Library</a>.)
                     A Java application can specify the use of the Optimal Predictors compressor, using the approach shown in the
                     following code snippet:</p>
 
                 <pre>
-    import org.gridfour.g93.lsop.compressor.LsEncoder12;
-    import org.gridfour.g93.lsop.decompressor.LsDecoder12;
+    import org.gridfour.gvrs.lsop.compressor.LsEncoder12;
+    import org.gridfour.gvrs.lsop.decompressor.LsDecoder12;
 
-    public static void addLsopToSpecification(G93FileSpecification spec) {
-        spec.addCompressionCodec("G93_LSOP12", LsEncoder12.class, LsDecoder12.class);
+    public static void addLsopToSpecification(GvrsFileSpecification spec) {
+        spec.addCompressionCodec("Gvrs_LSOP12", LsEncoder12.class, LsDecoder12.class);
     }
                 </pre>
 
@@ -704,7 +704,7 @@
 
                 <p>Kidner and Smith (2003) reported using arithmetic coding as their preferred method for compressing
                     the post-prediction data set (the residuals). To investigate its suitability for Gridfour,
-                    I implemented a G93 compression codec using the <i>Reference arithmetic coding</i> software library
+                    I implemented a GVRS compression codec using the <i>Reference arithmetic coding</i> software library
                     (Project Nayuki, 2020).</p>
 
                 <p>In testing, arithmetic coding yielded only small improvements in data compression. For ETOPO1, the

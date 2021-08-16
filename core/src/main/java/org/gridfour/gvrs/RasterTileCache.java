@@ -36,7 +36,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -53,8 +53,8 @@ class RasterTileCache {
     int nTilesInCache;
     RasterTile firstTile;
     RasterTile lastTile;
-    final G93TileStore tileStore;
-    final G93FileSpecification spec;
+    final GvrsTileStore tileStore;
+    final GvrsFileSpecification spec;
 
     HashMap<Integer, RasterTile> tileMap = new HashMap<>();
     int priorUnsatistiedRequest = -1;
@@ -67,7 +67,7 @@ class RasterTileCache {
     private long nTilesDiscarded;
     private long nTileFirst;
 
-    RasterTileCache(G93FileSpecification spec, G93TileStore tileStore) {
+    RasterTileCache(GvrsFileSpecification spec, GvrsTileStore tileStore) {
         tileCacheSize = DEFAULT_TILE_CACHE_SIZE;
         this.tileStore = tileStore;
         this.spec = spec;

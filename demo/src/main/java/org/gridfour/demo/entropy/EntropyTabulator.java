@@ -45,14 +45,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
-import org.gridfour.g93.G93CacheSize;
-import org.gridfour.g93.G93DataType;
-import org.gridfour.g93.G93File;
-import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.gvrs.GvrsCacheSize;
+import org.gridfour.gvrs.GvrsDataType;
+import org.gridfour.gvrs.GvrsFile;
+import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.util.KahanSummation;
 
 /**
- * Provides a tool for obtaining an accurate value for the entropy of a G93 file
+ * Provides a tool for obtaining an accurate value for the entropy of a GVRS file
  * (within the precision of conventional floating point representations)
  * <p>
  * Although this class does provide a main method, it can also be used within an
@@ -61,13 +61,13 @@ import org.gridfour.util.KahanSummation;
 public class EntropyTabulator {
 
   private static final String TEMP_COUNT_FILE_NAME
-    = "TabulateEntropyTemporary.g93";
+    = "TabulateEntropyTemporary.gvrs";
 
   private static final String[] USAGE = {
     "TabulateEntropy",
     "Arguments:",
     "   -in   <file>",
-    "         specifies the input G93 file for evaluation",
+    "         specifies the input GVRS file for evaluation",
     "   -showProgress, -noShowProgress",
     "         controls whether progress messages are printed during evaluation",
     "",
@@ -117,14 +117,14 @@ public class EntropyTabulator {
   }
 
   /**
-   * Process the specified G93 file and write a report to the specified print
+   * Process the specified GVRS file and write a report to the specified print
    * stream.
    * <p>
    * If configured to do so, this method will write progress reports to the
    * specified print stream.
    *
    * @param ps a valid print stream, System&#46;out is a valid candidate
-   * @param inputFile a reference to a G93 file
+   * @param inputFile a reference to a GVRS file
    * @param showProgress indicates if progress reports are to be printed during
    * processing
    * @return on successful completion, a valid floating-point value; otherwise,
@@ -133,7 +133,7 @@ public class EntropyTabulator {
   public double process(PrintStream ps, File inputFile, boolean showProgress) {
     double entropy = Double.NaN;
 
-    ps.format("%nEntropy tabulation for G93 files%n");
+    ps.format("%nEntropy tabulation for GVRS files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
     SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
@@ -146,28 +146,28 @@ public class EntropyTabulator {
     File countsFile = new File(parent, TEMP_COUNT_FILE_NAME);
 
     // Define the specs for the entropy stats file
-    G93FileSpecification countsSpec
-      = new G93FileSpecification(65536, 65536, 256, 256);
+    GvrsFileSpecification countsSpec
+      = new GvrsFileSpecification(65536, 65536, 256, 256);
     countsSpec.setDataCompressionEnabled(false);
     countsSpec.setDataModelInt(1);
 
-    try (G93File source = new G93File(inputFile, "r");
-      G93File counts = new G93File(countsFile, countsSpec);) {
-      G93FileSpecification sourceSpec = source.getSpecification();
+    try (GvrsFile source = new GvrsFile(inputFile, "r");
+      GvrsFile counts = new GvrsFile(countsFile, countsSpec);) {
+      GvrsFileSpecification sourceSpec = source.getSpecification();
       int nRowsInSource = sourceSpec.getRowsInGrid();
       int nColsInSource = sourceSpec.getColumnsInGrid();
       int nRowsOfTilesInSource = sourceSpec.getRowsOfTilesInGrid();
       int nColsOfTilesInSource = sourceSpec.getColumnsOfTilesInGrid();
       int nRowsInTile = sourceSpec.getRowsInTile();
       int nColsInTile = sourceSpec.getColumnsInTile();
-      G93DataType dataType = sourceSpec.getDataType();
+      GvrsDataType dataType = sourceSpec.getDataType();
       long nSamples = 0;
       long nSymbols = 0;
 
       ps.println("Source File " + inputFile.getName());
       ps.format("   Rows:      %8d%n", nRowsInSource);
       ps.format("   Columns:   %8d%n", nColsInSource);
-      source.setTileCacheSize(G93CacheSize.Small);
+      source.setTileCacheSize(GvrsCacheSize.Small);
       counts.setTileCacheSize(2000);
       long time0 = System.currentTimeMillis();
       if (showProgress) {
@@ -217,7 +217,7 @@ public class EntropyTabulator {
           for (int iRow = row0; iRow < row1; iRow++) {
             for (int iCol = col0; iCol < col1; iCol++) {
               int bits;
-//              if (dataType == G93DataType.Float4) {
+//              if (dataType == GvrsDataType.Float4) {
 //                float sample = source.readValue(iRow, iCol);
 //                bits = Float.floatToRawIntBits(sample);
 //              } else {

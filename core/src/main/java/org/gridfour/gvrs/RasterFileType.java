@@ -36,20 +36,20 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 /**
- * Defines types for raster-related files used in the G93 system.
+ * Defines types for raster-related files used in the GVRS system.
  */
 enum RasterFileType {
     /**
-     * The simple g93 raster file type
+     * The simple gvrs raster file type
      */
-    G93raster("g93", "g93 raster"),
+    GvrsRaster("gvrs", "gvrs raster"),
     /**
-     * The optional index file for g93 rasters
+     * The optional index file for gvrs rasters
      */
-    G93index("g9x", "g93 index");
+    GvrsIndex("gvrx", "gvrs index");
 
     private final String extension;
     private final String identifier;
@@ -60,7 +60,7 @@ enum RasterFileType {
     }
 
     /**
-     * Gets the 3 character extension associated with this enumeration type.
+     * Gets the 4 character extension associated with this enumeration type.
      *
      * @return a valid string consisting of lowercase letters and numerals.
      */
@@ -69,11 +69,11 @@ enum RasterFileType {
     }
 
     /**
-     * Gets the identifier string that is embedded into g93 raster and
+     * Gets the identifier string that is embedded into gvrs raster and
      * raster-related files.
      *
      * @return a valid string consisting of lower case letters and numerals,
-     * beginning with the string "g93" and of maximum length 12 characters.
+     * beginning with the string "gvrs" and of maximum length 12 characters.
      */
     public final String getIdentifier() {
         return identifier;
