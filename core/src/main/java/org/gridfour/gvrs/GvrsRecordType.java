@@ -1,8 +1,9 @@
-/*
+/* --------------------------------------------------------------------
+ *
  * The MIT License
  *
- * Copyright 2019 gwluc.
- *
+ * Copyright (C) 2019  Gary W. Lucas.
+
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -20,6 +21,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
+ * ---------------------------------------------------------------------
  */
 
  /*
@@ -34,23 +36,44 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 /**
- * Used to represent the coder-decoders (codecs) that are defined for G93.
- * Others may be added by application code.
+ * Defines record types for non-tile records
  */
-public enum CodecType {
+public enum GvrsRecordType {
+
     /**
-     * The Huffman encoding is used to compress data.
+     * Data is stored using the Java 4-byte integer data type.
      */
-    G93_Huffman,
+    VariableLengthRecord(-1),
     /**
-     * The Deflate (GZIP) compression algorithm is used.
+     * An undefined record type
      */
-    G93_Deflate,
+    Undefined(-2);
+
+    final int codeValue;
+
+    GvrsRecordType(int codeValue) {
+        this.codeValue = codeValue;
+    }
+
     /**
-     * A non-lossy float format
+     * Gets the code value to be stored in a data file to indicate what
+     * data type was used for the non-compressed storage representation.
+     *
+     * @return gets an integer code value indicating the data type; used
+     * internally.
      */
-    G93_Float
+    public int getCodeValue() {
+        return codeValue;
+    }
+
+    static GvrsRecordType valueOf(int codeValue) {
+        if (codeValue == -1) {
+            return VariableLengthRecord;
+        } else {
+            return Undefined;
+        }
+    }
 }

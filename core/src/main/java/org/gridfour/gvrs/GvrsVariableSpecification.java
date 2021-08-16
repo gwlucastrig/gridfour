@@ -27,20 +27,20 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 /**
- * A package-scoped class for specifying variables in a G93 file.
+ * A package-scoped class for specifying variables in a GVRS file.
  */
-class G93VariableSpecification {
+class GvrsVariableSpecification {
 
-    final G93DataType dataType;
+    final GvrsDataType dataType;
     final float scale;
     final float offset;
     final String name;
 
-    G93VariableSpecification(
-        G93DataType dataType,
+    GvrsVariableSpecification(
+        GvrsDataType dataType,
         float scale,
         float offset,
         String name) {

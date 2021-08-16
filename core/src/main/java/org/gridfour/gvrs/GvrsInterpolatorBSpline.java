@@ -42,7 +42,7 @@
  * interpolations (and millions of interpolations is not an unusual workload).
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import java.io.IOException;
 import org.gridfour.interpolation.InterpolationResult;
@@ -50,7 +50,7 @@ import org.gridfour.interpolation.InterpolationTarget;
 import org.gridfour.interpolation.InterpolatorBSpline;
 
 /**
- * Performs interpolations over a G93 raster file using the classic B-Spline
+ * Performs interpolations over a GVRS raster file using the classic B-Spline
  * algorithm.
  * <p>
  * For geographic coordinates, logic is implemented to support cases where the
@@ -62,12 +62,12 @@ import org.gridfour.interpolation.InterpolatorBSpline;
  * <strong>Under development</strong> Module has undergone some testing and
  * seems to reliably compute correct values. Development is required to add more
  * more methods, including the computation of surface derivatives and proper
- * access to G93 files of dimension higher than 1.
+ * access to GVRS files of dimension higher than 1.
  */
-public class G93InterpolatorBSpline {
+public class GvrsInterpolatorBSpline {
 
-    private final G93File g93;
-    private final G93FileSpecification spec;
+    private final GvrsFile gvrs;
+    private final GvrsFileSpecification spec;
     private final int nRowsInRaster;
     private final int nColsInRaster;
     private final int dimension;
@@ -91,14 +91,14 @@ public class G93InterpolatorBSpline {
     private static final double rEarth = 6371007.2;
 
     /**
-     * Constructs an instance that will operate over the specified G93 File.
+     * Constructs an instance that will operate over the specified GVRS File.
      *
-     * @param g93 a valid G93 file opened for read access.
+     * @param gvrs a valid GVRS file opened for read access.
      * @throws java.io.IOException in the event of an I/O error
      */
-    public G93InterpolatorBSpline(G93File g93) throws IOException {
-        this.g93 = g93;
-        spec = g93.getSpecification();
+    public GvrsInterpolatorBSpline(GvrsFile gvrs) throws IOException {
+        this.gvrs = gvrs;
+        spec = gvrs.getSpecification();
         nRowsInRaster = spec.getRowsInGrid();
         nColsInRaster = spec.getColumnsInGrid();
         if (spec.getRowsInGrid() < 4 || spec.getColumnsInGrid() < 4) {
@@ -147,9 +147,9 @@ public class G93InterpolatorBSpline {
     public double z(double x, double y) throws IOException {
         double[] g;
         if (geoCoordinates) {
-            g = g93.mapGeographicToGrid(y, x);
+            g = gvrs.mapGeographicToGrid(y, x);
         } else {
-            g = g93.mapCartesianToGrid(x, y);
+            g = gvrs.mapCartesianToGrid(x, y);
         }
         double r = g[0];
         double c = g[1];
@@ -178,14 +178,14 @@ public class G93InterpolatorBSpline {
         double dx = du;
         double dy = dv;
         if (geoCoordinates) {
-            g = g93.mapGeographicToGrid(y, x);
+            g = gvrs.mapGeographicToGrid(y, x);
             double s = Math.cos(Math.toRadians(y));
             dx = s * du;
             if (dx < 1) {
                 dx = 1;
             }
         } else {
-            g = g93.mapCartesianToGrid(x, y);
+            g = gvrs.mapCartesianToGrid(x, y);
         }
         double row = g[0];
         double col = g[1];
@@ -238,9 +238,9 @@ public class G93InterpolatorBSpline {
     public double zTest(double x, double y, int index) throws IOException {
         double[] g;
         if (geoCoordinates) {
-            g = g93.mapGeographicToGrid(y, x);
+            g = gvrs.mapGeographicToGrid(y, x);
         } else {
-            g = g93.mapCartesianToGrid(x, y);
+            g = gvrs.mapCartesianToGrid(x, y);
         }
         double row = g[0];
         double col = g[1];
@@ -251,10 +251,10 @@ public class G93InterpolatorBSpline {
 
         int c0 = (col0 + nColsInRaster) % nColsInRaster;
         int c1 = (col0 + nColsInRaster + 1) % nColsInRaster;
-        double z0 = g93.readValue(row0, c0);
-        double z1 = g93.readValue(row0, c1);
-        double z2 = g93.readValue(row0 + 1, c0);
-        double z3 = g93.readValue(row0 + 1, c1);
+        double z0 = gvrs.readValue(row0, c0);
+        double z1 = gvrs.readValue(row0, c1);
+        double z2 = gvrs.readValue(row0 + 1, c0);
+        double z3 = gvrs.readValue(row0 + 1, c1);
 
         double y0 = (1 - ct) * z0 + ct * z1;
         double y1 = (1 - ct) * z2 + ct * z3;
@@ -270,7 +270,7 @@ public class G93InterpolatorBSpline {
             u = col - col0 - 1; // x parameter
             v = row - row0 - 1; // y parameter
 
-            return g93.readBlock(row0, col0, 4, 4);
+            return gvrs.readBlock(row0, col0, 4, 4);
 
         }
 
@@ -291,7 +291,7 @@ public class G93InterpolatorBSpline {
         u = col - col0 - 1; // x parameter
         v = row - row0 - 1; // y parameter
 
-        return g93.readBlock(row0, col0, 4, 4);
+        return gvrs.readBlock(row0, col0, 4, 4);
 
     }
 
@@ -308,14 +308,14 @@ public class G93InterpolatorBSpline {
             col0 = nColsForWrap - 1;
             n1 = 1;
             n2 = 3;
-            z1 = g93.readBlock(row0, col0, 4, n1);
-            z2 = g93.readBlock(row0, 0, 4, n2);
+            z1 = gvrs.readBlock(row0, col0, 4, n1);
+            z2 = gvrs.readBlock(row0, 0, 4, n2);
         } else {
             col0 = iCol - 1;
             n1 = nColsForWrap - col0;
             n2 = 4 - n1;
-            z1 = g93.readBlock(row0, col0, 4, n1);
-            z2 = g93.readBlock(row0, 0, 4, n2);
+            z1 = gvrs.readBlock(row0, col0, 4, n1);
+            z2 = gvrs.readBlock(row0, 0, 4, n2);
         }
         float[] z = new float[16 * dimension];
         for (int iVariable = 0; iVariable < dimension; iVariable++) {

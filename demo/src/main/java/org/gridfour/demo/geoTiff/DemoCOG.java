@@ -87,7 +87,7 @@ public class DemoCOG {
     /**
      * Reads the content of a TIFF file containing floating-point data and
      * stores
-     * the results to a G93 file.
+     * the results to a GVRS file.
      *
      * @param args the command line arguments giving the path to an input TIFF
      * file and other options for processing.

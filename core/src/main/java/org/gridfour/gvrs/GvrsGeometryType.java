@@ -36,7 +36,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 /**
  * Describes whether the geometry associated with each value in the
@@ -53,7 +53,7 @@ package org.gridfour.g93;
  * respect to the area of coverage), you may have to resort to guesswork
  * or use the "Unspecified" value of this enumeration.
  */
-public enum G93GeometryType {
+public enum GvrsGeometryType {
 
   /**
    * No specification was made for the raster cell geometry type.
@@ -70,7 +70,7 @@ public enum G93GeometryType {
 
   final int codeValue;
 
-  G93GeometryType(int codeValue) {
+  GvrsGeometryType(int codeValue) {
     this.codeValue = codeValue;
   }
 
@@ -85,7 +85,7 @@ public enum G93GeometryType {
     return codeValue;
   }
 
-  static G93GeometryType valueOf(int codeValue) {
+  static GvrsGeometryType valueOf(int codeValue) {
     switch (codeValue) {
       case 0:
         return Unspecified;

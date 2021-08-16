@@ -38,7 +38,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.ICompressionEncoder;
@@ -48,7 +48,7 @@ import java.util.List;
 
 /**
  * Provides specification strings related to the use of data encoders
- * and decoders in G93-formatted files.
+ * and decoders in Gvrs-formatted files.
  */
 class CodecSpecification {
 

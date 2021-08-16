@@ -1,4 +1,4 @@
 /**
- * Provides example code and tests of G93 file access
+ * Provides example code and tests of GVRS file access
  */
 package org.gridfour.demo.access;

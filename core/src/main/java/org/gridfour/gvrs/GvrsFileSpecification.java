@@ -36,7 +36,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import org.gridfour.compress.CodecDeflate;
 import org.gridfour.compress.CodecHuffman;
@@ -56,9 +56,9 @@ import org.gridfour.util.Angle;
 import static org.gridfour.util.GridfourConstants.INT4_NULL_CODE;
 
 /**
- * Provides a specification for creating G93File instances.
+ * Provides a specification for creating GvrsFile instances.
  */
-public class G93FileSpecification {
+public class GvrsFileSpecification {
 
     /**
      * The sub-version identifier to be used by all raster-file and related
@@ -168,19 +168,19 @@ public class G93FileSpecification {
     // are here to supportthe transition from the earlier version of the code
     // and are subject to change moving forward.
     int dimension = 1;
-    G93DataType dataType = G93DataType.INTEGER;
+    GvrsDataType dataType = GvrsDataType.INTEGER;
     float valueScale = 1;
     float valueOffset = 0;
     String variableName = "Variable:0";
     int standardTileSizeInBytes;
 
-    G93GeometryType geometryType
-        = G93GeometryType.Unspecified;
+    GvrsGeometryType geometryType
+        = GvrsGeometryType.Unspecified;
 
     List<CodecHolder> codecList = new ArrayList<>();
     List<String> codecIdentificationList = new ArrayList<>();
 
-    List<G93VariableSpecification> variableSpecifications = new ArrayList<>();
+    List<GvrsVariableSpecification> variableSpecifications = new ArrayList<>();
 
     private void addCodecSpec(String key, Class<?> codec) {
         CodecHolder spec
@@ -189,9 +189,9 @@ public class G93FileSpecification {
     }
 
     private void initDefaultCodecList() {
-        addCodecSpec(CodecType.G93_Huffman.toString(), CodecHuffman.class);
-        addCodecSpec(CodecType.G93_Deflate.toString(), CodecDeflate.class);
-        addCodecSpec(CodecType.G93_Float.toString(), CodecFloat.class);
+        addCodecSpec(CodecType.GvrsHuffman.toString(), CodecHuffman.class);
+        addCodecSpec(CodecType.GvrsDeflate.toString(), CodecDeflate.class);
+        addCodecSpec(CodecType.GvrsFloat.toString(), CodecFloat.class);
     }
 
     /**
@@ -243,7 +243,7 @@ public class G93FileSpecification {
     }
 
     /**
-     * Construct a specification for creating a G93 raster with the indicated
+     * Construct a specification for creating a GVRS raster with the indicated
      * dimensions.
      * <p>
      * If the number of rows or columns in a tile specification does not evenly
@@ -272,7 +272,7 @@ public class G93FileSpecification {
      * @param nRowsInTile the number of rows in the tiling scheme
      * @param nColumnsInTile the number of columns in the tiling scheme
      */
-    public G93FileSpecification(
+    public GvrsFileSpecification(
         int nRowsInRaster,
         int nColumnsInRaster,
         int nRowsInTile,
@@ -331,7 +331,7 @@ public class G93FileSpecification {
 
         standardTileSizeInBytes = dimension * nCellsInTile * dataType.getBytesPerSample();
         variableSpecifications.add(
-            new G93VariableSpecification(dataType,
+            new GvrsVariableSpecification(dataType,
                 valueScale,
                 valueOffset,
                 variableName));
@@ -342,7 +342,7 @@ public class G93FileSpecification {
      *
      * @param s a valid instance of SimpleRasterSpecification.
      */
-    public G93FileSpecification(G93FileSpecification s) {
+    public GvrsFileSpecification(GvrsFileSpecification s) {
         uuid = s.uuid;
         timeCreated = s.timeCreated;
         nRowsInRaster = s.nRowsInRaster;
@@ -384,7 +384,7 @@ public class G93FileSpecification {
         }
 
         variableSpecifications.addAll(s.variableSpecifications);
-        G93VariableSpecification vtemp = variableSpecifications.get(0);
+        GvrsVariableSpecification vtemp = variableSpecifications.get(0);
         dataType = vtemp.dataType;
         valueScale = vtemp.scale;
         valueOffset = vtemp.offset;
@@ -429,7 +429,7 @@ public class G93FileSpecification {
                 "Zero or negative dimension value not supported");
         }
         this.dimension = dimension;
-        dataType = G93DataType.INTEGER_CODED_FLOAT;
+        dataType = GvrsDataType.INTEGER_CODED_FLOAT;
         valueScale = scale;
         valueOffset = offset;
         variableName = "Variables";
@@ -438,7 +438,7 @@ public class G93FileSpecification {
         variableSpecifications.clear();
         for (int i = 0; i < dimension; i++) {
             variableSpecifications.add(
-                new G93VariableSpecification(dataType,
+                new GvrsVariableSpecification(dataType,
                     valueScale,
                     valueOffset,
                     "Variable: " + i));
@@ -456,7 +456,7 @@ public class G93FileSpecification {
                 "Zero or negative dimension value not supported");
         }
         this.dimension = dimension;
-        dataType = G93DataType.INTEGER;
+        dataType = GvrsDataType.INTEGER;
         valueScale = 1.0F;
         valueOffset = 0.0F;
         variableName = "Variables";
@@ -465,7 +465,7 @@ public class G93FileSpecification {
         variableSpecifications.clear();
         for (int i = 0; i < dimension; i++) {
             variableSpecifications.add(
-                new G93VariableSpecification(dataType,
+                new GvrsVariableSpecification(dataType,
                     valueScale,
                     valueOffset,
                     "Variable: " + i));
@@ -483,7 +483,7 @@ public class G93FileSpecification {
                 "Zero or negative dimension value not supported");
         }
         this.dimension = dimension;
-        dataType = G93DataType.FLOAT;
+        dataType = GvrsDataType.FLOAT;
         valueScale = 1.0F;
         valueOffset = 0.0F;
         variableName = "Variables";
@@ -492,7 +492,7 @@ public class G93FileSpecification {
         variableSpecifications.clear();
         for (int i = 0; i < dimension; i++) {
             variableSpecifications.add(
-                new G93VariableSpecification(dataType,
+                new GvrsVariableSpecification(dataType,
                     valueScale,
                     valueOffset,
                     "Variable: " + i));
@@ -717,7 +717,7 @@ public class G93FileSpecification {
     }
 
     /**
-     * Gets array of bytes of length 64, intended for writing a g93 Raster file.
+     * Gets array of bytes of length 64, intended for writing a gvrs Raster file.
      *
      * @return a valid array of length 64, potentially all zeros if empty.
      */
@@ -744,8 +744,8 @@ public class G93FileSpecification {
 
     /**
      * Gets the identification string associated with this specification and the
-     * G93File that is created from it. The identification is supplied by the
-     * application that creates a G93 file and is not required to be populated.
+     * GvrsFile that is created from it. The identification is supplied by the
+     * application that creates a GVRS file and is not required to be populated.
      *
      * @return a string of up to 64 characters, potentially null.
      */
@@ -760,7 +760,7 @@ public class G93FileSpecification {
      * data.
      * @throws IOException in the event of an unrecoverable I/O error
      */
-    public G93FileSpecification(BufferedRandomAccessFile braf) throws IOException {
+    public GvrsFileSpecification(BufferedRandomAccessFile braf) throws IOException {
         initDefaultCodecList();
 
         timeCreated = System.currentTimeMillis();
@@ -802,21 +802,21 @@ public class G93FileSpecification {
         for (int iDependent = 0; iDependent < dimension; iDependent++) {
             byte[] codeValue = new byte[4];
             braf.readFully(codeValue, 0, 4);
-            G93DataType vDataType = G93DataType.valueOf(codeValue[0]);
+            GvrsDataType vDataType = GvrsDataType.valueOf(codeValue[0]);
             // the three other bytes are spares.
             codeValue[0] = (byte) vDataType.getCodeValue();
             float vValueScale = braf.leReadFloat();
             float vValueOffset = braf.leReadFloat();
             braf.skipBytes(4);  // would be an integer or a float for the no-data value
             String vName = braf.readASCII(16);
-            G93VariableSpecification vSpec = new G93VariableSpecification(vDataType, vValueScale, vValueOffset, vName);
+            GvrsVariableSpecification vSpec = new GvrsVariableSpecification(vDataType, vValueScale, vValueOffset, vName);
             variableSpecifications.add(vSpec);
         }
 
         if (variableSpecifications.isEmpty()) {
             throw new IOException("Empty specification for variable definitions");
         }
-        G93VariableSpecification vtemp = variableSpecifications.get(0);
+        GvrsVariableSpecification vtemp = variableSpecifications.get(0);
         dataType = vtemp.dataType;
         valueScale = vtemp.scale;
         valueOffset = vtemp.offset;
@@ -824,7 +824,7 @@ public class G93FileSpecification {
 
         isExtendedFileSizeEnabled = braf.readBoolean();
         int geometryCode = braf.readUnsignedByte();
-        geometryType = G93GeometryType.valueOf(geometryCode);
+        geometryType = GvrsGeometryType.valueOf(geometryCode);
 
         braf.skipBytes(1); // available for future use
         int coordinateSystem = braf.readUnsignedByte();
@@ -845,12 +845,12 @@ public class G93FileSpecification {
         }
 
         // The source file may supply keys for compression encoder types.
-        // Some keys are part of the G93 specification, but others may
+        // Some keys are part of the GVRS specification, but others may
         // have been created by other applications.  If these applications
         // were written in Java, there may be a reference to a variable
-        // length record of type G93_Java_Codecs which may have given
+        // length record of type GVRS_Java_Codecs which may have given
         // classpath strings that can be used for loading codecs.  If the
-        // data was created by a non-Java application, there G93_Java_Codecs
+        // data was created by a non-Java application, there GVRS_Java_Codecs
         // element will probably not be supplied.
         int nCompressionSpecifications = braf.leReadInt();
         if (nCompressionSpecifications > 0) {
@@ -866,10 +866,10 @@ public class G93FileSpecification {
     }
 
     /**
-     * Writes the header for the G93File
+     * Writes the header for the GvrsFile
      *
      * @param braf the
-     * @param g93FileType
+     * @param gvrsFileType
      * @param majorVersion
      * @param minorVersion
      * @throws IOException
@@ -899,7 +899,7 @@ public class G93FileSpecification {
             braf.writeFully(codeValue, 0, codeValue.length);
             braf.leWriteFloat(valueScale);
             braf.leWriteFloat(valueOffset);
-            if (dataType == G93DataType.FLOAT) {
+            if (dataType == GvrsDataType.FLOAT) {
                 braf.leWriteFloat(Float.NaN);
             } else {
                 braf.leWriteInt(Integer.MIN_VALUE);
@@ -1045,7 +1045,7 @@ public class G93FileSpecification {
      * <p>
      * <strong>Warning:</strong>At this time the extended file size option is
      * not
-     * implemented by the G93File class.
+     * implemented by the GvrsFile class.
      *
      * @param extendedFileSizeEnabled true if extended file sizes are enabled;
      * otherwise false.
@@ -1058,7 +1058,7 @@ public class G93FileSpecification {
      * Maps the specified floating point value to the integer value that would
      * be
      * used for the internal representation of data when storing integral data.
-     * Normally, the G93File will convert floating point values to integers if
+     * Normally, the GvrsFile will convert floating point values to integers if
      * the
      * file is defined with an integer data type or if the data is being stored
      * in
@@ -1082,7 +1082,7 @@ public class G93FileSpecification {
     /**
      * Maps the specified integer value to the equivalent floating point value
      * as
-     * defined for the G93File.
+     * defined for the GvrsFile.
      * <p>
      * The transformation performed by this method is based on the parameters
      * established through the setValueTransform() method when the associated
@@ -1272,7 +1272,7 @@ public class G93FileSpecification {
      * described by the raster. If the geometry type is Area, the value at a row
      * and column is intended to represent the value for an entire cell centered
      * at the coordinates associated with the row and column. In either case,
-     * G93
+     * Gvrs
      * treats real-valued coordinates (Cartesian or geographic) as giving the
      * position at which the data value for a grid point exactly matches the
      * value
@@ -1280,7 +1280,7 @@ public class G93FileSpecification {
      *
      * @param geometryType a valid instance of the enumeration.
      */
-    public void setGeometryType(G93GeometryType geometryType) {
+    public void setGeometryType(GvrsGeometryType geometryType) {
         this.geometryType = geometryType;
     }
 
@@ -1289,7 +1289,7 @@ public class G93FileSpecification {
      *
      * @return a valid instance of the enumeration.
      */
-    public G93GeometryType getGeometryType() {
+    public GvrsGeometryType getGeometryType() {
         return geometryType;
     }
 
@@ -1363,10 +1363,10 @@ public class G93FileSpecification {
      * allows a maximum of 256 codecs.
      * Any existing codecs with the same codecID will be replaced.
      * <p>
-     * The codec class must implement both the interfaces IG93Encoder
-     * and IG93Decoder. It must also include an coder/decoder (e.g. a "codec")
+     * The codec class must implement both the interfaces IGvrsEncoder
+     * and IGvrsDecoder. It must also include an coder/decoder (e.g. a "codec")
      * that has a no-argument constructor that can be successfully invoked
-     * by the G93 classes..
+     * by the GVRS classes..
      *
      * @param codecID a unique identification following the syntax of Java
      * identifier strings, 16 character maximum.
@@ -1434,23 +1434,23 @@ public class G93FileSpecification {
      * specification. The specification allows a maximum of 256 codecs.
      * Any existing codecs with the same codecID will be replaced.
      * <p>
-     * The encoder class must implement the interfaces IG93Encoder
-     * interface. The decoder class must implement the IG93Decoder
+     * The encoder class must implement the interfaces IGvrsEncoder
+     * interface. The decoder class must implement the IGvrsDecoder
      * interface. Both classes must also include a no-argument constructor
-     * that can be successfully invoked by the G93 classes.
+     * that can be successfully invoked by the GVRS classes.
      * <p>
      * The rationale for specifying separate classes for the encoder and
      * decoder is that in some cases, the encoder may include substantially
      * more complexity (and library dependencies) than the decoder.
      * In such cases, it may be desirable to have some applications that
-     * can access compressed G93 files on a read-only basis. Such applications
+     * can access compressed GVRS files on a read-only basis. Such applications
      * may be able to operate correctly even though they do not include
      * all the libraries required for the encoding.
      *
      * @param codecID a unique identification following the syntax of Java
      * identifier strings, 16 character maximum.
-     * @param encoder a valid reference to a class that implements IG93Encoder.
-     * @param decoder a valid reference to a class that implements IG93Decoder.
+     * @param encoder a valid reference to a class that implements IGvrsEncoder.
+     * @param decoder a valid reference to a class that implements IGvrsDecoder.
      */
     public final void addCompressionCodec(
         String codecID, Class<?> encoder, Class<?> decoder) {
@@ -1534,12 +1534,12 @@ public class G93FileSpecification {
     }
 
     /**
-     * Gets an enumeration indicating the data type for the elements in the G93
+     * Gets an enumeration indicating the data type for the elements in the Gvrs
      * file.
      *
      * @return a valid enumeration.
      */
-    public G93DataType getDataType() {
+    public GvrsDataType getDataType() {
         return dataType;
     }
 
@@ -1592,10 +1592,10 @@ public class G93FileSpecification {
     }
 
     /**
-     * Gets the UUID assigned to this specification (and any G93 files derived
+     * Gets the UUID assigned to this specification (and any GVRS files derived
      * from it). The UUID is an arbitrary value automatically assigned to the
-     * specification. Its intended use it to allow G93 to correlate files of
-     * different types (such as the main G93 file and its associated index
+     * specification. Its intended use it to allow GVRS to correlate files of
+     * different types (such as the main GVRS file and its associated index
      * file).
      * <p>
      * Once established, the UUID is never modified.

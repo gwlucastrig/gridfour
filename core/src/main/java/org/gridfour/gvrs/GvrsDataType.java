@@ -36,12 +36,12 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 /**
  * Defines the possible representations of data stored in a simple-raster file.
  */
-public enum G93DataType {
+public enum GvrsDataType {
 
     /**
      * Data is stored using the Java 4-byte integer data type.
@@ -61,7 +61,7 @@ public enum G93DataType {
     final int codeValue;
     final int bytesPerSample;
 
-    G93DataType(int codeValue, int bytesPerSample) {
+    GvrsDataType(int codeValue, int bytesPerSample) {
         this.codeValue = codeValue;
         this.bytesPerSample = bytesPerSample;
     }
@@ -87,7 +87,7 @@ public enum G93DataType {
         return bytesPerSample;
     }
 
-    public static G93DataType valueOf(int codeValue) {
+    public static GvrsDataType valueOf(int codeValue) {
         switch (codeValue) {
             case 0:
                 return INTEGER;
@@ -102,7 +102,7 @@ public enum G93DataType {
 
     /**
      * Indicates whether this enumeration identifies an integer-based datatype
-     * for G93 data.
+     * for GVRS data.
      *
      * @return true if the identified data type is integral; otherwise, false.
      */

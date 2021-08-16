@@ -38,19 +38,19 @@ package org.gridfour.demo.access;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import org.gridfour.g93.G93CacheSize;
-import org.gridfour.g93.G93DataType;
-import org.gridfour.g93.G93File;
-import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.gvrs.GvrsCacheSize;
+import org.gridfour.gvrs.GvrsDataType;
+import org.gridfour.gvrs.GvrsFile;
+import org.gridfour.gvrs.GvrsFileSpecification;
 
 /**
- * A simple demonstration application that reads the entire content of a G93
+ * A simple demonstration application that reads the entire content of a Gvrs
  * file. Intended to test read operations and measure access time.
  */
-public class G93ReadPerformance {
+public class GvrsReadPerformance {
 
   File inputFile;
-  G93FileSpecification spec;
+  GvrsFileSpecification spec;
   int nRowsInRaster;
   int nColsInRaster;
   int nRowsInTile;
@@ -58,10 +58,10 @@ public class G93ReadPerformance {
   int nRowsOfTiles;
   int nColsOfTiles;
 
-  G93ReadPerformance(File inputFile) throws IOException {
+  GvrsReadPerformance(File inputFile) throws IOException {
     this.inputFile = inputFile;
-    try (G93File g93 = new G93File(inputFile, "r")) {
-      spec = g93.getSpecification();
+    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      spec = gvrs.getSpecification();
       nRowsInRaster = spec.getRowsInGrid();
       nColsInRaster = spec.getColumnsInGrid();
       nRowsInTile = spec.getRowsInTile();
@@ -81,7 +81,7 @@ public class G93ReadPerformance {
     }
     File file = new File(args[0]);
     ps.println("Reading file " + file.getPath());
-    G93ReadPerformance reader = new G93ReadPerformance(file);
+    GvrsReadPerformance reader = new GvrsReadPerformance(file);
 
     for (int iTest = 0; iTest < 3; iTest++) {
       reader.testRowMajorScan(ps);
@@ -97,17 +97,17 @@ public class G93ReadPerformance {
   }
 
   void testRowMajorScan(PrintStream ps) throws IOException {
-    try (G93File g93 = new G93File(inputFile, "r")) {
-      g93.setTileCacheSize(G93CacheSize.Large);
-      G93DataType dType = spec.getDataType();
+    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
+      GvrsDataType dType = spec.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.INTEGER) {
+      if (dType == GvrsDataType.INTEGER) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            int sample = g93.readIntValue(iRow, iCol);
+            int sample = gvrs.readIntValue(iRow, iCol);
             if (sample != Integer.MIN_VALUE) {
               sum += sample;
               nSample++;
@@ -121,7 +121,7 @@ public class G93ReadPerformance {
         double sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            float sample = g93.readValue(iRow, iCol);
+            float sample = gvrs.readValue(iRow, iCol);
             if (!Float.isNaN(sample)) {
               sum += sample;
               nSample++;
@@ -139,17 +139,17 @@ public class G93ReadPerformance {
   }
 
   void testColumnMajorScan(PrintStream ps) throws IOException {
-    try (G93File g93 = new G93File(inputFile, "r")) {
-      g93.setTileCacheSize(G93CacheSize.Large);
-      G93DataType dType = spec.getDataType();
+    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
+      GvrsDataType dType = spec.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.INTEGER) {
+      if (dType == GvrsDataType.INTEGER) {
         long sum = 0;
         for (int iCol = 0; iCol < nColsInRaster; iCol++) {
           for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-            int sample = g93.readIntValue(iRow, iCol);
+            int sample = gvrs.readIntValue(iRow, iCol);
             if (sample != Integer.MIN_VALUE) {
               sum += sample;
               nSample++;
@@ -163,7 +163,7 @@ public class G93ReadPerformance {
         double sum = 0;
         for (int iCol = 0; iCol < nColsInRaster; iCol++) {
           for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-            float sample = g93.readValue(iRow, iCol);
+            float sample = gvrs.readValue(iRow, iCol);
             if (!Float.isNaN(sample)) {
               sum += sample;
               nSample++;
@@ -181,16 +181,16 @@ public class G93ReadPerformance {
   }
 
   void testRowBlockScan(PrintStream ps) throws IOException {
-    try (G93File g93 = new G93File(inputFile, "r")) {
-      g93.setTileCacheSize(G93CacheSize.Large);
-      G93DataType dType = spec.getDataType();
+    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
+      GvrsDataType dType = spec.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == G93DataType.INTEGER) {
+      if (dType == GvrsDataType.INTEGER) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-          float[] block = g93.readBlock(iRow, 0, 1, nColsInRaster);
+          float[] block = gvrs.readBlock(iRow, 0, 1, nColsInRaster);
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
             float sample = block[iCol];
             if (!Float.isNaN(sample)) {
@@ -206,7 +206,7 @@ public class G93ReadPerformance {
         double sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            float sample = g93.readValue(iRow, iCol);
+            float sample = gvrs.readValue(iRow, iCol);
             if (!Float.isNaN(sample)) {
               sum += sample;
               nSample++;
@@ -224,8 +224,8 @@ public class G93ReadPerformance {
   }
 
   void testTileBlockScan(PrintStream ps) throws IOException {
-    try (G93File g93 = new G93File(inputFile, "r")) {
-      g93.setTileCacheSize(G93CacheSize.Small);
+    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      gvrs.setTileCacheSize(GvrsCacheSize.Small);
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
@@ -235,7 +235,7 @@ public class G93ReadPerformance {
         for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
           int row0 = iRow * nRowsInTile;
           int col0 = iCol * nColsInTile;
-          float[] block = g93.readBlock(row0, col0, nRowsInTile, nColsInTile);
+          float[] block = gvrs.readBlock(row0, col0, nRowsInTile, nColsInTile);
           for (float sample : block) {
             if (!Float.isNaN(sample)) {
               sum += sample;
@@ -255,8 +255,8 @@ public class G93ReadPerformance {
   }
 
   void testTileLoadTime(PrintStream ps) throws IOException {
-    try (G93File g93 = new G93File(inputFile, "r")) {
-      g93.setTileCacheSize(G93CacheSize.Small);
+    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      gvrs.setTileCacheSize(GvrsCacheSize.Small);
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
@@ -266,7 +266,7 @@ public class G93ReadPerformance {
         for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
           int row0 = iRow * nRowsInTile;
           int col0 = iCol * nColsInTile;
-          float sample = g93.readValue(row0 + 1, col0 + 1);
+          float sample = gvrs.readValue(row0 + 1, col0 + 1);
           if (!Float.isNaN(sample)) {
             sum += sample;
             nSample++;

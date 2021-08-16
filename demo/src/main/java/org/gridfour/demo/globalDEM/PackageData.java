@@ -44,10 +44,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
-import org.gridfour.g93.G93CacheSize;
-import org.gridfour.g93.G93DataType;
-import org.gridfour.g93.G93File;
-import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.gvrs.GvrsCacheSize;
+import org.gridfour.gvrs.GvrsDataType;
+import org.gridfour.gvrs.GvrsFile;
+import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.io.FastByteArrayOutputStream;
 import org.gridfour.lsop.LsCodecUtility;
 import ucar.ma2.Array;
@@ -57,14 +57,14 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 /**
- * A simple demonstration application showing how to create a G93 file from the
+ * A simple demonstration application showing how to create a GVRS file from the
  * ETOPO1 and GEBCO global elevation/bathymetry data sets. These data sets are
  * distributed in the NetCDF file format.
  */
 public class PackageData {
 
   private static String[] usage = {
-    "PackageData  -- create a G93 file from from ETOPO1 or GEBCO_2019 Global DEM files",
+    "PackageData  -- create a GVRS file from from ETOPO1 or GEBCO_2019 Global DEM files",
     "Arguments:",
     "   -in     <input_file_path>",
     "   -out    <output_file_path>",
@@ -108,7 +108,7 @@ public class PackageData {
   void process(PrintStream ps, TestOptions options, String[] args)
     throws IOException {
 
-    // The packaging of data in a G93 file can be thought of in terms of
+    // The packaging of data in a GVRS file can be thought of in terms of
     // the steps shown below.
     //
     //    0.  Obtain descriptive parameters about source data.  In this
@@ -117,16 +117,16 @@ public class PackageData {
     //        established in the earlier ExtractData.java demonstration
     //
     //    1.  Define the fixed metadata about the file (it's dimensions,
-    //        data type, tile organization, etc.) using a G93FileSpecification
+    //        data type, tile organization, etc.) using a GvrsFileSpecification
     //        object.
     //
-    //    2.  Open a new G93File object using the settings created in step 1.
+    //    2.  Open a new GvrsFile object using the settings created in step 1.
     //        Adjust any run-time parameters (such as the tile-cache size)
     //        according to the needs of the application.
     //
-    //    3.  Extract the data from its source and store in the G93 file.
+    //    3.  Extract the data from its source and store in the GVRS file.
     //
-    ps.format("%nG93 Packaging Application for NetCDF-format Global DEM files%n");
+    ps.format("%nGvrs Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
     SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
@@ -192,9 +192,9 @@ public class PackageData {
     int nRowsInTile = tileSize[0];
     int nColsInTile = tileSize[1];
 
-    // Initialize the specification used to initialize the G93 file -------
-    G93FileSpecification spec
-      = new G93FileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
+    // Initialize the specification used to initialize the GVRS file -------
+    GvrsFileSpecification spec
+      = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setIdentification(identification);
     spec.setCopyright("This data is in the public domain and may be used free of charge");
     spec.setDocumentControl("This data should not be used for navigation");
@@ -207,19 +207,19 @@ public class PackageData {
     float zScale = (float) options.getZScale();
     float zOffset = (float) options.getZOffset();
     DataType sourceDataType = z.getDataType();  // data type from NetCDF file
-    G93DataType g93DataType;
+    GvrsDataType gvrsDataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      g93DataType = G93DataType.INTEGER_CODED_FLOAT;
+      gvrsDataType = GvrsDataType.INTEGER_CODED_FLOAT;
       spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
     } else if (sourceDataType.isIntegral()) {
-      g93DataType = G93DataType.INTEGER;
+      gvrsDataType = GvrsDataType.INTEGER;
       spec.setDataModelInt(1);
     } else {
-      g93DataType = G93DataType.FLOAT;
+      gvrsDataType = GvrsDataType.FLOAT;
       spec.setDataModelFloat(1);
     }
-    ps.println("Source date type " + sourceDataType + ", stored as " + g93DataType);
+    ps.println("Source date type " + sourceDataType + ", stored as " + gvrsDataType);
     ps.println("");
 
     // Determine whether data compression is used -------------------
@@ -263,10 +263,10 @@ public class PackageData {
     double zMax = Double.NEGATIVE_INFINITY;
     double zSum = 0;
     long nSum = 0;
-    try (G93File g93 = new G93File(outputFile, spec)) {
-      g93.setTileCacheSize(G93CacheSize.Large);
-      g93.setIndexCreationEnabled(true);
-      storeGeoreferencingInformation(g93);
+    try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
+      gvrs.setIndexCreationEnabled(true);
+      storeGeoreferencingInformation(gvrs);
 
       // Initialize data-statistics collection ---------------------------
       // we happen to know the range of values for the global DEM a-priori.
@@ -308,12 +308,12 @@ public class PackageData {
         try {
           Array array = z.read(readOrigin, readShape);
           // Loop on each column, obtain the data from the NetCDF file
-          // and store it in the G93 file.
-          switch (g93DataType) {
+          // and store it in the GVRS file.
+          switch (gvrsDataType) {
             case INTEGER:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 int sample = array.getInt(iCol);
-                g93.storeIntValue(iRow, iCol, sample);
+                gvrs.storeIntValue(iRow, iCol, sample);
                 stats.addSample(sample);
                 if (sample < zMin) {
                   zMin = sample;
@@ -330,7 +330,7 @@ public class PackageData {
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
-                g93.storeValue(iRow, iCol, sample);
+                gvrs.storeValue(iRow, iCol, sample);
                 stats.addSample(sample);
                 if (sample < zMin) {
                   zMin = sample;
@@ -348,7 +348,7 @@ public class PackageData {
         }
       }
 
-      g93.flush();
+      gvrs.flush();
       long time1 = System.currentTimeMillis();
       double timeToProcess = (time1 - time0) / 1000.0;
       ps.format("Finished processing file in %4.1f seconds%n", timeToProcess);
@@ -360,7 +360,7 @@ public class PackageData {
         bitsPerSymbol);
 
       ps.format("%nSummary of file content and packaging actions------------%n");
-      g93.summarize(ps, true);
+      gvrs.summarize(ps, true);
       ps.format("Range of z values:%n");
       ps.format("  Min z: %8.3f%n", zMin);
       ps.format("  Max z: %8.3f%n", zMax);
@@ -375,12 +375,12 @@ public class PackageData {
       int[] readShape = new int[rank];
 
       ps.println("\nTesting product for data consistency with source");
-      ps.println("Opening g93 file for reading");
+      ps.println("Opening gvrs file for reading");
       long time0 = System.currentTimeMillis();
-      try (G93File g93 = new G93File(outputFile, "r")) {
+      try (GvrsFile gvrs = new GvrsFile(outputFile, "r")) {
         long time1 = System.currentTimeMillis();
         ps.println("Opening complete in " + (time1 - time0) + " ms");
-        g93.setTileCacheSize(G93CacheSize.Large);
+        gvrs.setTileCacheSize(GvrsCacheSize.Large);
         for (int iRow = 0; iRow < nRows; iRow++) {
           if (iRow % 10000 == 9999) {
             time1 = System.currentTimeMillis();
@@ -402,11 +402,11 @@ public class PackageData {
           readShape[1] = nCols;
           try {
             Array array = z.read(readOrigin, readShape);
-            switch (g93DataType) {
+            switch (gvrsDataType) {
               case INTEGER:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   int sample = array.getInt(iCol);
-                  int test = g93.readIntValue(iRow, iCol);
+                  int test = gvrs.readIntValue(iRow, iCol);
                   if (sample != test) {
                     ps.println("Failure at " + iRow + ", " + iCol);
                     System.exit(-1);
@@ -417,7 +417,7 @@ public class PackageData {
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
                   int sTest = (int) Math.floor(sample * zScale + 0.5);
-                  int test = g93.readIntValue(iRow, iCol);
+                  int test = gvrs.readIntValue(iRow, iCol);
                   if (sTest != test) {
                     ps.println("Failure at " + iRow + ", " + iCol);
                     System.exit(-1);
@@ -428,7 +428,7 @@ public class PackageData {
               default:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   float sample = array.getFloat(iCol);
-                  float test = g93.readValue(iRow, iCol);
+                  float test = gvrs.readValue(iRow, iCol);
                   if (sample != test) {
                     ps.println("Failure at " + iRow + ", " + iCol);
                     System.exit(-1);
@@ -442,7 +442,7 @@ public class PackageData {
 
         time1 = System.currentTimeMillis();
         ps.println("Exhaustive cross check complete in " + (time1 - time0) + " ms");
-        g93.summarize(System.out, false);
+        gvrs.summarize(System.out, false);
       }
 
     }
@@ -452,15 +452,15 @@ public class PackageData {
   }
 
   /**
-   * Stores a G93 Variable-Length Record (VLR) that gives coordinate/projection
+   * Stores a GVRS Variable-Length Record (VLR) that gives coordinate/projection
    * data in the Well-Known Text (WKT) format used in many GIS systems. This
    * setting will allow applications to find out what kind of coordinate system
-   * is stored in the G93 file using an industry-standard text format.
+   * is stored in the GVRS file using an industry-standard text format.
    *
-   * @param g93 a valid G93 file
+   * @param gvrs a valid GVRS file
    * @throws IOException in the event of an IO error
    */
-  void storeGeoreferencingInformation(G93File g93) throws IOException {
+  void storeGeoreferencingInformation(GvrsFile gvrs) throws IOException {
     // Note:  At this time, the Well-Known Text (WKT) data for this
     // demo may not be complete. In particular, it does not include the
     // TOWGS84 node (the "to WGS 1984" node which specifies transformations
@@ -477,8 +477,8 @@ public class PackageData {
     }
     b = fbaos.toByteArray();
 
-    g93.storeVariableLengthRecord(
-      "G93_Projection",
+    gvrs.storeVariableLengthRecord(
+      "GVRS_Projection",
       2111,
       "WKT Projection Metadata",
       b, 0, b.length, true);

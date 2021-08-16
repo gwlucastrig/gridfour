@@ -36,44 +36,35 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 /**
- * Defines record types for non-tile records
+ * Specifies the size of a tile cache for the SimpleRasterTile class. In
+ * general, large caches support faster data access but require more memory.
+ * Smaller caches conserve memory, but may result in reduced performance for
+ * data queries and storage.
  */
-public enum G93RecordType {
-
+public enum GvrsCacheSize {
     /**
-     * Data is stored using the Java 4-byte integer data type.
+     * The smallest cache size, makes conservative use of memory. May result in
+     * reduced
+     * performance compared to the larger cache sizes.
      */
-    VariableLengthRecord(-1),
+    Small,
     /**
-     * An undefined record type
+     * A moderate cache size providing better performance than the smaller size,
+     * though consuming additional memory, this setting is the default value.
      */
-    Undefined(-2);
-
-    final int codeValue;
-
-    G93RecordType(int codeValue) {
-        this.codeValue = codeValue;
-    }
-
+    Medium,
     /**
-     * Gets the code value to be stored in a data file to indicate what
-     * data type was used for the non-compressed storage representation.
-     *
-     * @return gets an integer code value indicating the data type; used
-     * internally.
+     * A larger cache size intended to support higher performance applications
+     * and
+     * creating new raster files. The large cache size will generally include
+     * enough tiles to span an entire row of tiles with a few more tiles added
+     * to
+     * improve transitions across portions of the data collection. This cache
+     * size is recommend when writing data and can also be beneficial when
+     * reading data.
      */
-    public int getCodeValue() {
-        return codeValue;
-    }
-
-    static G93RecordType valueOf(int codeValue) {
-        if (codeValue == -1) {
-            return VariableLengthRecord;
-        } else {
-            return Undefined;
-        }
-    }
+    Large;
 }

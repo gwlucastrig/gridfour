@@ -36,7 +36,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.g93;
+package org.gridfour.gvrs;
 
 import java.io.Closeable;
 import java.io.File;
@@ -56,14 +56,14 @@ import static org.gridfour.util.GridfourConstants.INT4_NULL_CODE;
 /**
  * Provides methods and data elements for managing raster data in a file.
  */
-public class G93File implements Closeable, AutoCloseable {
+public class GvrsFile implements Closeable, AutoCloseable {
 
     private final static long FILEPOS_MODIFICATION_TIME = 16;
     private final static long FILEPOS_OPEN_FOR_WRITING_TIME = 24;
     private final static long FILEPOS_OFFSET_TO_TILE_STORE = 32;
 
     private final File file;
-    private final G93FileSpecification spec;
+    private final GvrsFileSpecification spec;
     private final CodecMaster rasterCodec;
     private final BufferedRandomAccessFile braf;
     private boolean isClosed;
@@ -73,7 +73,7 @@ public class G93File implements Closeable, AutoCloseable {
 
     private long filePosTileStore;
 
-    private final G93TileStore tileStore;
+    private final GvrsTileStore tileStore;
     private final RasterTileCache tileCache;
 
     private class TileAccessElements {
@@ -110,10 +110,10 @@ public class G93File implements Closeable, AutoCloseable {
      *
      * @param file a valid file reference giving the path to a new output file
      * in a location with write access.
-     * @param specification a valid g93 raster specification
+     * @param specification a valid gvrs raster specification
      * @throws IOException in the event of an unrecoverable I/O error.
      */
-    public G93File(File file, G93FileSpecification specification)
+    public GvrsFile(File file, GvrsFileSpecification specification)
         throws IOException {
         if (file == null) {
             throw new IOException("Null file reference not supported");
@@ -133,15 +133,15 @@ public class G93File implements Closeable, AutoCloseable {
 
         this.openedForWriting = true;
         this.file = file;
-        this.spec = new G93FileSpecification(specification);
+        this.spec = new GvrsFileSpecification(specification);
         this.rasterCodec = new CodecMaster(specification.codecList);
         braf = new BufferedRandomAccessFile(file, "rw");
 
         timeModified = System.currentTimeMillis();
 
-        braf.writeASCII(RasterFileType.G93raster.getIdentifier(), 12);
-        braf.writeByte(G93FileSpecification.VERSION);
-        braf.writeByte(G93FileSpecification.SUB_VERSION);
+        braf.writeASCII(RasterFileType.GvrsRaster.getIdentifier(), 12);
+        braf.writeByte(GvrsFileSpecification.VERSION);
+        braf.writeByte(GvrsFileSpecification.SUB_VERSION);
         braf.writeByte(0); // reserved
         braf.writeByte(0); // reserved
 
@@ -168,7 +168,7 @@ public class G93File implements Closeable, AutoCloseable {
         braf.leWriteLong(filePosTileStore);
         braf.flush();
 
-        tileStore = new G93TileStore(spec, rasterCodec, braf, filePosTileStore);
+        tileStore = new GvrsTileStore(spec, rasterCodec, braf, filePosTileStore);
         tileCache = new RasterTileCache(spec, tileStore);
 
         List<CodecHolder> csList = spec.getCompressionCodecs();
@@ -176,7 +176,7 @@ public class G93File implements Closeable, AutoCloseable {
             String scratch = CodecHolder.formatSpecificationString(csList);
 
             storeVariableLengthRecord(
-                "G93_Java_Codecs",
+                "GVRS_Java_Codecs",
                 0,
                 "Class paths for Java compressors",
                 scratch.toString());
@@ -198,7 +198,7 @@ public class G93File implements Closeable, AutoCloseable {
      * Java RandomAccessFile class (valid values, "r", "rw", etc&#46;)
      * @throws IOException in the event of an unrecoverable I/O error
      */
-    public G93File(File file, String access) throws IOException {
+    public GvrsFile(File file, String access) throws IOException {
         if (file == null) {
             throw new IOException("Null file reference not supported");
         }
@@ -215,19 +215,19 @@ public class G93File implements Closeable, AutoCloseable {
         boolean writingEnabled = access.toLowerCase().contains("w");
 
         String identification = braf.readASCII(12);
-        if (!RasterFileType.G93raster.getIdentifier().equals(identification)) {
+        if (!RasterFileType.GvrsRaster.getIdentifier().equals(identification)) {
             throw new IOException("Incompatible file type " + identification);
         }
         int version = braf.readUnsignedByte();
         int subversion = braf.readUnsignedByte();
         braf.skipBytes(2); // unused, reserved bytes
-        if (version != G93FileSpecification.VERSION
-            || subversion != G93FileSpecification.SUB_VERSION) {
+        if (version != GvrsFileSpecification.VERSION
+            || subversion != GvrsFileSpecification.SUB_VERSION) {
             throw new IOException("Incompatible version " + version + "." + subversion
                 + ".  Expected "
-                + G93FileSpecification.VERSION
+                + GvrsFileSpecification.VERSION
                 + "."
-                + G93FileSpecification.SUB_VERSION);
+                + GvrsFileSpecification.SUB_VERSION);
         }
 
         timeModified = braf.leReadLong(); // time modified from old file
@@ -241,7 +241,7 @@ public class G93File implements Closeable, AutoCloseable {
 
         filePosTileStore = braf.leReadLong();
 
-        spec = new G93FileSpecification(braf);
+        spec = new GvrsFileSpecification(braf);
         if (spec.isExtendedFileSizeEnabled) {
             throw new IOException(
                 "Unable to access file with extended file size option set,"
@@ -256,7 +256,7 @@ public class G93File implements Closeable, AutoCloseable {
         }
 
         rasterCodec = new CodecMaster(spec.codecList);
-        tileStore = new G93TileStore(spec, rasterCodec, braf, filePosTileStore);
+        tileStore = new GvrsTileStore(spec, rasterCodec, braf, filePosTileStore);
         if (!readIndexFile(timeModified)) {
             tileStore.scanFileForTiles();
         }
@@ -266,7 +266,7 @@ public class G93File implements Closeable, AutoCloseable {
         List<CodecSpecification> codecSpecificationList = new ArrayList<>();
         List<VariableLengthRecord> vlrList = getVariableLengthRecords();
         for (VariableLengthRecord vlr : vlrList) {
-            if ("G93_Java_Codecs".equals(vlr.getUserId())) {
+            if ("GVRS_Java_Codecs".equals(vlr.getUserId())) {
                 byte[] codecBytes = vlr.readPayload();
                 String codecStr = new String(codecBytes);
                 codecSpecificationList
@@ -279,7 +279,7 @@ public class G93File implements Closeable, AutoCloseable {
 
     }
 
-    private void resolveCodecs(G93FileSpecification fileSpec, List<CodecSpecification> specList) throws IOException {
+    private void resolveCodecs(GvrsFileSpecification fileSpec, List<CodecSpecification> specList) throws IOException {
         List<String> identificationList = fileSpec.codecIdentificationList;
         // List<CodecHolder> holderList = fileSpec.codecList;
 
@@ -389,7 +389,7 @@ public class G93File implements Closeable, AutoCloseable {
      * @param analyze performs an analysis of compressed data
      */
     public void summarize(PrintStream ps, boolean analyze) {
-        ps.format("G93 Raster File:   " + file.getPath());
+        ps.format("Gvrs Raster File:   " + file.getPath());
         ps.println("");
 
         spec.summarize(ps);
@@ -428,14 +428,14 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Store an integer value in the g93 raster file. Because write operations
+     * Store an integer value in the gvrs raster file. Because write operations
      * are
      * buffered, this data may be retained in memory for some time before
      * actually
      * being written to the file. However, any data lingering in memory will be
      * recorded when the flush() or close() methods are called.
      * <p>
-     * The value G93FileConstants.NULL_DATA_CODE is reserved for the
+     * The value GvrsFileConstants.NULL_DATA_CODE is reserved for the
      * representation of null data.
      *
      * @param row a positive value in the range defined by the file
@@ -459,9 +459,9 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Read an integer value from the G93File. If no data exists for the
+     * Read an integer value from the GvrsFile. If no data exists for the
      * specified
-     * row and column, the value G93FileContants.NULL_DATA_CODE will be
+     * row and column, the value GvrsFileContants.NULL_DATA_CODE will be
      * returned.
      *
      * @param row a positive value in the range defined by the file
@@ -486,7 +486,7 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Store an floating-point value in the g93 raster file. Because write
+     * Store an floating-point value in the gvrs raster file. Because write
      * operations are buffered, this data may be retained in memory for some
      * time
      * before actually being written to the file. However, any data lingering in
@@ -515,7 +515,7 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Reads a floating-point value from the G93File. If no data exists for the
+     * Reads a floating-point value from the GvrsFile. If no data exists for the
      * specified row and column, the value Float.NaN will be returned.
      *
      * @param row a positive value in the range defined by the file
@@ -541,7 +541,7 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Stores an array of values in the g93 raster file. The array should be
+     * Stores an array of values in the gvrs raster file. The array should be
      * defined to be at least the size of the "dimension" value given in the
      * SimpleRasterSpecification used to create this file. Extra elements will
      * be
@@ -554,7 +554,7 @@ public class G93File implements Closeable, AutoCloseable {
      * lingering in memory will be recorded when the flush() or close() methods
      * are called.
      * <p>
-     * The value G93FileConstants.NULL_DATA_CODE is reserved for the
+     * The value GvrsFileConstants.NULL_DATA_CODE is reserved for the
      * representation of null data.
      *
      * @param row a positive value in the range defined by the file
@@ -582,7 +582,7 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Reads a floating-point value from the G93File. If no data exists for the
+     * Reads a floating-point value from the GvrsFile. If no data exists for the
      * specified row and column, the value Float.NaN will be returned. This
      * method
      * is intended to support cases where the file definition has a dimension
@@ -637,7 +637,7 @@ public class G93File implements Closeable, AutoCloseable {
      * @param cacheSize a valid instance
      * @throws IOException in the event of a non-recoverable I/P exception.
      */
-    public void setTileCacheSize(G93CacheSize cacheSize) throws IOException {
+    public void setTileCacheSize(GvrsCacheSize cacheSize) throws IOException {
         switch (cacheSize) {
             case Small:
                 setTileCacheSize(4);
@@ -654,13 +654,13 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Gets a safe copy of the g93 raster specification associated with this
+     * Gets a safe copy of the gvrs raster specification associated with this
      * file.
      *
      * @return a valid instance.
      */
-    public G93FileSpecification getSpecification() {
-        return new G93FileSpecification(spec);
+    public GvrsFileSpecification getSpecification() {
+        return new GvrsFileSpecification(spec);
     }
 
     /**
@@ -685,9 +685,9 @@ public class G93File implements Closeable, AutoCloseable {
         String extension;
         char c = name.charAt(extensionIndex + 1);
         if (Character.isLowerCase(c)) {
-            extension = RasterFileType.G93index.getExtension().toLowerCase();
+            extension = RasterFileType.GvrsIndex.getExtension().toLowerCase();
         } else if (Character.isUpperCase(c)) {
-            extension = RasterFileType.G93index.getExtension().toUpperCase();
+            extension = RasterFileType.GvrsIndex.getExtension().toUpperCase();
         } else {
             return null;
         }
@@ -715,9 +715,9 @@ public class G93File implements Closeable, AutoCloseable {
 
         BufferedRandomAccessFile idxraf
             = new BufferedRandomAccessFile(indexFile, "rw");
-        idxraf.writeASCII(RasterFileType.G93index.getIdentifier(), 12);
-        idxraf.writeByte(G93FileSpecification.VERSION);
-        idxraf.writeByte(G93FileSpecification.SUB_VERSION);
+        idxraf.writeASCII(RasterFileType.GvrsIndex.getIdentifier(), 12);
+        idxraf.writeByte(GvrsFileSpecification.VERSION);
+        idxraf.writeByte(GvrsFileSpecification.SUB_VERSION);
         idxraf.writeByte(0); // reserved
         idxraf.writeByte(0); // reserved
 
@@ -743,14 +743,14 @@ public class G93File implements Closeable, AutoCloseable {
             = new BufferedRandomAccessFile(indexFile, "r");) {
 
             String s = idxraf.readASCII(12);
-            if (!RasterFileType.G93index.getIdentifier().equals(s)) {
+            if (!RasterFileType.GvrsIndex.getIdentifier().equals(s)) {
                 throw new IOException("Improper identifier found in file "
                     + file.getPath() + ": " + s);
             }
             int version = idxraf.readUnsignedByte();
             int subVersion = idxraf.readUnsignedByte();
-            if (version != G93FileSpecification.VERSION
-                || subVersion != G93FileSpecification.SUB_VERSION) {
+            if (version != GvrsFileSpecification.VERSION
+                || subVersion != GvrsFileSpecification.SUB_VERSION) {
                 return false;
             }
             idxraf.skipBytes(2); // reserved
@@ -778,7 +778,7 @@ public class G93File implements Closeable, AutoCloseable {
      * Maps the specified floating point value to the integer value that would
      * be
      * used for the internal representation of data when storing integral data.
-     * Normally, the G93File will convert floating point values to integers if
+     * Normally, the GvrsFile will convert floating point values to integers if
      * the
      * file is defined with an integer data type or if the data is being stored
      * in
@@ -799,7 +799,7 @@ public class G93File implements Closeable, AutoCloseable {
     /**
      * Maps the specified integer value to the equivalent floating point value
      * as
-     * defined for the G93File.
+     * defined for the GvrsFile.
      * <p>
      * The transformation performed by this method is based on the parameters
      * established through the setValueTransform() method when the associated
@@ -902,7 +902,7 @@ public class G93File implements Closeable, AutoCloseable {
      * Adds a variable-length record (VLR) to the file. Variable-length records
      * are used to store application-defined metadata that is outside the scope
      * of
-     * the G93File format specification.
+     * the GvrsFile format specification.
      * <p>
      * The structure for VLRs is modeled on the VLR specification used for the
      * Lidar LAS file specification promulgated by the American Society for
@@ -973,7 +973,7 @@ public class G93File implements Closeable, AutoCloseable {
      * Adds a variable-length record (VLR) containt a text payload to the file.
      * Variable-length records are used to store application-defined metadata
      * that
-     * is outside the scope of the G93File format specification.
+     * is outside the scope of the GvrsFile format specification.
      *
      * @param userID an application-defined user ID string, an
      * application-defined
@@ -1014,7 +1014,7 @@ public class G93File implements Closeable, AutoCloseable {
     }
 
     /**
-     * Reads a block (sub-grid) of values from the G93 file based on the grid
+     * Reads a block (sub-grid) of values from the GVRS file based on the grid
      * row,
      * column, and block-size specifications. If successful, the return value
      * from

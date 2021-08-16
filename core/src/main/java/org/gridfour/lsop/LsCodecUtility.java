@@ -29,11 +29,11 @@
  */
 package org.gridfour.lsop;
 
-import org.gridfour.g93.G93FileSpecification;
+import org.gridfour.gvrs.GvrsFileSpecification;
 
 /**
  * Provides convenience methods for adding the LSOP encoder and decoder
- * to a G93 File Specification.
+ * to a GVRS File Specification.
  */
 public class LsCodecUtility {
 
@@ -46,19 +46,19 @@ public class LsCodecUtility {
 
     /**
      * A static method to adds the LS encoder and decoder classes to
-     * the G93 File Specification.
+     * the GVRS File Specification.
      * <p>
      * The exclusive option is intended for development and diagnostic
-     * purposes. It adjusts the G93FileSpecification so that the default
+     * purposes. It adjusts the GvrsFileSpecification so that the default
      * compressor codecs are removed (if any) and the Optimal Predictor
      * codecs are used exclusively.
      *
-     * @param spec a valid G93 file specification
+     * @param spec a valid GVRS file specification
      * @param exclusive a flag indicating whether Optimal Predictors are to be
      * used exclusively for data compression (true) or whether other compressor
      * codec are to be included.
      */
-    public static void addLsopToSpecification(G93FileSpecification spec, boolean exclusive) {
+    public static void addLsopToSpecification(GvrsFileSpecification spec, boolean exclusive) {
         if (exclusive) {
             spec.removeAllCompressionCodecs();
         }
