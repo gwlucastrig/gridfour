@@ -42,9 +42,9 @@ a number of tools for working with raster data, among them a data compression te
 inspired by the work of Kidner and Smith (1992). You can read more about them at our wiki page
 [GVRS Compression Algorithms](https://github.com/gwlucastrig/gridfour/wiki/GVRS-Compression-Algorithms).
 
-Of course, the state of the art has advanced quite a bit since 1993. And although
-the GVRS incorporates a number of old ideas, it is based on modern software design concepts
-and practices. We hope that our GVRS library will provide
+Of course, the state of the art has advanced quite a bit since 1993.
+And although the foundation for GVRS comes from old ideas, we hope you find that our API provides a fresh take on their implementation
+We intend out GVRS library to provide
 a convenient tool for investigators developing new techniques for compressing
 geophysical and scientific data in raster form. GVRS makes it very easy to
 extend the Gridfour code and add new data compression capabilities &#40; to see
