@@ -25,32 +25,34 @@ the processing of that data. In particular, we see a need for more efficient tec
 and data compression for grid data.  That need inspired us to create Gridfour.
 
 ## An Old Idea Made New
-<img src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2019 shaded-reflief rendering of Oahu" height="275" width="250" align="left"/>The first module created for the Gridfour Software Project
-is the Gridfour Virtual Raster System, a grid-based data
-compression and file management API.  The Gridfour's Virtual Raster System (GVRS)
+<img src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2019 shaded-reflief rendering of Oahu" height="275" width="250" align="left"/>
+The first module created for the Gridfour Software Project
+is the Gridfour Virtual Raster System (GVRS), a grid-based data
+compression and file management API. The GVRS module
 helps Java applications manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
 the persistent storage of data between runs. And, finally, it includes custom
 data compression that significantly reduces the storage size required for
 raster data. 
 
-Some of the algorithms used in GVRS have been around for a long time
-They were originally developed for a project named Gem93 that was
-completed in 1993.  Gem93 included 
+Some of the algorithms used in GVRS have been around for a long time.
+Our data compression techniques were originally developed for a project named
+Gem93 that was completed in 1993.  Gem93 included 
 a number of tools for working with raster data, among them a data compression technique
 inspired by the work of Kidner and Smith (1992). You can read more about them at our wiki page
 [GVRS Compression Algorithms](https://github.com/gwlucastrig/gridfour/wiki/GVRS-Compression-Algorithms).
 
 Of course, the state of the art has advanced quite a bit since 1993. And although
-the Gridfour is based on old ideas, we hope that our GVRS library will provide
+the GVRS incorporates a number of old ideas, it is based on modern software design concepts
+and practices. We hope that our GVRS library will provide
 a convenient tool for investigators developing new techniques for compressing
-geophysical and scientific data in raster form.  GVRS makes it very easy to
+geophysical and scientific data in raster form. GVRS makes it very easy to
 extend the Gridfour code and add new data compression capabilities &#40; to see
 just how easy it is, visit our wiki page on
 [Custom Data Compressors](https://github.com/gwlucastrig/gridfour/wiki/How-to-Register-a-Custom-Data-Compressor) &#41;.
-Our hope is that by providing this tool, investigators will be able to
-focus on their own research and leave the details of file-management to
-the GVRS tools.
+Our hope is that by providing GVRS, we will help investigators
+focus on their own research and leave the details of memory and file-management to
+the Gridfour API.
 
 ### Help Wanted ###
 We are finishing up the initial implementation of GVRS.  We are looking for
