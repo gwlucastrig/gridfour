@@ -57,11 +57,12 @@
                     could reasonably be kept in memory. It also provides a file-based utility for
                     the persistent storage of data between runs. And, finally, it includes custom
                     data compression that significantly reduces the storage size required for
-                    raster data. </p>
-                <p>Some of the algorithms used in GVRS have been around for a long time
+                    raster data.</p>
+
+                <p>Some of the data-compression algorithms used in GVRS have been around for a long time
                     They were originally developed for a project named Gem93 that was
                     completed in 1993. Gem93 included a number of tools for working with raster data, among them a lossless data compression technique
-                    inspired by the work of Kidner and Smith (1992). You can read more about them at our wiki page
+                    inspired by the work of Kidner and Smith (1992). You can read more about them at our project documentation
                     <a href="https://gwlucastrig.github.io/gridfour/notes/GridfourDataCompressionAlgorithms.html">Lossless Raster Compression Algorithms</a>.</p>
                 <p>Of course, the state of the art has advanced quite a bit since 1993. And although
                     the foundation for GVRS comes from old ideas, we hope you find that our API provides a fresh take
@@ -69,11 +70,11 @@
                     a convenient tool for investigators developing new techniques for compressing
                     geophysical and scientific data in raster form. GVRS makes it very easy to
                     extend the Gridfour code and add new data compression capabilities &#40; to see
-                    just how easy it is, visit our wiki page on
+                    just how easy it is, visit our wiki page at
                     <a href="https://github.com/gwlucastrig/gridfour/wiki/How-to-Register-a-Custom-Data-Compressor">Custom Data Compressors</a> &#41;.
-                    Our hope is that by providing this tool, investigators will be able to
-                    focus on their own research and leave the details of file-management to
-                    the GVRS tools.</p>
+                    Our hope is that by providing GVRS, we will help investigators
+                    focus on their own research and leave the details of memory and file-management to
+                    the Gridfour API.</p>
                 <h3 id="help-wanted">Help Wanted</h3>
                 <p>We are finishing up the initial implementation of GVRS. We are looking for
                     developers interested in porting it to additional languages
