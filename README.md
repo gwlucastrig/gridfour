@@ -31,7 +31,7 @@ is the Gridfour Virtual Raster System (GVRS), a grid-based data
 compression and file management API. The GVRS module
 helps Java applications manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
-the persistent storage of data between runs. And, finally, it includes custom
+the persistent storage of data between application sessions. And, finally, it includes custom
 data compression that significantly reduces the storage size required for
 raster data. 
 
@@ -39,8 +39,8 @@ Some of the algorithms used in GVRS have been around for a long time.
 Our data compression techniques were originally developed for a project named
 Gem93 that was completed in 1993.  Gem93 included 
 a number of tools for working with raster data, among them a data compression technique
-inspired by the work of Kidner and Smith (1992). You can read more about them at our wiki page
-[GVRS Compression Algorithms](https://github.com/gwlucastrig/gridfour/wiki/GVRS-Compression-Algorithms).
+inspired by the work of Kidner and Smith (1992). You can read more about them at our project documentation page
+[Gridfour Raster Data Compression Algorithms](https://gwlucastrig.github.io/gridfour/notes/GridfourDataCompressionAlgorithms.html).
 
 Of course, the state of the art has advanced quite a bit since 1993.
 And although the foundation for GVRS comes from old ideas, we hope you find that our API provides a fresh take on their implementation
@@ -78,7 +78,7 @@ GEBCO_2019 was one of the data sets used for the GVRS pilot project and a good e
 potential of systems like it.  Color-coding was based on elevation obtained from a GVRS file
 and shading was computed using the surface normal obtained with Gridfour's B-Spline raster interpolation class.
 The GVRS data compression reduces the size of this data set down to about 17.2 percent of
-its original size &#40;see [GVRS Performance](https://github.com/gwlucastrig/gridfour/wiki/GVRS-Performance)
+its original size &#40;see [GVRS Performance](https://gwlucastrig.github.io/gridfour/notes/GVRS_Performance.html)
 for more details &#41;. Future work may bring about more improvements.
 
 ![Gridfour shaded-relief rendering of Hokkaido, Japan](doc/images/hokkaido_hillshade_800_720_70_steep_10.jpg "Gridfour/GEBCO_2019 hillshade rendering of Hokkaido, Japan")

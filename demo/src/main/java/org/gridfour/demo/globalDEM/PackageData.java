@@ -126,7 +126,7 @@ public class PackageData {
     //
     //    3.  Extract the data from its source and store in the GVRS file.
     //
-    ps.format("%nGvrs Packaging Application for NetCDF-format Global DEM files%n");
+    ps.format("%nGVRS Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
     SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
