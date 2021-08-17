@@ -72,10 +72,11 @@
                 <p>Fortunately, when dealing with such large data sets, applications seldom
                     need to access the entire collection all at once. So an obvious solution
                     to the problem of memory use is to store the data on a file and load
-                    (or store) pieces of it on an as-needed basis. This approach is
-                    used in data formats such as the TIFF image specification which
-                    partition large grids into smaller, regularly sized sub-grids
-                    known as tiles (Adobe, 1992, pg. 68).</p>
+                    (or store) pieces of it on an as-needed basis. In essence, this approach
+                    follows the pattern of a classic virtual-memory management scheme (thus the "virtual" in "Virtual Raster").
+                    The Gridfour API allows applications to access cells in the grid in a seamless manner
+                    using an efficient cache mechanism to provide high-speed access to data.
+                    </p>
 
                 <p>The basic idea of tiling a grid can be seen in the image below. In this case,
                     a grid consisting of six rows and nine columns is divided into six 3-by-3 tiles.</p>
@@ -166,22 +167,22 @@
                     that might use the GVRS file.</p>
 
                 <pre>
-	NetcdfFile ncfile = NetcdfFile.open(filePathToSourceETOPO1);
-	Variable z = ncfile.findVariable("z");  // the NetCDF variable for reading values
+    NetcdfFile ncfile = NetcdfFile.open(filePathToSourceETOPO1);
+    Variable z = ncfile.findVariable("z");  // the NetCDF variable for reading values
 
-	int nRowsInGrid = 10800;  // spans 90 south to 90 north
-	int nColsInGrid = 21600;  // spans 180 west to 180 east
-	int nRowsInTile = 90;
-	int nColsInTile = 120;
+    int nRowsInGrid = 10800;  // spans 90 south to 90 north
+    int nColsInGrid = 21600;  // spans 180 west to 180 east
+    int nRowsInTile = 90;
+    int nColsInTile = 120;
 
-	// Create a specification for the overall grid and tiling.
-	GvrsFileSpecification spec
+    // Create a specification for the overall grid and tiling.
+    GvrsFileSpecification spec
             = new GvrsFileSpecification(nRowsInGrid, nColsInGrid, nRowsInTile, nColsInTile);
 
 
-	// Create a GVRS-formatted file for output
-	File outputFile = new File("ETOPO1.gvrs");
-	GvrsFile gvrsFile = new GvrsFile(outputFile, spec);
+    // Create a GVRS-formatted file for output
+    File outputFile = new File("ETOPO1.gvrs");
+    GvrsFile gvrsFile = new GvrsFile(outputFile, spec);
                 </pre>
 
                 <p>When a GVRS file is created, the metadata from the specification object is used to populate
@@ -196,28 +197,28 @@
                     row at a time.  This is the most efficient pattern for accessing the ETOPO1 file.</p>
 
                 <pre>
-	// initialize access specifications for NetCDF.
-	int[] readOrigin = new int[2];
-	int[] readShape = new int[2];
+    // initialize access specifications for NetCDF.
+    int[] readOrigin = new int[2];
+    int[] readShape = new int[2];
 
-	for (int iRow = 0; iRow < nRowsInGrid; iRow++) {
-		readOrigin[0] = iRow;
-		readOrigin[1] = 0;
-		readShape[0] = 1;
-		readShape[1] = nColsInGrid;
-		// Read one row of data from the NetCDF file.
-		// The data will be stored in a NetCDF "Array" object.
-		// Then loop on each column, obtain the elevation/bathymetry data
-		// and store it in GVRS.   ETOPO1 stores data as integers.
-		// GEBCO_2019 stores it as doubles.
-		Array array = z.read(readOrigin, readShape);.
-		for (int iCol = 0; iCol < nColsInGrid; iCol++) {
-			int sample = array.getInt(iCol);
-			gvrs.storeValue(iRow, iCol, sample);
-		}
-	}
-	gvrs.flush();
-	gvrs.close();
+    for (int iRow = 0; iRow < nRowsInGrid; iRow++) {
+        readOrigin[0] = iRow;
+        readOrigin[1] = 0;
+        readShape[0] = 1;
+        readShape[1] = nColsInGrid;
+        // Read one row of data from the NetCDF file.
+        // The data will be stored in a NetCDF "Array" object.
+        // Then loop on each column, obtain the elevation/bathymetry data
+        // and store it in GVRS.   ETOPO1 stores data as integers.
+        // GEBCO_2019 stores it as doubles.
+        Array array = z.read(readOrigin, readShape);.
+        for (int iCol = 0; iCol < nColsInGrid; iCol++) {
+            int sample = array.getInt(iCol);
+            gvrs.storeValue(iRow, iCol, sample);
+        }
+    }
+    gvrs.flush();
+    gvrs.close();
                 </pre>
 
                 <p>The snippet above would work just fine, except that it might be a little
@@ -252,11 +253,11 @@
                 <p>How much difference does the larger cache make?  With the default "Medium"
                     cache size, the time required to store ETOPO1 in uncompressed format was 237.2 seconds.
                     With the "Large" size setting, it was only 8.6 seconds. The use of a large cache can
-					also be useful when reading data. In testing, we compared the access time
-					using both a Medium and Large cache size
-					for reading the entire 233 million sample set from the GVRS-formatted version of ETOPO1.
-					Using the Medium cache, the read operation required 69.8 seconds. Using the Large cache,
-					the operation required only 3.6 seconds.</p>
+                    also be useful when reading data. In testing, we compared the access time
+                    using both a Medium and Large cache size
+                    for reading the entire 233 million sample set from the GVRS-formatted version of ETOPO1.
+                    Using the Medium cache, the read operation required 69.8 seconds. Using the Large cache,
+                    the operation required only 3.6 seconds.</p>
 
                 <p>Here it is worth emphasizing that the need for a larger cache size
                     is due to the pattern-of-access applied in packaging the data.
@@ -276,7 +277,7 @@
                     performance. The other setting of interest is</p>
 
                 <pre>
-	gvrs.setIndexCreationEnabled(boolean enabled);
+    gvrs.setIndexCreationEnabled(boolean enabled);
                 </pre>
 
                 <p>When writing data to a GVRS file, we have the option of telling GVRS to write
@@ -323,7 +324,7 @@
                 <pre>
     GvrsFileSpecification spec
             = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
-	double h = 1.0/60.0;  // one minute spacing, 1/60th of a degree
+    double h = 1.0/60.0;  // one minute spacing, 1/60th of a degree
     spec.setGeographicCoordinates(
              -90+h/2,   // south, first row in grid
             -180+h/2,   // west, first column in grid
@@ -367,11 +368,11 @@
                     to grid coordinates and vice versus.  These are shown below:</p>
 
                 <pre>
-	public double []mapGridToCartesian(double row, double column)   // returns x,y
-	public double []mapCartesianToGrid(double   x, double      y)
+    public double []mapGridToCartesian(double row, double column)   // returns x,y
+    public double []mapCartesianToGrid(double   x, double      y)
 
-	public double []mapGridToGeographic(double row, double column)  // returns lat, lon
-	public double []mapGeographicToGrid(double latitude, longitude)
+    public double []mapGridToGeographic(double row, double column)  // returns lat, lon
+    public double []mapGeographicToGrid(double latitude, longitude)
                 </pre>
 
                 <p>Note that the mapping functions may return and/or accept fractional values for the row
@@ -389,9 +390,9 @@
                 <p>The data type and dimension are specified using one of the following calls:</p>
 
                 <pre>
-	spec.setDataModelInt(  int dimension);
-	spec.setDataModelFloat(int dimension);
-	spec.setDataModelIntegerScaledFloat(int dimension,  double scale,  double offset);
+    spec.setDataModelInt(  int dimension);
+    spec.setDataModelFloat(int dimension);
+    spec.setDataModelIntegerScaledFloat(int dimension,  double scale,  double offset);
                 </pre>
 
                 <p>The scale and offset values specified as part of the integer-scaled-float model are used
@@ -407,8 +408,8 @@
                 <p>Scale and offset are treated as follows:</p>
 
                 <pre>
-	intValue = (floatValue-offset) * scale
-	floatValue = (intValue/scale) + offset
+    intValue = (floatValue-offset) * scale
+    floatValue = (intValue/scale) + offset
                 </pre>
 
                 <h2>Data Compression</h2>
@@ -474,8 +475,8 @@
                     processing and increases the time to process to 68.3 seconds. However, most data compression
                     techniques in use today require far less processing to decompress data than to compress it.
                     This generalization is also true for all the currently implemented Gridfour data compression utilities.
-					While it took over a minute to compress the ETOPO1 data, the time required to read
-					the entire 233 million points in the compressed data set was only 6.3 seconds.</p>
+                    While it took over a minute to compress the ETOPO1 data, the time required to read
+                    the entire 233 million points in the compressed data set was only 6.3 seconds.</p>
 
                 <p>Even though the integer-coded GEBCO x 1 and the ETOPO1 products represent elevations with the
                     same precision (as integral meters), the bits per-sample-value for GEBCO x 1
