@@ -27,11 +27,11 @@ and data compression for grid data.  That need inspired us to create Gridfour.
 ## An Old Idea Made New
 <img src="doc/images/oahu_250_70_steep_10.jpg" alt="Gridfour/GEBCO 2019 shaded-reflief rendering of Oahu" height="275" width="250" align="left"/>
 The first module created for the Gridfour Software Project
-is the Gridfour Virtual Raster System (GVRS), a grid-based data
-compression and file management API. The GVRS module
+is the Gridfour Virtual Raster Store (GVRS), a grid-based data
+compression and file management system. The GVRS module
 helps Java applications manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
-the persistent storage of data between application sessions. And, finally, it includes custom
+the persistent storage of data between application sessions anf for long-term archiving. And, finally, it includes custom
 data compression that significantly reduces the storage size required for
 raster data. 
 
