@@ -562,6 +562,100 @@ public class BufferedRandomAccessFile
     }
   }
 
+  
+   /**
+   * Reads an array of integers accessing them in little-endian order.
+   * @param array a valid, non-zero sized array
+   * @param arrayOffset the starting position within the array.
+   * @param length the number of values to read.
+   * @throws IOException in the event of an I/O error.
+   */
+  public void leReadShortArray(short[] array, int arrayOffset, int length)
+          throws IOException {
+    int offset = arrayOffset;
+    int nShortToRead = length;
+    if (length <= 0) {
+      return;
+    }
+
+    if (readDataIsInBuffer) {
+      int remaining = buffer.remaining();
+      int n = remaining / 2;
+      if (n >= nShortToRead) {
+        // The read can be fully satisfied by what's in the buffer
+        buffer.asShortBuffer().get(array, offset, nShortToRead);
+        buffer.position(buffer.position() + nShortToRead * 2);
+        virtualPosition += nShortToRead * 2;
+        return;
+      } else {
+        buffer.asShortBuffer().get(array, offset, n);
+        buffer.position(buffer.position() + n * 2);
+        offset += n;
+        nShortToRead -= n;
+        virtualPosition += n * 2;
+        remaining -= n * 2;
+        if (remaining == 0) {
+          buffer.clear();
+        } else {
+          buffer.compact();
+        }
+      }
+    } else {
+      // read data was not in buffer
+      if (writeDataIsInBuffer) {
+        flushWrite();
+      }
+      if (virtualPosition != truePosition) {
+        rafChannel.position(virtualPosition);
+        truePosition = virtualPosition;
+      }
+      buffer.clear();
+    }
+
+    while (true) {
+      if (virtualPosition >= virtualLength) {
+        throw new EOFException();
+      }
+
+      int nBytesRead = rafChannel.read(buffer);
+      if (nBytesRead < 0) {
+        throw new EOFException();
+      }
+      truePosition += nBytesRead;
+      buffer.flip();
+      readDataIsInBuffer = true;
+      truePosition += nBytesRead;
+
+      int remaining = buffer.remaining();
+      int n = remaining / 2;
+      if (n >= nShortToRead) {
+        buffer.asShortBuffer().get(array, offset, nShortToRead);
+        buffer.position(buffer.position() + nShortToRead * 2);
+        virtualPosition += nShortToRead * 2;
+        return;
+      }
+      buffer.asShortBuffer().get(array, offset, n);
+      buffer.position(buffer.position() + n * 2);
+      offset += n;
+      nShortToRead -= n;
+      virtualPosition += n * 2;
+      remaining -= n * 2;
+      if (remaining == 0) {
+        // because the size of the buffer is a multiple of 2
+        // this will pretty much always be the case.
+        buffer.clear();
+      } else {
+        buffer.compact();
+      }
+
+    }
+  }
+
+  
+  
+  
+  
+  
   /**
    * Reads one input byte and returns true if that byte is nonzero, false if
    * that byte is zero. This method is suitable for reading the byte written by

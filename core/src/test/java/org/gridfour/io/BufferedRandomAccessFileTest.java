@@ -233,4 +233,47 @@ public class BufferedRandomAccessFileTest {
 	}
   }
   
+  
+  @Test
+  public void testShortArray() throws Exception {
+    File tempFolder = tempDir.toFile();
+    File tempFile = new File(tempFolder, "Test.data");
+ 
+	// Test against Java's implementations to verify
+	// that BRAF correctly implements the short-array reading operation
+	short []sample = new short[1025];
+	try(
+		FileOutputStream fos = new FileOutputStream(tempFile);
+		BufferedOutputStream bos = new BufferedOutputStream(fos);
+		DataOutputStream dos = new DataOutputStream(bos);){
+		for(int i=0; i<sample.length; i++){
+			sample[i] = (short)(i-512);
+			// The Java DataOutputStream writes data in big-endian byte order.
+			// Gridfour will use little-endian.  So flip the bytes before storage.
+			int a = (sample[i]>>8)&0xff;
+			int b = sample[i]&0xff;
+			int s = (b<<8)|a; 
+			dos.writeShort(s); 
+		}
+	}catch(IOException ioex){
+		fail("IOException writing test file "+tempFile.getPath());
+	}
+	
+	short []result = new short[sample.length];
+	try(BufferedRandomAccessFile braf = new BufferedRandomAccessFile(tempFile, "r")){
+		braf.leReadShortArray(result, 0, sample.length);
+	}catch(IOException ioex){
+		fail("IOException reading test file "+tempFile.getPath());
+	}
+		
+	boolean status = tempFile.delete();
+	if(!status){
+		fail("Couldn't delete file");
+	}
+	
+	for(int i=0; i<sample.length; i++){
+		assertEquals(sample[i], result[i], "Error at index="+i);
+    }
+  }
+  
 }
