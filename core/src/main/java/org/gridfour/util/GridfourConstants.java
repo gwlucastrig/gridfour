@@ -52,11 +52,20 @@ public class GridfourConstants {
   }
 
   /**
-   * The null data value used for integer data representations, including cases
+   * The default null data value used for integer data representations, including cases
    * where floating-point values are converted to integer values in support of
    * data compression and other operations.
    * <p>
    * This constant is the minimum value for a four-byte signed integer.
    */
   public static final int INT4_NULL_CODE = Integer.MIN_VALUE;
+  
+    /**
+   * The default null data value used for short integer data representations.
+   * <p>
+   * This constant is the minimum value for a two-byte signed integer.
+   */
+  public static final short SHORT_NULL_CODE = Short.MIN_VALUE;
+  
+  
 }

@@ -212,8 +212,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
         this.file = file;
         braf = new BufferedRandomAccessFile(file, access);
-        boolean writingEnabled = access.toLowerCase().contains("w");
-
+        
         String identification = braf.readASCII(12);
         if (!RasterFileType.GvrsRaster.getIdentifier().equals(identification)) {
             throw new IOException("Incompatible file type " + identification);
@@ -248,7 +247,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
                 + " feature not implemented");
         }
 
-        if (access.contains("w")) {
+        boolean writingEnabled = access.toLowerCase().contains("w");
+        if (writingEnabled) {
             braf.seek(FILEPOS_OPEN_FOR_WRITING_TIME);
             braf.leWriteLong(System.currentTimeMillis());
             braf.flush();

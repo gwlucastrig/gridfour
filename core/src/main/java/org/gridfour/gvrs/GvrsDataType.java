@@ -44,7 +44,7 @@ package org.gridfour.gvrs;
 public enum GvrsDataType {
 
     /**
-     * Data is stored using the Java 4-byte integer data type.
+     * Data is stored using the Java 4-byte signed integer data type.
      */
     INTEGER(0, 4),
     /**
@@ -56,7 +56,12 @@ public enum GvrsDataType {
      * Data is stored using the Java 4-byte float data type, the IEEE-754
      * single-precision floating point format.
      */
-    FLOAT(2, 4);
+    FLOAT(2, 4),
+    
+      /**
+     * Data is stored using the Java 2-byte signed short data type.
+     */
+    SHORT(3, 2);
 
     final int codeValue;
     final int bytesPerSample;
@@ -95,6 +100,8 @@ public enum GvrsDataType {
                 return INTEGER_CODED_FLOAT;
             case 2:
                 return FLOAT;
+            case 3:
+              return SHORT;
             default:
                 return INTEGER;
         }
@@ -110,6 +117,7 @@ public enum GvrsDataType {
         switch (this) {
             case INTEGER:
             case INTEGER_CODED_FLOAT:
+            case SHORT:
                 return true;
             default:
                 return false;

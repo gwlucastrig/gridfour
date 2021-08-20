@@ -42,7 +42,6 @@ import java.util.zip.Deflater;
 import org.gridfour.compress.HuffmanEncoder;
 import org.gridfour.compress.ICompressionEncoder;
 import org.gridfour.io.BitOutputStore;
-import org.gridfour.util.GridfourConstants;
 
 /**
  * Provides methods and data elements used to encode raster data to be

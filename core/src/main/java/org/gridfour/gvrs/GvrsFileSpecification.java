@@ -473,6 +473,34 @@ public class GvrsFileSpecification {
     }
 
     /**
+     * Sets the data model to signed short integer with the specified dimension.
+     *
+     * @param dimension the dimension of the dependent variables for the raster.
+     */
+    public void setDataModelShort(int dimension) {
+        if (dimension < 1) {
+            throw new IllegalArgumentException(
+                "Zero or negative dimension value not supported");
+        }
+        this.dimension = dimension;
+        dataType = GvrsDataType.SHORT;
+        valueScale = 1.0F;
+        valueOffset = 0.0F;
+        variableName = "Variables";
+        standardTileSizeInBytes
+            = dimension * nRowsInTile * nColsInTile * dataType.getBytesPerSample();
+        variableSpecifications.clear();
+        for (int i = 0; i < dimension; i++) {
+            variableSpecifications.add(
+                new GvrsVariableSpecification(dataType,
+                    valueScale,
+                    valueOffset,
+                    "Variable: " + i));
+        }
+    }
+
+    
+    /**
      * Sets the data model to integer with the specified dimension.
      *
      * @param dimension the dimension of the dependent variables for the raster.

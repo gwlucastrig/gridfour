@@ -213,8 +213,9 @@ public class PackageData {
       gvrsDataType = GvrsDataType.INTEGER_CODED_FLOAT;
       spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
     } else if (sourceDataType.isIntegral()) {
-      gvrsDataType = GvrsDataType.INTEGER;
-      spec.setDataModelInt(1);
+      // elevations in meters fall within the range of a short integer
+      gvrsDataType = GvrsDataType.SHORT;
+      spec.setDataModelShort(1);
     } else {
       gvrsDataType = GvrsDataType.FLOAT;
       spec.setDataModelFloat(1);
@@ -310,7 +311,7 @@ public class PackageData {
           // Loop on each column, obtain the data from the NetCDF file
           // and store it in the GVRS file.
           switch (gvrsDataType) {
-            case INTEGER:
+            case SHORT:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 int sample = array.getInt(iCol);
                 gvrs.storeIntValue(iRow, iCol, sample);
@@ -403,7 +404,7 @@ public class PackageData {
           try {
             Array array = z.read(readOrigin, readShape);
             switch (gvrsDataType) {
-              case INTEGER:
+              case SHORT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   int sample = array.getInt(iCol);
                   int test = gvrs.readIntValue(iRow, iCol);

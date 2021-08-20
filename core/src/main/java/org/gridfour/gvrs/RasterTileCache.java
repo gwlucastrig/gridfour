@@ -163,6 +163,18 @@ class RasterTileCache {
                     spec.valueScale,
                     spec.valueOffset,
                     false);
+            break;
+          case SHORT:
+            tile = new RasterTileShort(
+              tileIndex,
+              tileRow,
+              tileCol,
+              spec.nRowsInTile,
+              spec.nColsInTile,
+              spec.dimension,
+              spec.valueScale,
+              spec.valueOffset,
+              false);
                 break;
             default:
                 throw new IOException(
@@ -224,7 +236,19 @@ class RasterTileCache {
                     spec.valueScale,
                     spec.valueOffset,
                     true);
-                break;
+               break;
+          case SHORT:
+            tile = new RasterTileShort(
+              tileIndex,
+              tileRow,
+              tileCol,
+              spec.nRowsInTile,
+              spec.nColsInTile,
+              spec.dimension,
+              spec.valueScale,
+              spec.valueOffset,
+              true);
+            break;
             default:
                 throw new IllegalArgumentException("Invalid data format specification "
                     + spec.dataType);
