@@ -633,8 +633,8 @@ public class GvrsFileSpecification {
      * last row of the raster.
      */
     public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
-        isGeographicCoordinateSystemSet = true;
-        isCartesianCoordinateSystemSet = false;
+        isGeographicCoordinateSystemSet = false;
+        isCartesianCoordinateSystemSet = true;
         geoWrapsLongitude = false;
         if (!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) {
             throw new IllegalArgumentException("Invalid floating-point value");
