@@ -103,7 +103,7 @@
                     of 1 minute of arc (about 1855 meters between points at the equator) and 15 seconds of arc
                     (about 463 meters between points) respectively. Both of these products were compiled from
                     multiple sources and cover the entire world in a single grid-based data file. The third source of
-                    test data is taken from the Shuttle Radar Topography Mission (SRTM).  The SRTM data is available
+                    test data is taken from the Shuttle Radar Topography Mission (SRTM). The SRTM data is available
                     in several thousand separate files. Each of these files covers a single one-degree square with
                     a resolution of 1 second of arc (about  30 meters spacing at the equator).</p>
 
@@ -111,15 +111,8 @@
                     the ETOPO1 and GEBCO 2020 data sets and an SRTM file.
                     The SRTM file includes the city of Paducah, Kentucky (KY) USA,
                     and was selected both because of its representative terrain. It was also selected because
-                    it was featured in Kidner & Smith's 2003 overview paper. As such, it provides
-                    a good basis for comparison between the their research results and the Gridfour implementation.
-                    Storage sizes are given in bits per sample (bps). The "savings" column shows
-                    the amount by which the output data file was reduced when the standard compression
-                    technique was supplemented with LSOP.
-                    The savings value for SRTM is smaller than that of the others because it is taken from only
-                    a single one-degree file. SRTM is, however, a global data set and there are more than 14 thousand
-                    such files in the overall collection. So the the small savings for a single file would
-                    be realized several thousands of times when applied to the entire data set.</p>
+                    it was featured in Kidner &#38; Smith's 2003 overview paper.
+                    Storage sizes are given in bits per sample (bps).</p>
 
                 <table>
                     <thead>
@@ -127,36 +120,36 @@
                             <th>Product</th>
                             <th>Grid Spacing</th>
                             <th>Cells in Grid</th>
-                            <th>Standard</th>
-                            <th>With LSOP</th>
-                            <th>Savings</th>
+                            <th>Uncompressed</th>
+                            <th>LSOP</th>
+                            <th>Reduction</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td> ETOPO1</td>
-                            <td>1 minute</td>
+                            <td>1 minute of arc</td>
                             <td>233 Million</td>
-                            <td>4.40 bps</td>
+                            <td>16 bps</td>
                             <td>3.66 bps</td>
-                            <td>20.6 MB</td>
+                            <td>22 %</td>
                         </tr>
                         <tr>
                             <td>GEBCO 2020 </td>
-                            <td>15 seconds </td>
+                            <td>15 seconds of arc </td>
                             <td>3.7 Billion</td>
-                            <td>3.08 bps </td>
+                            <td>16 bps </td>
                             <td>2.87 bps</td>
-                            <td>71.2 MB</td>
+                            <td>18 %</td>
                         </tr>
 
                         <tr>
                             <td>SRTM (Paducah, KY)</td>
-                            <td>1 second </td>
+                            <td>1 second of arc </td>
                             <td>12.9 Million</td>
-                            <td>2.23 bps </td>
+                            <td>16 bps </td>
                             <td>1.92 bps</td>
-                            <td>0.48 MB</td>
+                            <td>12 %</td>
                         </tr>
                     </tbody>
                 </table>
@@ -319,7 +312,7 @@
                 <p>Smith and Lewis used the classic method of Lagrange Multipliers to analyze a data set
                     and identify parameters for a predictor that were optimal in the sense that the mean error
                     of the residuals tended to zero. This feature led to output data set with statistical properties
-                    that made it well suited to data compression by convention data compression techniques.
+                    that made it well suited to data compression by conventional techniques such as Huffman coding or Deflate.
                     To see how Smith and Lewis’ Optimal Predictors work, we will begin with a simpler technique,
                     the Triangle Predictor, which was introduced by Kidner and Smith in 1993.</p>
 
