@@ -65,26 +65,26 @@
                     Therefore, I've tried to limit the discussion of Gridfour-specific elements to those
                     details that relate directly to creating a viable Optimal Predictor implementation.
                     Part 3 of the article concludes with a brief note on ideas for future work.</p>
-                    
+
                 <p>If you prefer, you can jump to the sections of interest using the following links.</p>
                 <ul>
                     <li><a class="box-link" href="#Part_1">Part 1: Optimal Predictors</a>
-                    <ul>
-                        <li><a class="box-link" href="#performance">Performance:</a>
-                               Indicates the performance you can expect using Optimal Predictors.</li>
-                        <li><a class="box-link" href="#theory">How it works:</a>
-                               Provides background concepts and theory for the technique.</li>
-                    </ul>
+                        <ul>
+                            <li><a class="box-link" href="#performance">Performance:</a>
+                                Indicates the performance you can expect using Optimal Predictors.</li>
+                            <li><a class="box-link" href="#theory">How it works:</a>
+                                Provides background concepts and theory for the technique.</li>
+                        </ul>
                     </li>
                     <li><a class="box-link" href="#Part_2">Part 2: Implementation Details</a>
-                    <ul>
-                        <li><a class="box-link" href="#design-and-layout">Design Choices and Storage Layout:</a>
-                        Describes the geometry used for the predictor and shows how storage elements are configured
-                        in the output data encoding.</li>
-                        <li><a class="box-link" href="#floating-point">Floating-point Operations:</a>
-                         Discusses how floating-point operations are implemented to ensure numeric stability and
-                         portability across different programming languages and operating systems.</li>
-                    </ul>
+                        <ul>
+                            <li><a class="box-link" href="#design-and-layout">Design Choices and Storage Layout:</a>
+                                Describes the geometry used for the predictor and shows how storage elements are configured
+                                in the output data encoding.</li>
+                            <li><a class="box-link" href="#floating-point">Floating-point Operations:</a>
+                                Discusses how floating-point operations are implemented to ensure numeric stability and
+                                portability across different programming languages and operating systems.</li>
+                        </ul>
                     </li>
                     <li><a class="box-link" href="#Part_3">Part 3: Future Work</a></li>
                     <li><a class="box-link" href="#references">References</a></li>
@@ -92,6 +92,27 @@
 
                 <a id="Part_1"><br></a>
                 <h1>Part 1: Optimal Predictors</h1>
+
+                <h2 id="performance">Predictors and Data Compression</h2>
+                <p>The idea of using a predictor to improve data compression is a well known concept.
+                    Basically, we consider that if we had a function that could predict the values in a
+                    data set with perfect accuracy, we could represent the data set with almost no
+                    storage space at all. In most cases, of course, the best we can hope for is a predictor
+                    that offers a <i>good approximation</i> of the values in a data set. But, armed with
+                    such a predictor, we don't need to store the data itself. Instead, we store a set of correction
+                    factors (residuals) that allow us to recover the original data values from the predictions.
+                    Given a good predictor, the magnitude and variability of these correction factors will be small.
+                    And a set of symbols with small magnitude and minimal variability is just the kind of
+                    data that lends itself well to conventional compression techniques such as Huffman Coding
+                    or the well-known Deflate algorithm. So, in a predictor-based compression technique,
+                    we don't store the actual data, but rather a set of prediction parameters (to drive
+                    the prediction function) and its associated correction factors.</p>
+
+                <p>Before we introduced Optimal Predictors to the Gridfour software library, it already
+                    included three simpler predictors: Differencing, Linear, and Triangle. These were described
+                    in an earlier article (see <a href="https://gwlucastrig.github.io/gridfour/notes/GridfourDataCompressionAlgorithms.html">Lucas, 2019</a>).
+                    While the library still includes these legacy predictors, the Optimal Predictor method usually yields
+                    better results.</p>
 
                 <h2 id="performance">Performance</h2>
                 <p>There are two factors to consider when assessing the performance of a data compression technique:
@@ -159,14 +180,20 @@
                     GVRS file format divides the overall collection into subsets called "tiles". For the test results
                     given above, the partitioning scheme was specified to use tiles 120 rows high and 240 columns wide.
                     Each tile is compressed independently. When a tile is compressed, the Gridfour library uses a <i>brute force</i>
-                    method for compressing the data: it reduces the tile using one of the three standard predictors
-                    (Differencing, Linear, and Triangle) and the compresses the residual values using either of
-                    the conventional data compression techniques Huffman coding or the Deflate algorithm. The compressed
+                    method for compressing the data: it reduces the tile using each of the three legacy predictors
+                    (Differencing, Linear, and Triangle) and the new Optimal Predictors method. Then, it choses the one
+                    that produces the best results. As part of this process, the prediction residuals are compressed using either
+                    Huffman coding or the Deflate algorithm. The compressed
                     sizes are compared and the combination that produces the best results is used to store data to
-                    a file. For this test, the LSOP predictor was added to the roster, and the same approach was applied.</p>
+                    a file.</p>
 
-                <p>The LSOP predictor proved to be the most effective predictor in 90.1 % of the tiles for ETOPO1
-                    and 53.7 % of the tiles for GEBCO_2020. For SRTM, LSOP was used in almost all cases</p>
+                <p>In some of our tests, the selection method chose to use one of the legacy predictors rather than the
+                   new LSOP method. The legacy methods do entail less overhead (fewer prediction parameters) than
+                   the LSOP method. So in areas where the data had low variability and could be predicted with similar accuracy by all four
+                   methods, LSOP did not offer a significant advantage. Thus, the choice of predictor
+                   reflected the nature of the data. The LSOP predictor
+                   proved to be the most effective predictor in 90.1 % of the tiles for ETOPO1 and 53.7 % of the tiles for GEBCO_2020.
+                   For SRTM, the method of Optimal Predictors was used in almost all cases</p>
 
                 <h3>Total Reduction for Storage Size</h3>
                 <p>The table above showed the savings when the supplemental Optimal Predictors technique was
