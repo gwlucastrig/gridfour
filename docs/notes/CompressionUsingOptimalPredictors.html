@@ -543,13 +543,21 @@
 
                 <img alt="Layout for neighbor values" src="images/OptimalPredictors/SLGrid_12x12.png" />
 
-                <p>On inspection, the layout illustrated in the figure above reveals that there are a small number of
-                    grid cells for which the Smith and Lewis algorithm cannot predict grid cells. In order to predict
-                    a value for grid cell P, the algorithm requires cells with known values to the left, beneath, and
-                    beneath right of P. As the predictor scans through the grid, it can produce values for cells
-                    in its interior, but there are a certain number of cells that it simply cannot reach. Therefore,
-                    an implementation of Optimal Predictors must include special logic for populating the
-                    unreachable cells.</p>
+                <p>One issue when working with any of the optimal predictor patterns is that they cannot be used to populate all
+                the cells in the grid. For example, to compute the value at the prediction point P, the 12-coefficient
+                pattern requires that there be two columns of populated cells to the left of P. It also 
+                requires populated cells immediately below the prediction point. So for the cells the lower-left corner
+                of the grid, there are no candidate locations from which pre-populated cells can be found.</p>
+                
+                <p>The figure below shows regions of the grid (in gray) that cannot be populated using the
+                12-coefficient predictor. We refer to the members of these regions as "uncovered cells".
+                As the figure illustrates, the predictor can be moved to a variety of positions in the grid,
+                but there are no valid positions that would allow the predictor to compute points
+                in the uncovered regions. The two columns on the left, two rows on the bottom, 
+                and two columns to the right are all uncovered. Therefore, an implementation of Optimal Predictors
+                must include alternate logic to pre-populate those cells before appling the 12-coefficient predictor.</p>
+
+                <img alt="Uncovered cells" src="images/OptimalPredictors/SLGrid_CoveredAndUncoveredCells.png" />
 
                 <p>The Gridfour implementation of the Smith and Lewis algorithm begins processing by using
                     its simpler predictors to prepopulate the first two rows and first two columns of the grid.
