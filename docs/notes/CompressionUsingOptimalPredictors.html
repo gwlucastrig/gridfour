@@ -316,8 +316,8 @@
                     For example, the ETOPO1 product described is organized into 5400 blocks of
                     43200 data samples each.  Adding the LSOP compression to the file resulted
                     in an increase in the time to read that data from 4.02 seconds to 8.15 seconds.
-                    Considering that the ETOPO1 data set contains over 233 million data,
-                    the fact that it required four extra seconds to unpack it does not seem onerous.
+                    Considering that the ETOPO1 data set contains over 233 million data points,
+                    the fact that the process required four extra seconds to unpack it does not seem onerous.
                 </p>
 
                 <p>Future work on the LSOP compression may involve exploring different coding techniques
@@ -539,7 +539,8 @@
                     requires solving a system of 13 linear equations. The linear algebra and matrix operations required to find
                     such a solution are not supported by the standard Java API. To perform these operations, the LSOP implementation
                     required that the core module incorporate a small number of classes from the public-domain
-                    <i>JAMA Java Matrix Project </i>(NIST, 2012).</p>
+                    <i>JAMA Java Matrix Project </i>(NIST, 2012). I note, however, that the matrix operations were required
+                    only for the compression operation. The decompression operation did not require any non-core Java math operations.</p>
 
                 <h2 id="design-and-layout">Design Choices and Storage Layout</h2>
 
