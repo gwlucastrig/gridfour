@@ -30,28 +30,31 @@
                 </p>
 
                 <h1>Introduction</h1>
-                <p>The Gridfour software library recently added a supplemental data compression module that
-                    offers a significant improvement in data compression ratios for its integer-based
-                    raster data sets. The implementation, which is designated LSOP, is based on
-                    the method of Optimal Predictors proposed by Smith and Lewis (1994).
-                    LSOP is a lossless data compression technique that offers good compression
-                    ratios and good data-access speeds.</p>
-
-                <p>Although the algorithm used by the LSOP compressor was described in 1994, it has been
+                <p>The method of Optimal Predictors is a lossless data compression technique that
+                    offers good compression ratios and good data-access speeds.
+                    Although the Optimal Predictors algorithm was described by Smith and Lewis in 1994, it has been
                     largely overshadowed by lossy techniques based on wavelets or the discrete
-                    cosine transform. But because it is lossless, Smith and Lewis' Optimal Predictor method
+                    cosine transform. But because it is lossless, the Optimal Predictor technique
                     has the advantage of preserving the exact values provided by its input data. This feature
-                    makes the compression technique suitable for archival, reference, and data-distribution
-                    applications. Optimal predictors also have the attractive characteristic of requiring
-                    a light processing load. By implementing the Optimal Predictor algorithm as part of
-                    its software library, the Gridfour project hopes to direct some overdue attention
+                    makes Optimal Predictors suitable for archival, reference, and data-distribution
+                    applications. The technique also has the attractive characteristic of requiring
+                    a light processing load.</p>
+
+                <p>This article describes the Optimal Predictors technique and provides test
+                    results from an implementation created for the Gridfour software project.
+                    Although the focus of this article is on the technique itself, the Gridfour module
+                    serves as an example of how to address some of the practical considerations
+                    involved in its implementation. By including a working demonstrating of Optimal Predictors
+                    as part of its software library, the Gridfour project hopes to direct some overdue attention
                     to this under appreciated technique.</p>
+
+
 
                 <p>The algorithm used by Smith and Lewis was published in <i>Computers &#38; Geosciences</i> (Smith &#38; Lewis, 1994),
                     but an earlier version of their paper (Lewis &#38; Smith, 1993) may be obtained without fee from the
                     <a href="https://cartogis.org/docs/proceedings/archive/auto-carto-11/pdf/optimal-predictors-for-the-data-compression-of-digital-elevation-models-using-the-method-of-lagrange-multipliers.pdf">Cartography and Geographic Information Society website</a>.
                     The Lewis &#38; Smith paper provided the basis for the implementation used for Gridfour. One of the paper's authors, Derek Smith,
-                    also contributed to an "overview" paper that gives much useful background on the ideas used
+                    also published an "overview" paper that gives much useful background on the ideas used
                     for data compression (see Kidner &#38; Smith, 2003).</p>
 
                 <h2>How this Article is Organized</h2>
@@ -65,6 +68,9 @@
                     Therefore, I've tried to limit the discussion of Gridfour-specific elements to those
                     details that relate directly to creating a viable Optimal Predictor implementation.
                     Part 3 of the article concludes with a brief note on ideas for future work.</p>
+
+                <p>For brevity, this article will sometimes refer to the Optimal Predictor technique
+                    and its Gridfour implementation using the acronymn LSOP for "Lewis-Smith Optimal Predictors".</p>
 
                 <p>If you prefer, you can jump to the sections of interest using the following links.</p>
                 <ul>
@@ -191,12 +197,12 @@
                     a file.</p>
 
                 <p>In some of our tests, the selection method chose to use one of the legacy predictors rather than the
-                   new LSOP method. The legacy methods do entail less overhead (fewer prediction parameters) than
-                   the LSOP method. So in areas where the data had low variability and could be predicted with similar accuracy by all four
-                   methods, LSOP did not offer a significant advantage. Thus, the choice of predictor
-                   reflected the nature of the data. The LSOP predictor
-                   proved to be the most effective predictor in 90.1 % of the tiles for ETOPO1 and 53.7 % of the tiles for GEBCO_2020.
-                   For SRTM, the method of Optimal Predictors was used in almost all cases</p>
+                    new LSOP method. The legacy methods do entail less overhead (fewer prediction parameters) than
+                    the LSOP method. So in areas where the data had low variability and could be predicted with similar accuracy by all four
+                    methods, LSOP did not offer a significant advantage. Thus, the choice of predictor
+                    reflected the nature of the data. The LSOP predictor
+                    proved to be the most effective predictor in 90.1 % of the tiles for ETOPO1 and 53.7 % of the tiles for GEBCO_2020.
+                    For SRTM, the method of Optimal Predictors was used in almost all cases</p>
 
                 <h3>Total Reduction for Storage Size</h3>
                 <p>The table above showed the savings when the supplemental Optimal Predictors technique was
@@ -544,18 +550,19 @@
                 <img alt="Layout for neighbor values" src="images/OptimalPredictors/SLGrid_12x12.png" />
 
                 <p>One issue when working with any of the optimal predictor patterns is that they cannot be used to populate all
-                the cells in the grid. For example, to compute the value at the prediction point P, the 12-coefficient
-                pattern requires that there be two columns of populated cells to the left of P. It also 
-                requires populated cells immediately below the prediction point. So for the cells the lower-left corner
-                of the grid, there are no candidate locations from which pre-populated cells can be found.</p>
-                
+                    the cells in the grid. For example, to compute the value at the prediction point P, the 12-coefficient
+                    pattern requires that there be two columns of populated cells to the left of P. But the first column in the
+                    grid does not have <i>any</i> populated cells to its left. And the second column only has one. So values for
+                    these two columns cannot be predicted using the 12-coefficient pattern. Similar limitations apply for
+                    the two bottom rows and the two right-side columns.</p>
+
                 <p>The figure below shows regions of the grid (in gray) that cannot be populated using the
-                12-coefficient predictor. We refer to the members of these regions as "uncovered cells".
-                As the figure illustrates, the predictor can be moved to a variety of positions in the grid,
-                but there are no valid positions that would allow the predictor to compute points
-                in the uncovered regions. The two columns on the left, two rows on the bottom, 
-                and two columns to the right are all uncovered. Therefore, an implementation of Optimal Predictors
-                must include alternate logic to pre-populate those cells before appling the 12-coefficient predictor.</p>
+                    12-coefficient predictor. We refer to the members of these regions as "uncovered cells".
+                    As the figure illustrates, the predictor can be moved to a variety of positions in the grid,
+                    but there are no valid positions that would allow the predictor to compute points
+                    in the uncovered regions. The two columns on the left, two rows on the bottom,
+                    and two columns to the right are all uncovered. Therefore, an implementation of Optimal Predictors
+                    must include alternate logic to pre-populate those cells before appling the 12-coefficient predictor.</p>
 
                 <img alt="Uncovered cells" src="images/OptimalPredictors/SLGrid_CoveredAndUncoveredCells.png" />
 
