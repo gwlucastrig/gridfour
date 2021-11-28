@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
@@ -141,8 +141,8 @@
                     <tbody>
                         <tr>
                             <td>Read</td>
-                            <td>80.2 M/s</td>
-                            <td>40.5 M/s</td>
+                            <td>106.1 M/s</td>
+                            <td>44.1 M/s</td>
                             <td>55.9 M/s</td>
                             <td>34.7 M/s</td>
                         </tr>
@@ -241,38 +241,39 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Row Blocks</td>
-                            <td>2.76</td>
-                            <td>5.52</td>
-                            <td>65.32</td>
-                            <td>103.47</td>
-                        </tr>
+
                         <tr>
                             <td>Row-Major</td>
-                            <td>2.91</td>
-                            <td>5.76</td>
+                            <td>2.22</td>
+                            <td>5.28</td>
                             <td>66.83</td>
                             <td>107.67</td>
                         </tr>
                         <tr>
                             <td>Column-Major</td>
-                            <td>3.29</td>
-                            <td>6.28</td>
+                            <td>2.49</td>
+                            <td>6.14</td>
                             <td>96.83</td>
                             <td>148.27</td>
                         </tr>
+                                                <tr>
+                            <td>Blocks of One Row</td>
+                            <td>0.53</td>
+                            <td>4.50</td>
+                            <td>65.32</td>
+                            <td>103.47</td>
+                        </tr>
                         <tr>
-                            <td>Tile Block</td>
-                            <td>1.80</td>
-                            <td>4.74</td>
+                            <td>Blocks of Full Tile</td>
+                            <td>0.65</td>
+                            <td>4.47</td>
                             <td>29.40</td>
                             <td>77.66</td>
                         </tr>
                         <tr>
                             <td>Tile Load</td>
-                            <td>0.53</td>
-                            <td>3.33</td>
+                            <td>0.27</td>
+                            <td>3.09</td>
                             <td>20.81</td>
                             <td>69.32</td>
                         </tr>
@@ -323,9 +324,8 @@
                     Row-Major alternative.</p>
                 <p>In theory, the block retrievals should be faster
                     than the single-point read operations because fewer calls result
-                    in less overhead. As the table above shows, the difference in the
-                    operations was detectable, but not especially impressive. This result suggests
-                    that the gvrs.readBlock() method may present opportunities for improvement.</p>
+                    in less overhead. As the table above shows, the test series confirms
+                    this idea.</p>
                 <h2 id="the-cost-of-reading-data-from-the-file">The Cost of Reading Data from the File</h2>
                 <p>The Tile Load test retrieves just one point for tile. Thus the run time for
                     the test is essentially just the time required to load read the individual tiles from
