@@ -46,13 +46,17 @@ import java.util.Date;
 import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
-import org.gridfour.gvrs.GvrsDataType;
+import org.gridfour.gvrs.GvrsElement;
+import org.gridfour.gvrs.GvrsElementInt;
+import org.gridfour.gvrs.GvrsElementSpecInt;
+import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.util.KahanSummation;
 
 /**
- * Provides a tool for obtaining an accurate value for the entropy of a GVRS file
+ * Provides a tool for obtaining an accurate value for the entropy of a GVRS
+ * file
  * (within the precision of conventional floating point representations)
  * <p>
  * Although this class does provide a main method, it can also be used within an
@@ -149,7 +153,8 @@ public class EntropyTabulator {
     GvrsFileSpecification countsSpec
       = new GvrsFileSpecification(65536, 65536, 256, 256);
     countsSpec.setDataCompressionEnabled(false);
-    countsSpec.setDataModelInt(1);
+    GvrsElementSpecInt countsElementSpec = new GvrsElementSpecInt("counts", 0);
+    countsSpec.addElementSpecification(countsElementSpec);
 
     try (GvrsFile source = new GvrsFile(inputFile, "r");
       GvrsFile counts = new GvrsFile(countsFile, countsSpec);) {
@@ -160,7 +165,10 @@ public class EntropyTabulator {
       int nColsOfTilesInSource = sourceSpec.getColumnsOfTilesInGrid();
       int nRowsInTile = sourceSpec.getRowsInTile();
       int nColsInTile = sourceSpec.getColumnsInTile();
-      GvrsDataType dataType = sourceSpec.getDataType();
+      GvrsElement sourceElement = source.getElements().get(0);
+      GvrsElementType sourceDataType = sourceElement.getDataType();
+      GvrsElement countsElement = counts.getElement("counts");
+      
       long nSamples = 0;
       long nSymbols = 0;
 
@@ -175,11 +183,13 @@ public class EntropyTabulator {
           countsFile.getPath());
         ps.flush();
       }
-      for (int iRow = 0; iRow < 65536; iRow++) {
-        for (int iCol = 0; iCol < 65535; iCol++) {
-          counts.storeIntValue(iRow, iCol, 0);
-        }
-      }
+      
+    // no longer needed because of the fill value
+    //  for (int iRow = 0; iRow < 65536; iRow++) {
+    //    for (int iCol = 0; iCol < 65535; iCol++) {
+    //      counts.storeIntValue(iRow, iCol, 0);
+    //    }
+    //  }
 
       // -----------------------------------------------------------------
       // Package the data
@@ -217,19 +227,17 @@ public class EntropyTabulator {
           for (int iRow = row0; iRow < row1; iRow++) {
             for (int iCol = col0; iCol < col1; iCol++) {
               int bits;
-//              if (dataType == GvrsDataType.Float4) {
-//                float sample = source.readValue(iRow, iCol);
-//                bits = Float.floatToRawIntBits(sample);
-//              } else {
-//                bits = source.readIntValue(iRow, iCol);
-//              }
-              float sample = source.readValue(iRow, iCol);
-              bits = Float.floatToRawIntBits(sample);
+              if (sourceDataType == GvrsElementType.FLOAT) {
+                float sample = sourceElement.readValue(iRow, iCol);
+                bits = Float.floatToRawIntBits(sample);
+              } else {
+                bits = sourceElement.readValueInt(iRow, iCol);
+              }
               long longIndex = ((long) bits) & 0x00ffffffffL;
               long longRow = longIndex / 65536L;
               long longCol = longIndex - longRow * 65536L;
-              int count = counts.readIntValue((int) longRow, (int) longCol);
-              counts.storeIntValue((int) longRow, (int) longCol, count + 1);
+              int count = countsElement.readValueInt((int) longRow, (int) longCol);
+              countsElement.writeValueInt((int) longRow, (int) longCol, count + 1);
               nSamples++;
               if (count == 0) {
                 nSymbols++;
@@ -268,7 +276,7 @@ public class EntropyTabulator {
           ps.flush();
         }
         for (int iCol = 0; iCol < 65536; iCol++) {
-          int count = counts.readIntValue(iRow, iCol);
+          int count = countsElement.readValueInt(iRow, iCol);
           if (count > 0) {
             double p = (double) count / nSamplesDouble;
             double s = -p * Math.log(p);
@@ -291,12 +299,13 @@ public class EntropyTabulator {
       time1 = System.currentTimeMillis();
       double timeToTabulate = (time1 - time0) / 1000.0;
       ps.format("Finished processing file in %4.1f seconds%n", timeToTabulate);
-      ps.format("Samples:          %12d%n", nSamples);
-      ps.format("Unique Symbols:   %12d%n", nUnique);
-      ps.format("Repeated Symbols: %12d%n", nRepeated);
-      ps.format("Total symbols:    %12d%n", nSymbols);
-      ps.format("Max count:        %12d%n", maxCount);
-      ps.format("Entropy:          %9.5f%n ", entropy);
+      ps.format("Size of Counts File %12d%n", countsFile.length());
+      ps.format("Samples:            %12d%n", nSamples);
+      ps.format("Unique Symbols:     %12d%n", nUnique);
+      ps.format("Repeated Symbols:   %12d%n", nRepeated);
+      ps.format("Total symbols:      %12d%n", nSymbols);
+      ps.format("Max count:          %12d%n", maxCount);
+      ps.format("Entropy:            %9.5f%n ", entropy);
     } catch (IOException ioex) {
       ps.println("IOException accessing " + inputFile.getPath() + ", " + ioex.getMessage());
       ioex.printStackTrace(ps);

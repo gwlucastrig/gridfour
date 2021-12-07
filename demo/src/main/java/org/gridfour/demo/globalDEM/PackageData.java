@@ -35,19 +35,29 @@
  * -----------------------------------------------------------------------
  */
 package org.gridfour.demo.globalDEM;
-
+ 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
-import org.gridfour.gvrs.GvrsDataType;
+import org.gridfour.gvrs.GvrsElement;
+ 
+import org.gridfour.gvrs.GvrsElementSpec;
+import org.gridfour.gvrs.GvrsElementSpecFloat;
+ 
+import org.gridfour.gvrs.GvrsElementSpecIntCodedFloat;
+import org.gridfour.gvrs.GvrsElementSpecShort;
+import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
+import org.gridfour.gvrs.GvrsMetadata;
+import org.gridfour.gvrs.GvrsMetadataEnum;
 import org.gridfour.io.FastByteArrayOutputStream;
 import org.gridfour.lsop.LsCodecUtility;
 import ucar.ma2.Array;
@@ -57,20 +67,21 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 /**
- * A simple demonstration application showing how to create a GVRS file from the
+ * A simple demonstration application showing how to create a Gvrs file from the
  * ETOPO1 and GEBCO global elevation/bathymetry data sets. These data sets are
  * distributed in the NetCDF file format.
  */
 public class PackageData {
 
   private static String[] usage = {
-    "PackageData  -- create a GVRS file from from ETOPO1 or GEBCO_2019 Global DEM files",
+    "PackageData  -- create a Gvrs file from from ETOPO1 or GEBCO_2019 Global DEM files",
     "Arguments:",
     "   -in     <input_file_path>",
     "   -out    <output_file_path>",
     "   -zScale <value>  apply a scale factor for data compression",
     "   -tileSize <###x###> n_rows and n_columns of tile (i.e. 90x120)",
     "   -compress (-nocompress)  Apply compression to file (default: false)",
+    "   -checksums (-nochecksums) Compute checksums (default: false)",
     "   -verify (-noconfirm)     Verify that output is correct (default: false)",
     "   -lsop (-nolsop)            Enable LS encoder when compressing data (default:false)",
     "Note: the zScale option instructs the packager to use the",
@@ -108,7 +119,7 @@ public class PackageData {
   void process(PrintStream ps, TestOptions options, String[] args)
     throws IOException {
 
-    // The packaging of data in a GVRS file can be thought of in terms of
+    // The packaging of data in a Gvrs file can be thought of in terms of
     // the steps shown below.
     //
     //    0.  Obtain descriptive parameters about source data.  In this
@@ -124,9 +135,9 @@ public class PackageData {
     //        Adjust any run-time parameters (such as the tile-cache size)
     //        according to the needs of the application.
     //
-    //    3.  Extract the data from its source and store in the GVRS file.
+    //    3.  Extract the data from its source and store in the Gvrs file.
     //
-    ps.format("%nGVRS Packaging Application for NetCDF-format Global DEM files%n");
+    ps.format("%nGvrs Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
     SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
@@ -134,10 +145,10 @@ public class PackageData {
 
     String inputPath = options.getInputFile().getPath();
     File outputFile = options.getOutputFile();
-    if(outputFile==null){
-        ps.format("Missing specification for output file%n");
-        ps.format("Packaging application terminated%n");
-        return;
+    if (outputFile == null) {
+      ps.format("Missing specification for output file%n");
+      ps.format("Packaging application terminated%n");
+      return;
     }
     ps.format("Input file:  %s%n", inputPath);
     ps.format("Output file: %s%n", outputFile.getPath());
@@ -192,12 +203,10 @@ public class PackageData {
     int nRowsInTile = tileSize[0];
     int nColsInTile = tileSize[1];
 
-    // Initialize the specification used to initialize the GVRS file -------
+    // Initialize the specification used to initialize the Gvrs file -------
     GvrsFileSpecification spec
       = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setIdentification(identification);
-    spec.setCopyright("This data is in the public domain and may be used free of charge");
-    spec.setDocumentControl("This data should not be used for navigation");
 
     // Initialize the data type.  If a zScale option was specified,
     // use integer-coded floats.  Otherwise, pick the data type
@@ -207,25 +216,33 @@ public class PackageData {
     float zScale = (float) options.getZScale();
     float zOffset = (float) options.getZOffset();
     DataType sourceDataType = z.getDataType();  // data type from NetCDF file
-    GvrsDataType gvrsDataType;
+    GvrsElementSpec elementSpec = null;
+    GvrsElementType gvrsDataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      gvrsDataType = GvrsDataType.INTEGER_CODED_FLOAT;
-      spec.setDataModelIntegerScaledFloat(1, zScale, zOffset);
+      elementSpec = new GvrsElementSpecIntCodedFloat("z", zScale, zOffset);
+      spec.addElementSpecification(elementSpec);
+      gvrsDataType = GvrsElementType.INTEGER_CODED_FLOAT;
     } else if (sourceDataType.isIntegral()) {
-      // elevations in meters fall within the range of a short integer
-      gvrsDataType = GvrsDataType.SHORT;
-      spec.setDataModelShort(1);
+      elementSpec = new GvrsElementSpecShort("z");
+      spec.addElementSpecification(elementSpec);
+      gvrsDataType = GvrsElementType.SHORT;
     } else {
-      gvrsDataType = GvrsDataType.FLOAT;
-      spec.setDataModelFloat(1);
+      elementSpec = new GvrsElementSpecFloat("z");
+      spec.addElementSpecification(elementSpec);
+      gvrsDataType = GvrsElementType.FLOAT;
     }
+    elementSpec.setDescription("Elevation (positive values) or depth (negative), in meters");
+    elementSpec.setUnitOfMeasure("m");
+
     ps.println("Source date type " + sourceDataType + ", stored as " + gvrsDataType);
     ps.println("");
 
     // Determine whether data compression is used -------------------
     boolean compressionEnabled = options.isCompressionEnabled();
     spec.setDataCompressionEnabled(compressionEnabled);
+    boolean checksumsEnaled = options.isChecksumComputationEnabled();
+    spec.setChecksumEnabled(checksumsEnaled);
 
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
 
@@ -265,6 +282,14 @@ public class PackageData {
     double zSum = 0;
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
+      GvrsMetadata copyright = GvrsMetadataEnum.Copyright.newInstance();
+      copyright.setString("This data is in the public domain and may be used free of charge");
+      gvrs.writeMetadata(copyright);
+      GvrsMetadata instructionsForUse = GvrsMetadataEnum.InstructionsForUse.newInstance();
+      instructionsForUse.setString("This data should not be used for navigation");
+      gvrs.writeMetadata(instructionsForUse);
+
+      GvrsElement zElement = gvrs.getElement("z");
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
       gvrs.setIndexCreationEnabled(true);
       storeGeoreferencingInformation(gvrs);
@@ -309,12 +334,13 @@ public class PackageData {
         try {
           Array array = z.read(readOrigin, readShape);
           // Loop on each column, obtain the data from the NetCDF file
-          // and store it in the GVRS file.
+          // and store it in the Gvrs file.
           switch (gvrsDataType) {
+            case INTEGER:
             case SHORT:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 int sample = array.getInt(iCol);
-                gvrs.storeIntValue(iRow, iCol, sample);
+                zElement.writeValueInt(iRow, iCol, sample);
                 stats.addSample(sample);
                 if (sample < zMin) {
                   zMin = sample;
@@ -331,7 +357,7 @@ public class PackageData {
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
                 float sample = array.getFloat(iCol);
-                gvrs.storeValue(iRow, iCol, sample);
+                zElement.writeValue(iRow, iCol, sample);
                 stats.addSample(sample);
                 if (sample < zMin) {
                   zMin = sample;
@@ -379,8 +405,15 @@ public class PackageData {
       ps.println("Opening gvrs file for reading");
       long time0 = System.currentTimeMillis();
       try (GvrsFile gvrs = new GvrsFile(outputFile, "r")) {
+        GvrsMetadata m = gvrs.readMetadata("Copyright", 0);
+        if (m != null) {
+          System.out.println("Copyright: " + m.getString());
+        }
+        GvrsElement zElement = gvrs.getElement("z");
+        System.out.println("Element " + zElement.getName() + ", " + zElement.getDescription());
         long time1 = System.currentTimeMillis();
         ps.println("Opening complete in " + (time1 - time0) + " ms");
+        System.out.println("  Element: " + zElement);
         gvrs.setTileCacheSize(GvrsCacheSize.Large);
         for (int iRow = 0; iRow < nRows; iRow++) {
           if (iRow % 10000 == 9999) {
@@ -404,12 +437,13 @@ public class PackageData {
           try {
             Array array = z.read(readOrigin, readShape);
             switch (gvrsDataType) {
-              case SHORT:
+              case INTEGER:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   int sample = array.getInt(iCol);
-                  int test = gvrs.readIntValue(iRow, iCol);
+                  int test = zElement.readValueInt(iRow, iCol);
                   if (sample != test) {
                     ps.println("Failure at " + iRow + ", " + iCol);
+                    test = zElement.readValueInt(iRow, iCol);
                     System.exit(-1);
                   }
                 }
@@ -417,9 +451,11 @@ public class PackageData {
               case INTEGER_CODED_FLOAT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
-                  int sTest = (int) Math.floor(sample * zScale + 0.5);
-                  int test = gvrs.readIntValue(iRow, iCol);
-                  if (sTest != test) {
+                  int iSample = (int) ((sample - zOffset) * zScale + 0.5);
+                  float fSample = iSample / zScale + zOffset;
+                  float test = zElement.readValue(iRow, iCol);
+                  double delta = Math.abs(fSample - test);
+                  if (delta > 1.01 / zScale) {
                     ps.println("Failure at " + iRow + ", " + iCol);
                     System.exit(-1);
                   }
@@ -429,9 +465,10 @@ public class PackageData {
               default:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   float sample = array.getFloat(iCol);
-                  float test = gvrs.readValue(iRow, iCol);
+                  float test = zElement.readValue(iRow, iCol);
                   if (sample != test) {
                     ps.println("Failure at " + iRow + ", " + iCol);
+                    test = zElement.readValueInt(iRow, iCol);
                     System.exit(-1);
                   }
                 }
@@ -453,13 +490,13 @@ public class PackageData {
   }
 
   /**
-   * Stores a GVRS Variable-Length Record (VLR) that gives coordinate/projection
+   * Stores a GVRS tag (metadata) that gives coordinate/projection
    * data in the Well-Known Text (WKT) format used in many GIS systems. This
    * setting will allow applications to find out what kind of coordinate system
    * is stored in the GVRS file using an industry-standard text format.
    *
-   * @param gvrs a valid GVRS file
-   * @throws IOException in the event of an IO error
+   * @param gvrs a valid GVRS file opened for writing
+   * @throws IOException in the event of an unhandled I/O exception.
    */
   void storeGeoreferencingInformation(GvrsFile gvrs) throws IOException {
     // Note:  At this time, the Well-Known Text (WKT) data for this
@@ -477,12 +514,12 @@ public class PackageData {
       fbaos.write(b, 0, nBytesRead);
     }
     b = fbaos.toByteArray();
+    String wkt = new String(b, StandardCharsets.UTF_8);
 
-    gvrs.storeVariableLengthRecord(
-      "GVRS_Projection",
-      2111,
-      "WKT Projection Metadata",
-      b, 0, b.length, true);
+    GvrsMetadata metadataWKT = GvrsMetadataEnum.WKT.newInstance();
+    metadataWKT.setDescription("Well-Known Text, geographic metadata");
+    metadataWKT.setString(wkt);
+    gvrs.writeMetadata(metadataWKT);
   }
 
 }

@@ -3,7 +3,7 @@
  * The MIT License
  *
  * Copyright (C) 2019  Gary W. Lucas.
-
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -39,44 +39,41 @@
 package org.gridfour.gvrs;
 
 /**
- * Describes whether the geometry associated with each value in the
- * raster should be interpreted as a single point value or an overall
- * value for an area. The notion of a value geometry is embedded into many
- * raster data formats, such as the GeoTIFF standard's PixelIsPoint and
- * PixelIsArea settings. It allows an application to precisely specify
- * how a value is derived for an arbitrary point on the surface described
- * by the raster.
- * <p>
- * Unfortunately, not all data authors indicate which form is used.
- * In such cases, if you cannot determine the appropriate representation
- * through deduction (looking at the number of rows and columns with
- * respect to the area of coverage), you may have to resort to guesswork
- * or use the "Unspecified" value of this enumeration.
+ * Defines the possible representations of data stored as an element
+ * in a GVRS file.
  */
-public enum GvrsGeometryType {
+public enum GvrsElementType {
 
   /**
-   * No specification was made for the raster cell geometry type.
+   * Data is stored using the Java 4-byte signed integer data type.
    */
-  Unspecified(0),
+  INTEGER(0, 4),
   /**
-   * Raster cells indicate the value at a single point.
+   * Floating point values are multiplied by a scaling factor and
+   * stored as a Java 4-byte integer data type.
    */
-  Point(1),
+  INTEGER_CODED_FLOAT(1, 4),
   /**
-   * Raster cells indicate the value for an area.
+   * Data is stored using the Java 4-byte float data type, the IEEE-754
+   * single-precision floating point format.
    */
-  Area(2);
+  FLOAT(2, 4),
+  /**
+   * Data is stored using the Java 2-byte signed short data type.
+   */
+  SHORT(3, 2);
 
   final int codeValue;
+  final int bytesPerSample;
 
-  GvrsGeometryType(int codeValue) {
+  GvrsElementType(int codeValue, int bytesPerSample) {
     this.codeValue = codeValue;
+    this.bytesPerSample = bytesPerSample;
   }
 
   /**
-   * Gets the code value to be stored in a data file to indicate what kind of
-   * predictor was used to store data
+   * Gets the code value to be stored in a data file to indicate what
+   * data type was used for the non-compressed storage representation.
    *
    * @return gets an integer code value indicating the data type; used
    * internally.
@@ -85,17 +82,46 @@ public enum GvrsGeometryType {
     return codeValue;
   }
 
-  static GvrsGeometryType valueOf(int codeValue) {
+  /**
+   * Get the number of bytes required to store a single data sample
+   * of the associated type.
+   *
+   * @return an integer value of one or greater.
+   */
+  public int getBytesPerSample() {
+    return bytesPerSample;
+  }
+
+  public static GvrsElementType valueOf(int codeValue) {
     switch (codeValue) {
       case 0:
-        return Unspecified;
+        return INTEGER;
       case 1:
-        return Point;
+        return INTEGER_CODED_FLOAT;
       case 2:
-        return Area;
+        return FLOAT;
+      case 3:
+        return SHORT;
       default:
-        return Unspecified;
+        return INTEGER;
     }
-
   }
+
+  /**
+   * Indicates whether this enumeration identifies an integer-based datatype
+   * for GVRS data.
+   *
+   * @return true if the identified data type is integral; otherwise, false.
+   */
+  public boolean isIntegral() {
+    switch (this) {
+      case INTEGER:
+      case INTEGER_CODED_FLOAT:
+      case SHORT:
+        return true;
+      default:
+        return false;
+    }
+  }
+
 }

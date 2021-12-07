@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
@@ -256,7 +256,7 @@
                             <td>96.83</td>
                             <td>148.27</td>
                         </tr>
-                                                <tr>
+                        <tr>
                             <td>Blocks of One Row</td>
                             <td>0.53</td>
                             <td>4.50</td>
@@ -280,52 +280,68 @@
                     </tbody>
                 </table>
 
-                <h2 id="row-blocks-versus-row-major">Row Blocks versus Row-Major</h2>
-                <p>The Row Blocks test reads each row of data in the source grid in
-                    a single &quot;read&quot;. There are 10800 rows of data in the ETOPO1 product
-                    and 21600 columns. Thus each block-read operation returns 21600 values.
-                    This pattern of access is illustrated by the following code snippet</p>
-                <pre><code>for (int iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
-  <span class="hljs-type">float</span> []block = gvrs.readBlock(iRow, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, nColsInRaster);
-}
-</code></pre><p>In contrast the Row-Major operation reads the grid points for
-                    each row one value at a time.   Internally, the GvrsFile class
-                    reads the data one tile at a time and stores them in a cache as necessary.
-                    The &quot;read-value&quot; API determines which tile is needed and fetches
-                    it from the cache each time the application requests a value. This pattern
-                    of access is illustrated by the following code snippet:</p>
-                <pre><code><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
-  <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iCol = <span class="hljs-number">0</span>; iCol &lt; nColumnsInRaster; iCol++) {
-     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = gvrs.readIntValue(iRow, iCol);
-  }
-}
-</code></pre><p>The Column-Major pattern is similar, but uses columns as the outer loop.</p>
-                <pre><code><span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iCol = <span class="hljs-number">0</span>; iCol &lt; nColumnsInRaster; iCol++) {
-  <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> iRow = <span class="hljs-number">0</span>; iRow &lt; nRowsInRaster; iRow++) {
-     <span class="hljs-type">int</span> <span class="hljs-keyword">sample</span> = gvrs.readIntValue(iRow, iCol);
-  }
-}
+                <h2 id="row-blocks-versus-row-major">Reading Data in Row-Major Order versus Blocks</h2>
+                <p>The Row-Major test reads the data one grid cell at a time traversing
+                    the grid in row-major order.  The following code snippet illustrates the
+                    process.  In this example, a GvrsElement named "z" is obtained from
+                    the GvrsFile and used to access the data. The code snippet
+                    then uses that element to access data from the file. Because there
+                    are 233 million grid cells in ETOPO1, this operation requires
+                    233 million calls to the readValueInt() method.</p>
+                <pre><code>
+                GvrsElement zElement = gvrs.getElement("z");
+                for (int iRow = 0; iRow &lt; nRowsInRaster; iRow++) {
+                    for (int iCol = 0; iCol &lt; nColumnsInRaster; iCol++) {
+                      int sample = zElement.readValueInt(iRow, iCol);
+                    }
+                }
 </code></pre>
-                <p>As these code snippets show, the Row-Major and Column-Major patterns
-                    perform a separate read operation for each data point. Because each of these
-                    read operations is independent, they involve a overhead
-                    both for the Java method call and for the internal arithmetic to compute
-                    an index into the grid and retrieve the associated tile from GVRS&#39;s
-                    internal tile-cache. This small overhead was multiplied across the
-                    numerous data read operations that were performed by these tests.</p>
-                <p>The difference in data-fetching time between the Row-Major and Column-Major
+
+                <p>The Row Blocks test treats each row of data as a "block" of
+                    grid values.  It reads each row of data in the source grid in
+                    a single operation. There are 10800 rows of data in the ETOPO1 product
+                    and 21600 columns. Each block-read operation returns 21600 values,
+                    or one for each column. This pattern of access is illustrated
+                    by the following code snippet</p>
+                <pre><code>
+                GvrsElement zElement = gvrs.getElement("z");
+                for (int iRow = 0; iRow &lt; nRowsInRaster; iRow++) {
+                   int []block = zElement.readBlock(iRow,  0, 1, nColsInRaster);
+                }
+</code></pre>
+
+                <p>The advantage of the row block operation is that it performs
+                    for fewer data access operations than would be required
+                    for reading values for the source one grid cell at a time.
+                    However, it is worth noting that the GvrsFile is designed
+                    to support both patterns of access efficiently.  Internally,
+                    it maintains a data cache that minimizes the frequency with
+                    which it must read data from disk.  The single-cell read
+                    pattern entails more overhead than the block-read operation,
+                    but only because it involves so many more method calls.</p>
+
+                <p>The Column-Major pattern is similar to the Row-Major pattern,
+                but it uses columns as the outer loop rather than rows.</p>
+                <pre><code>
+                GvrsElement zElement = gvrs.getElement("z");
+                for (int iCol = 0; iCol &lt; nColumnsInRaster; iCol++) {
+                    for (int iRow = 0; iRow &lt; nRowsInRaster; iRow++) {
+                      int sample = zElement.readValueInt(iRow, iCol);
+                    }
+                }
+</code></pre>
+                <p>Referring to the table above, we see that the Column-Major
+                    pattern required slightly more time than the Row-Major operation.
+                    The difference in data-fetching time between the Row-Major and Column-Major
                     access pattern is due to the fact that the tiles stored in the
                     particular GVRS files used for this test were themselves written
                     to the file in row-major order (rows of tiles). So two tiles that
                     were adjacent in a single row were also adjacent in their file
                     locations. However, two tiles that were adjacent in a single
-                    column were not adjacent in the file. This the Column-Major
+                    column were not adjacent in the file. Thus the Column-Major
                     pattern required more file seek-and-fetch operations than the
                     Row-Major alternative.</p>
-                <p>In theory, the block retrievals should be faster
-                    than the single-point read operations because fewer calls result
-                    in less overhead. As the table above shows, the test series confirms
-                    this idea.</p>
+
                 <h2 id="the-cost-of-reading-data-from-the-file">The Cost of Reading Data from the File</h2>
                 <p>The Tile Load test retrieves just one point for tile. Thus the run time for
                     the test is essentially just the time required to load read the individual tiles from
@@ -468,7 +484,6 @@
                     <li>Integer-coded Float (floating-point values scaled and stored as integers)</li>
                 </ol>
 
-
                 <p>The GEBCO data is expressed in a non-integral form. While the data can be stored
                     as integer-coded-floats, the integer coding requires some loss of precision.
                     So, to store the data in a lossless form, it needs to be represented using
@@ -531,6 +546,7 @@
                         </tr>
                     </tbody>
                 </table>
+
                 <p>ETOPO1 data is stored in the form of integers with a small amount of overhead
                     for metadata and file-management elements. As table above shows, GVRS data compression reduces
                     the raw data for ETOPO1 from 16 bits per sample to 4.46 bits per sample.  So the storage
@@ -549,6 +565,7 @@
                     interested in how well the algorithm would work across varying degrees of precision in
                     the converted data. So we applied various
                     scaling factors as shown in the results above.</p>
+
                 <h1 id="future-work">Future Work</h1>
                 <p>When data compression is applied to a GVRS file, it adds a considerable amount
                     of processing overhead to the data-writing operation. In future work, it may be
@@ -565,6 +582,7 @@
                     to improve the access speeds, especially for the block-based file access routines.
                     Future work will involve a careful review of the code used for the readBlock()
                     method.</p>
+
                 <h1 id="conclusion">Conclusion</h1>
                 <p>The figures cited in this article provide a rough guide to estimating
                     the kind of performance an application designer can expect using the

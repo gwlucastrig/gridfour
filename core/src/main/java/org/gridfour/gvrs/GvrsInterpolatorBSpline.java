@@ -67,6 +67,7 @@ import org.gridfour.interpolation.InterpolatorBSpline;
 public class GvrsInterpolatorBSpline {
 
     private final GvrsFile gvrs;
+    private final GvrsElement element;
     private final GvrsFileSpecification spec;
     private final int nRowsInRaster;
     private final int nColsInRaster;
@@ -93,11 +94,12 @@ public class GvrsInterpolatorBSpline {
     /**
      * Constructs an instance that will operate over the specified GVRS File.
      *
-     * @param gvrs a valid GVRS file opened for read access.
+     * @param element a valid GVRS element from a file opened for read access.
      * @throws java.io.IOException in the event of an I/O error
      */
-    public GvrsInterpolatorBSpline(GvrsFile gvrs) throws IOException {
-        this.gvrs = gvrs;
+    public GvrsInterpolatorBSpline(GvrsElement element) throws IOException {
+        this.element = element;
+        this.gvrs = element.gvrsFile;
         spec = gvrs.getSpecification();
         nRowsInRaster = spec.getRowsInGrid();
         nColsInRaster = spec.getColumnsInGrid();
@@ -106,7 +108,7 @@ public class GvrsInterpolatorBSpline {
                 "Unable to perform B-Spline interpolation on grid smaller than 4x4");
         }
 
-        dimension = spec.getDimension();
+        dimension = spec.getNumberOfElements();
 
         geoCoordinates = spec.isGeographicCoordinateSystemSpecified();
         if (geoCoordinates) {
@@ -251,10 +253,10 @@ public class GvrsInterpolatorBSpline {
 
         int c0 = (col0 + nColsInRaster) % nColsInRaster;
         int c1 = (col0 + nColsInRaster + 1) % nColsInRaster;
-        double z0 = gvrs.readValue(row0, c0);
-        double z1 = gvrs.readValue(row0, c1);
-        double z2 = gvrs.readValue(row0 + 1, c0);
-        double z3 = gvrs.readValue(row0 + 1, c1);
+        double z0 = element.readValue(row0, c0);
+        double z1 = element.readValue(row0, c1);
+        double z2 = element.readValue(row0 + 1, c0);
+        double z3 = element.readValue(row0 + 1, c1);
 
         double y0 = (1 - ct) * z0 + ct * z1;
         double y1 = (1 - ct) * z2 + ct * z3;
@@ -270,7 +272,7 @@ public class GvrsInterpolatorBSpline {
             u = col - col0 - 1; // x parameter
             v = row - row0 - 1; // y parameter
 
-            return gvrs.readBlock(row0, col0, 4, 4);
+            return element.readBlock(row0, col0, 4, 4);
 
         }
 
@@ -291,7 +293,7 @@ public class GvrsInterpolatorBSpline {
         u = col - col0 - 1; // x parameter
         v = row - row0 - 1; // y parameter
 
-        return gvrs.readBlock(row0, col0, 4, 4);
+        return element.readBlock(row0, col0, 4, 4);
 
     }
 
@@ -308,14 +310,14 @@ public class GvrsInterpolatorBSpline {
             col0 = nColsForWrap - 1;
             n1 = 1;
             n2 = 3;
-            z1 = gvrs.readBlock(row0, col0, 4, n1);
-            z2 = gvrs.readBlock(row0, 0, 4, n2);
+            z1 = element.readBlock(row0, col0, 4, n1);
+            z2 = element.readBlock(row0, 0, 4, n2);
         } else {
             col0 = iCol - 1;
             n1 = nColsForWrap - col0;
             n2 = 4 - n1;
-            z1 = gvrs.readBlock(row0, col0, 4, n1);
-            z2 = gvrs.readBlock(row0, 0, 4, n2);
+            z1 = element.readBlock(row0, col0, 4, n1);
+            z2 = element.readBlock(row0, 0, 4, n2);
         }
         float[] z = new float[16 * dimension];
         for (int iVariable = 0; iVariable < dimension; iVariable++) {

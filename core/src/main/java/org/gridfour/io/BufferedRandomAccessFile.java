@@ -51,6 +51,7 @@ import java.io.UTFDataFormatException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Provides a wrapper around a Java Random Access File which supports buffered
@@ -296,10 +297,8 @@ public class BufferedRandomAccessFile
    * @throws IOException if an I/O error occurs.
    */
   public void flush() throws IOException {
-    if (raf != null) {
-      if (this.writeDataIsInBuffer) {
-        this.flushWrite();
-      }
+    if (raf != null && writeDataIsInBuffer) {
+      flushWrite();
     }
   }
 
@@ -912,6 +911,9 @@ public class BufferedRandomAccessFile
   public int skipBytes(int n) throws IOException {
     // handle the most straightforward case directly,
     // otherwise, fall through to seek().
+    if(n==0){
+      return 0;
+    }
     if (readDataIsInBuffer && buffer.remaining() > n) {
       int position = buffer.position();
       buffer.position(position + n);
@@ -1092,12 +1094,13 @@ public class BufferedRandomAccessFile
    * @param s a valid String
    * @throws IOException in the event of an I/O error.
    */
+ 
   @Override
   public void writeUTF(String s) throws IOException {
     if (s == null) {
       throw new NullPointerException("Null string passed to writeUTF");
     }
-    byte[] b = s.getBytes("UTF-8");
+    byte[] b = s.getBytes(StandardCharsets.UTF_8);
     if (b.length > 65535) {
       throw new UTFDataFormatException(
               "String passed to writeUTF exceeds 65535 byte maximum");
@@ -1187,7 +1190,7 @@ public class BufferedRandomAccessFile
   }
 
   /**
-   * Reads 2-bytes as an unsignd integer value in the big-endian order
+   * Reads 2-bytes as an unsigned integer value in the big-endian order
    * compatible with the Java DataInput interface.
    *
    * @return if successful, a valid signed short value
@@ -1221,7 +1224,7 @@ public class BufferedRandomAccessFile
     }
     byte[] b = new byte[length];
     readFully(b, 0, length);
-    return new String(b, "UTF-8");
+    return new String(b, StandardCharsets.UTF_8);
   }
 
   /**

@@ -10,7 +10,7 @@
   <parent>
     <groupId>org.gridfour</groupId>
     <artifactId>Gridfour</artifactId>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.7-SNAPSHOT</version>
   </parent>
 
   <artifactId>GridfourCore</artifactId>
@@ -18,24 +18,12 @@
   <description>Main classes and interfaces for Gridfour</description>
 
   <dependencies>
-  
-	<dependency>
-		<groupId>junit</groupId>
-		<artifactId>junit</artifactId>
-	</dependency>
-	<dependency>
-		<groupId>org.junit.jupiter</groupId>
-		<artifactId>junit-jupiter-api</artifactId>
-		<version>5.6.0</version>
-		<scope>test</scope>
-	</dependency>     
-
-	<dependency>
-		<groupId>org.junit.jupiter</groupId>
-		<artifactId>junit-jupiter-engine</artifactId>
-		<version>5.6.0</version>
-		<scope>test</scope>
-	</dependency>
+	    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.7.2</version>
+      <scope>test</scope>
+    </dependency>
 	
   </dependencies>
 </project>

@@ -10,12 +10,13 @@
   <parent>
     <groupId>org.gridfour</groupId>
     <artifactId>Gridfour</artifactId>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.7-SNAPSHOT</version>
   </parent>
 
 	<artifactId>GridfourDemo</artifactId>
 	<name>Demo</name>
 	<description>Demonstration classes, examples, and performance testing tools</description>
+ 
 	<repositories>
 		<repository>
 			<id>unidata-all</id>
@@ -23,6 +24,7 @@
 			<url>https://artifacts.unidata.ucar.edu/repository/unidata-all/</url>
 		</repository>
 	</repositories>
+ 
 	
   <dependencies>
 	<dependency>
@@ -64,10 +66,12 @@
 		<version>1.7.28</version>
 		<scope>test</scope>
 	</dependency>
-	
-	<dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.7.2</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
