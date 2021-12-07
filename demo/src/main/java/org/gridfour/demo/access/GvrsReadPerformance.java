@@ -38,8 +38,10 @@ package org.gridfour.demo.access;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import org.gridfour.gvrs.GvrsCacheSize;
-import org.gridfour.gvrs.GvrsDataType;
+import org.gridfour.gvrs.GvrsElement;
+import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 
@@ -58,7 +60,7 @@ public class GvrsReadPerformance {
   int nRowsOfTiles;
   int nColsOfTiles;
 
-  GvrsReadPerformance(File inputFile) throws IOException {
+  GvrsReadPerformance(PrintStream ps, File inputFile) throws IOException {
     this.inputFile = inputFile;
     try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
       spec = gvrs.getSpecification();
@@ -68,7 +70,11 @@ public class GvrsReadPerformance {
       nColsInTile = spec.getColumnsInTile();
       nRowsOfTiles = spec.getRowsOfTilesInGrid();
       nColsOfTiles = spec.getColumnsOfTilesInGrid();
+      ps.format("Number of samples in grid:  %12d%n", spec.getNumberOfCellsInGrid());
+      ps.format("Number of tiles in file:    %12d%n",
+        spec.getRowsOfTilesInGrid() * spec.getColumnsOfTilesInGrid());
     }
+
   }
 
   public static void main(String[] args) throws IOException {
@@ -81,7 +87,7 @@ public class GvrsReadPerformance {
     }
     File file = new File(args[0]);
     ps.println("Reading file " + file.getPath());
-    GvrsReadPerformance reader = new GvrsReadPerformance(file);
+    GvrsReadPerformance reader = new GvrsReadPerformance(ps, file);
 
     for (int iTest = 0; iTest < 3; iTest++) {
       reader.testRowMajorScan(ps);
@@ -89,25 +95,29 @@ public class GvrsReadPerformance {
       reader.testColumnMajorScan(ps);
       reader.testTileBlockScan(ps);
       reader.testTileLoadTime(ps);
+      ps.println("");
     }
   }
 
-  void report(PrintStream ps, String label, double deltaT, double avgValue) {
-    ps.format("%-15s %12.6f %12.3f%n", label, deltaT, avgValue);
+  void report(PrintStream ps, String label, double deltaT, double avgValue, long nSamples) {
+    ps.format("%-15s %12.6f %12.3f %12d  %12.6f%n",
+      label, deltaT, avgValue, nSamples, nSamples / deltaT / 1000000.0);
   }
 
   void testRowMajorScan(PrintStream ps) throws IOException {
     try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
-      gvrs.setTileCacheSize(GvrsCacheSize.Large);
-      GvrsDataType dType = spec.getDataType();
+            gvrs.setTileCacheSize(GvrsCacheSize.Large);
+      List<GvrsElement> elementList = gvrs.getElements();
+      GvrsElement element = elementList.get(0);
+      GvrsElementType dType = element.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == GvrsDataType.INTEGER) {
+      if (dType == GvrsElementType.INTEGER) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            int sample = gvrs.readIntValue(iRow, iCol);
+            int sample = element.readValueInt(iRow, iCol);
             if (sample != Integer.MIN_VALUE) {
               sum += sample;
               nSample++;
@@ -121,7 +131,7 @@ public class GvrsReadPerformance {
         double sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            float sample = gvrs.readValue(iRow, iCol);
+            float sample = element.readValue(iRow, iCol);
             if (!Float.isNaN(sample)) {
               sum += sample;
               nSample++;
@@ -134,22 +144,24 @@ public class GvrsReadPerformance {
       }
       long time1 = System.nanoTime();
       double deltaT = (time1 - time0) / 1.0e+9;
-      report(ps, "Row Major", deltaT, avgValue);
+      report(ps, "Row Major", deltaT, avgValue, nSample);
     }
   }
 
   void testColumnMajorScan(PrintStream ps) throws IOException {
     try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
-      GvrsDataType dType = spec.getDataType();
+      List<GvrsElement> elementList = gvrs.getElements();
+      GvrsElement element = elementList.get(0);
+      GvrsElementType dType = element.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == GvrsDataType.INTEGER) {
+      if (dType == GvrsElementType.INTEGER) {
         long sum = 0;
         for (int iCol = 0; iCol < nColsInRaster; iCol++) {
           for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-            int sample = gvrs.readIntValue(iRow, iCol);
+            int sample = element.readValueInt(iRow, iCol);
             if (sample != Integer.MIN_VALUE) {
               sum += sample;
               nSample++;
@@ -163,7 +175,7 @@ public class GvrsReadPerformance {
         double sum = 0;
         for (int iCol = 0; iCol < nColsInRaster; iCol++) {
           for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-            float sample = gvrs.readValue(iRow, iCol);
+            float sample = element.readValue(iRow, iCol);
             if (!Float.isNaN(sample)) {
               sum += sample;
               nSample++;
@@ -176,21 +188,36 @@ public class GvrsReadPerformance {
       }
       long time1 = System.nanoTime();
       double deltaT = (time1 - time0) / 1.0e+9;
-      report(ps, "Column Major", deltaT, avgValue);
+      report(ps, "Column Major", deltaT, avgValue, nSample);
     }
   }
 
   void testRowBlockScan(PrintStream ps) throws IOException {
     try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
-      GvrsDataType dType = spec.getDataType();
+      List<GvrsElement> elementList = gvrs.getElements();
+      GvrsElement element = elementList.get(0);
+      GvrsElementType dType = element.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-      if (dType == GvrsDataType.INTEGER) {
+      if (dType == GvrsElementType.INTEGER || dType == GvrsElementType.SHORT) {
         long sum = 0;
         for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-          float[] block = gvrs.readBlock(iRow, 0, 1, nColsInRaster);
+          int[] block = element.readBlockInt(iRow, 0, 1, nColsInRaster);
+          for (int iCol = 0; iCol < nColsInRaster; iCol++) {
+            int sample = block[iCol];
+            sum += sample;
+            nSample++;
+          }
+        }
+        if (nSample > 0) {
+          avgValue = (double) sum / (double) nSample;
+        }
+      } else {
+        double sum = 0;
+        for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
+          float[] block = element.readBlock(iRow, 0, 1, nColsInRaster);
           for (int iCol = 0; iCol < nColsInRaster; iCol++) {
             float sample = block[iCol];
             if (!Float.isNaN(sample)) {
@@ -200,46 +227,48 @@ public class GvrsReadPerformance {
           }
         }
         if (nSample > 0) {
-          avgValue = (double) sum / (double) nSample;
-        }
-      } else {
-        double sum = 0;
-        for (int iRow = 0; iRow < nRowsInRaster; iRow++) {
-          for (int iCol = 0; iCol < nColsInRaster; iCol++) {
-            float sample = gvrs.readValue(iRow, iCol);
-            if (!Float.isNaN(sample)) {
-              sum += sample;
-              nSample++;
-            }
-          }
-        }
-        if (nSample > 0) {
           avgValue = sum / (double) nSample;
         }
       }
       long time1 = System.nanoTime();
       double deltaT = (time1 - time0) / 1.0e+9;
-      report(ps, "Row Block", deltaT, avgValue);
+      report(ps, "Row Block", deltaT, avgValue, nSample);
     }
   }
 
   void testTileBlockScan(PrintStream ps) throws IOException {
     try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
-      gvrs.setTileCacheSize(GvrsCacheSize.Small);
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
+      List<GvrsElement> elementList = gvrs.getElements();
+      GvrsElement element = elementList.get(0);
+      GvrsElementType dType = element.getDataType();
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
-
       double sum = 0;
-      for (int iRow = 0; iRow < nRowsOfTiles; iRow++) {
-        for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
-          int row0 = iRow * nRowsInTile;
-          int col0 = iCol * nColsInTile;
-          float[] block = gvrs.readBlock(row0, col0, nRowsInTile, nColsInTile);
-          for (float sample : block) {
-            if (!Float.isNaN(sample)) {
+      if (dType == GvrsElementType.INTEGER || dType == GvrsElementType.SHORT) {
+        for (int iRow = 0; iRow < nRowsOfTiles; iRow++) {
+          for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
+            int row0 = iRow * nRowsInTile;
+            int col0 = iCol * nColsInTile;
+            int[] block = element.readBlockInt(row0, col0, nRowsInTile, nColsInTile);
+            for (int sample : block) {
               sum += sample;
               nSample++;
+            }
+          }
+        }
+      } else {
+        for (int iRow = 0; iRow < nRowsOfTiles; iRow++) {
+          for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
+            int row0 = iRow * nRowsInTile;
+            int col0 = iCol * nColsInTile;
+            float[] block = element.readBlock(row0, col0, nRowsInTile, nColsInTile);
+            for (float sample : block) {
+              if (!Float.isNaN(sample)) {
+                sum += sample;
+                nSample++;
+              }
             }
           }
         }
@@ -250,13 +279,16 @@ public class GvrsReadPerformance {
 
       long time1 = System.nanoTime();
       double deltaT = (time1 - time0) / 1.0e+9;
-      report(ps, "Block Test", deltaT, avgValue);
+      report(ps, "Block Test", deltaT, avgValue, nSample);
     }
   }
 
   void testTileLoadTime(PrintStream ps) throws IOException {
     try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
-      gvrs.setTileCacheSize(GvrsCacheSize.Small);
+            gvrs.setTileCacheSize(GvrsCacheSize.Small);
+      List<GvrsElement> elementList = gvrs.getElements();
+      GvrsElement element = elementList.get(0);
+
       double avgValue = 0;
       long nSample = 0;
       long time0 = System.nanoTime();
@@ -266,7 +298,7 @@ public class GvrsReadPerformance {
         for (int iCol = 0; iCol < nColsOfTiles; iCol++) {
           int row0 = iRow * nRowsInTile;
           int col0 = iCol * nColsInTile;
-          float sample = gvrs.readValue(row0 + 1, col0 + 1);
+          float sample = element.readValue(row0 + 1, col0 + 1);
           if (!Float.isNaN(sample)) {
             sum += sample;
             nSample++;
@@ -279,7 +311,7 @@ public class GvrsReadPerformance {
 
       long time1 = System.nanoTime();
       double deltaT = (time1 - time0) / 1.0e+9;
-      report(ps, "Tile Load", deltaT, avgValue);
+      report(ps, "Tile Load", deltaT, avgValue, nSample);
     }
   }
 

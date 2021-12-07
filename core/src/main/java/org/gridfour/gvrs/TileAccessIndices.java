@@ -1,9 +1,8 @@
-/* --------------------------------------------------------------------
- *
+/*
  * The MIT License
  *
- * Copyright (C) 2019  Gary W. Lucas.
-
+ * Copyright 2021 G. W. Lucas.
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -21,7 +20,6 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- * ---------------------------------------------------------------------
  */
 
  /*
@@ -30,50 +28,54 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created
+ * 10/2021  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
+
 package org.gridfour.gvrs;
 
-/**
- * Defines record types for non-tile records
- */
-public enum GvrsRecordType {
+import java.io.IOException;
 
-    /**
-     * Data is stored using the Java 4-byte integer data type.
-     */
-    VariableLengthRecord(-1),
-    /**
-     * An undefined record type
-     */
-    Undefined(-2);
+class TileAccessIndices {
 
-    final int codeValue;
+  public int tileIndex;
+  public int rowInTile;
+  public int colInTile;
+  public int tileRow;
+  public int tileCol;
+  public int indexInTile;
 
-    GvrsRecordType(int codeValue) {
-        this.codeValue = codeValue;
+  final int nRowsInRaster;
+  final int nColsInRaster;
+  final int nRowsInTile;
+  final int nColsInTile;
+  final int nColsOfTiles;
+
+  TileAccessIndices(GvrsFileSpecification spec) {
+
+    this.nRowsInRaster = spec.nRowsInRaster;
+    this.nColsInRaster = spec.nColsInRaster;
+    this.nRowsInTile = spec.nRowsInTile;
+    this.nColsInTile = spec.nColsInTile;
+    this.nColsOfTiles = spec.nColsOfTiles;
+  }
+
+  public void computeAccessIndices(int row, int col) throws IOException {
+    if (row < 0 || row >= nRowsInRaster) {
+      throw new IOException("Row out of bounds " + row);
+    }
+    if (col < 0 || col >= nColsInRaster) {
+      throw new IOException("Column out of bounds " + col);
     }
 
-    /**
-     * Gets the code value to be stored in a data file to indicate what
-     * data type was used for the non-compressed storage representation.
-     *
-     * @return gets an integer code value indicating the data type; used
-     * internally.
-     */
-    public int getCodeValue() {
-        return codeValue;
-    }
-
-    static GvrsRecordType valueOf(int codeValue) {
-        if (codeValue == -1) {
-            return VariableLengthRecord;
-        } else {
-            return Undefined;
-        }
-    }
+    tileRow = row / nRowsInTile;
+    tileCol = col / nColsInTile;
+    tileIndex = tileRow * nColsOfTiles + tileCol;
+    rowInTile = row - tileRow * nRowsInTile;
+    colInTile = col - tileCol * nColsInTile;
+    indexInTile = rowInTile*nColsInTile+colInTile;
+  }
 }

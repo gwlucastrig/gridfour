@@ -35,6 +35,7 @@
  */
 package org.gridfour.demo.utils;
 
+ 
 import java.io.File;
 import java.util.Arrays;
 
@@ -63,7 +64,8 @@ public class TestOptions {
     "-big",
     "-zScale",
     "-zOffset",
-    "-showProgress"
+    "-showProgress",
+    "-checksums"
   };
 
   File inputFile;
@@ -71,6 +73,7 @@ public class TestOptions {
   int[] tileSize;
   String description;
   boolean compress;
+  boolean checksums;
   boolean verify;
   boolean bigAddressSpace;
   boolean isZScaleSet = false;
@@ -450,6 +453,8 @@ public class TestOptions {
       = scanBooleanOption(args, "-verify", matched, verify);
     compress
       = scanBooleanOption(args, "-compress", matched, compress);
+    checksums
+      = scanBooleanOption(args, "-checksums", matched, checksums);
 
     isZScaleSet = isOptionSpecified(args, "-zScale");
     zScale = scanDoubleOption(args, "-zScale", matched, zScale);
@@ -558,6 +563,16 @@ public class TestOptions {
    */
   public boolean isCompressionEnabled() {
     return compress;
+  }
+
+  
+   /**
+   * Indicates whether checksums should be computed when writing data
+   *
+   * @return true if checksum computations are enabled; otherwise, false
+   */
+  public boolean isChecksumComputationEnabled() {
+    return checksums;
   }
 
   /**

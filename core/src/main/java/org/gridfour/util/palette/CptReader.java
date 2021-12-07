@@ -53,7 +53,7 @@ import java.util.List;
  */
 public class CptReader {
 
-  private static enum ColorModel {
+  private enum ColorModel {
     RGB,
     HSV
   }
@@ -118,7 +118,7 @@ public class CptReader {
         s = s.toUpperCase();
         if (s.contains("COLOR_MODEL")) {
           String[] a = s.split("=");
-          if (a.length != 2 || a[1].isBlank()) {
+          if (a.length != 2 || a[1].isEmpty()) {
             throw new IOException("Invalid COLOR_MODEL specification");
           }
           String modelName = a[1].trim();

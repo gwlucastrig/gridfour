@@ -39,153 +39,253 @@
 package org.gridfour.gvrs;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
  * Provides methods and elements for accessing a tile from a raster data set.
  */
-abstract class RasterTile {
+class RasterTile {
 
-    final int nRows;
-    final int nCols;
-    final int tileRow;
-    final int tileCol;
-    final int nValues;
-    final int dimension;
-    final float valueScale;
-    final float valueOffset;
+  final int nRows;
+  final int nCols;
+  final int tileRow;
+  final int tileCol;
+  final int nCellsInTile;
+  final List<GvrsElementSpec> elementSpecifications;
+  final TileElement[] elements;
+  final int standardSize;
 
-    // elements related to maintaining a linked-list
-    // of tiles and managing I/O.  These elements are scoped to package
-    // level to permit access by associated classes.
-    final int tileIndex;
-    RasterTile next;
-    RasterTile prior;
-    boolean writingRequired;
+  // elements related to maintaining a linked-list
+  // of tiles and managing I/O.  These elements are scoped to package
+  // level to permit access by associated classes.
+  final int tileIndex;
+  RasterTile next;
+  RasterTile prior;
+  boolean writingRequired;
 
-    /**
-     * Constructs a tile and allocates memory for storage.
-     *
-     * @param tileIndex the index of the tile within the raster grid.
-     * @param tileRow the row of the tile within the overall raster grid
-     * (strictly
-     * for diagnostic purposes).
-     * @param tileColumn the column of the tile within the overall raster grid
-     * (strictly for diagnostic purposes).
-     * @param nRows the number of rows in the tile.
-     * @param nColumns the number of columns in the tile.
-     */
-    RasterTile(
-        int tileIndex,
-        int tileRow,
-        int tileColumn,
-        int nRows,
-        int nColumns,
-        int dimension,
-        float valueScale,
-        float valueOffset) {
-        this.tileIndex = tileIndex;
-        this.tileRow = tileRow;
-        this.tileCol = tileColumn;
-        this.nRows = nRows;
-        this.nCols = nColumns;
-        this.nValues = nRows * nColumns;
-        this.dimension = dimension;
-        this.valueScale = valueScale;
-        this.valueOffset = valueOffset;
+  /**
+   * Constructs a tile and allocates memory for storage.
+   * <p>
+   * The initializeValues setting allows an application to
+   * control whether the elements are initialized when the
+   * tile is constructed. In cases where the tile is to be
+   * used for reading data and will quickly overwrite the content
+   * of the elements array, the application may choose to skip the
+   * initialization operation.
+   *
+   * @param tileIndex the index of the tile within the raster grid.
+   * @param tileRow the row of the tile within the overall raster grid
+   * (strictly
+   * for diagnostic purposes).
+   * @param tileColumn the column of the tile within the overall raster grid
+   * (strictly for diagnostic purposes).
+   * @param nRows the number of rows in the tile.
+   * @param nColumns the number of columns in the tile.
+   * @param elementSpecification list specifying the structure of one
+   * or more elements.
+   * @param initializeValues specifies whether the element content should
+   * be initialized.
+   */
+  RasterTile(
+    int tileIndex,
+    int tileRow,
+    int tileColumn,
+    int nRows,
+    int nColumns,
+    List<GvrsElementSpec> elementSpecifications,
+    boolean initializeValues) {
 
+    this.tileIndex = tileIndex;
+    this.tileRow = tileRow;
+    this.tileCol = tileColumn;
+    this.nRows = nRows;
+    this.nCols = nColumns;
+    this.nCellsInTile = nRows * nColumns;
+    this.elementSpecifications = elementSpecifications;
+    elements = new TileElement[elementSpecifications.size()];
+    int k = 0;
+    int sumStandardSize = 0;
+    for (GvrsElementSpec spec : elementSpecifications) {
+      TileElement e;
+      switch (spec.dataType) {
+        case INTEGER:
+          e = new TileElementInt(this, nRows, nColumns, spec, initializeValues);
+          break;
+        case FLOAT:
+          e = new TileElementFloat(this, nRows, nColumns, spec, initializeValues);
+          break;
+        case SHORT:
+          e = new TileElementShort(this, nRows, nColumns, spec, initializeValues);
+          break;
+        case INTEGER_CODED_FLOAT:
+          e = new TileElementIntCodedFloat(this, nRows, nColumns, spec, initializeValues);
+          break;
+        default:
+          throw new IllegalArgumentException("Unimplemented data type");
+      }
+      sumStandardSize += e.getStandardSize();
+      elements[k++] = e;
+    }
+    standardSize = sumStandardSize;
+  }
+
+  /**
+   * Gets the standard size of the data when stored in non-compressed format.
+   * This size is the product of dimension, number of rows and columns, and 4
+   * bytes
+   * for integer or float formats.
+   *
+   * @return a positive value.
+   */
+  int getStandardSize() {
+    return standardSize;
+  }
+
+  void writeStandardFormat(BufferedRandomAccessFile braf) throws IOException {
+    for (TileElement e : elements) {
+      int n = e.getStandardSize();
+      braf.leWriteInt(n);
+      e.writeStandardFormat(braf);
+    }
+  }
+ 
+
+  void readStandardFormat(BufferedRandomAccessFile braf, CodecMaster codec) throws IOException {
+    for (TileElement e : elements) {
+      int n = braf.leReadInt();
+      if(n==e.getStandardSize()){
+        e.readStandardFormat(braf);
+      }else{
+        byte []encoding = new byte[n];
+         braf.readFully(encoding);
+             e.decode(codec, encoding);
+      }
+    }
+  }
+ 
+ 
+
+  void setIntValue(int tileRow, int tileColumn, int value) {
+    writingRequired = true;
+    int index = tileRow * nCols + tileColumn;
+    elements[0].setIntValue(index, value);
+  }
+
+  int getIntValue(int tileRow, int tileColumn) {
+    int index = tileRow * nCols + tileColumn;
+    return elements[0].getValueInt(index);
+  }
+
+  void setValue(int tileRow, int tileColumn, float value) {
+    writingRequired = true;
+    int index = tileRow * nCols + tileColumn;
+    elements[0].setValue(index, value);
+  }
+
+  float getValue(int tileRow, int tileColumn) {
+    int index = tileRow * nCols + tileColumn;
+    return elements[0].getValue(index);
+  }
+
+  void setIntValue(int tileRow, int tileColumn, int iElement, int value) {
+    writingRequired = true;
+    int index = tileRow * nCols + tileColumn;
+    elements[iElement].setIntValue(index, value);
+  }
+
+  int getIntValue(int tileRow, int tileColumn, int iElement) {
+    int index = tileRow * nCols + tileColumn;
+    return elements[iElement].getValueInt(index);
+  }
+
+  void setValue(int tileRow, int tileColumn, int iElement, float value) {
+    writingRequired = true;
+    int index = tileRow * nCols + tileColumn;
+    elements[iElement].setValue(index, value);
+  }
+
+  float getValue(int tileRow, int tileColumn, int iElement) {
+    int index = tileRow * nCols + tileColumn;
+    return elements[iElement].getValueInt(index);
+  }
+
+  boolean isWritingRequired() {
+    return writingRequired;
+  }
+
+  int getTileIndex() {
+    return tileIndex;
+  }
+
+  void clearWritingRequired() {
+    writingRequired = false;
+  }
+
+  void clear() {
+    next = null;
+    prior = null;
+    writingRequired = false;
+  }
+
+  boolean hasNullDataValues() {
+    for (int i = 0; i < elements.length; i++) {
+      if (elements[i].hasFillDataValues()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  boolean hasValidData() {
+    for (int i = 0; i < elements.length; i++) {
+      if (elements[i].hasValidData()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void setToNullState() {
+    for (int i = 0; i < elements.length; i++) {
+      elements[i].setToNullState();
+    }
+  }
+
+  int[][] getIntCoding() {
+    throw new UnsupportedOperationException("Not implemented");
+  }
+
+  byte[] getCompressedPacking(CodecMaster codec) {
+    List<byte[]> packingList = new ArrayList<>();
+    int nBytesTotal = 0;
+    for (TileElement e : this.elements) {
+      byte[] test = e.encode(codec);
+      packingList.add(test);
+      nBytesTotal += test.length + 4;
     }
 
-    byte[] getCompressedPacking(CodecMaster codec) throws IOException {
-        // recall that compression is only defined for integers.
-        // compress each element of the tile data and collect
-        // the packings.  If successful, concatentate them into
-        // a single array of bytes for storage in the output file.
-        byte[][] results = new byte[dimension][];
-        int[][] codings = getIntCoding();
-        int nBytesTotal = 0;
-        for (int iVariable = 0; iVariable < dimension; iVariable++) {
-
-            results[iVariable] = codec.encode(nRows, nCols, codings[iVariable]);
-            if (results[iVariable] == null) {
-                return null;
-            }
-            nBytesTotal += results[iVariable].length;
-        }
-
-        int k = 0;
-        byte b[] = new byte[nBytesTotal + dimension * 4];
-        for (int iVariable = 0; iVariable < dimension; iVariable++) {
-            int n = results[iVariable].length;
-            b[k++] = (byte) ((n & 0xff));
-            b[k++] = (byte) ((n >> 8) & 0xff);
-            b[k++] = (byte) ((n >> 16) & 0xff);
-            b[k++] = (byte) ((n >> 24) & 0xff);
-            System.arraycopy(results[iVariable], 0, b, k, n);
-            k += n;
-        }
-        return b;
+    byte[] packing = new byte[nBytesTotal];
+    int k = 0;
+    for (byte[] test : packingList) {
+      int n = test.length;
+      packing[k++] = (byte) (n & 0xff);
+      packing[k++] = (byte) ((n >> 8) & 0xff);
+      packing[k++] = (byte) ((n >> 16) & 0xff);
+      packing[k++] = (byte) ((n >> 24) & 0xff);
+      System.arraycopy(test, 0, packing, k, n);
+      k += n;
     }
 
-    /**
-     * Gets the standard size of the data when stored in non-compressed format.
-     * This size is the product of dimension, number of rows and columns, and 4
-     * bytes
-     * for integer or float formats.
-     *
-     * @return a positive value.
-     */
-    abstract int getStandardSize();
+    return packing;
+  }
 
-    abstract void writeStandardFormat(BufferedRandomAccessFile braf) throws IOException;
-
-    abstract void readStandardFormat(BufferedRandomAccessFile braf) throws IOException;
-
-    abstract void readCompressedFormat(CodecMaster codec, BufferedRandomAccessFile braf, int payloadSize) throws IOException;
-
-    abstract void setIntValue(int tileRow, int tileColumn, int value);
-
-    abstract int getIntValue(int tileRow, int tileColumn);
-
-    abstract void setValue(int tileRow, int tileColumn, float value);
-
-    abstract float getValue(int tileRow, int tileColumn);
-
-    abstract void setValues(int tileRow, int tileColumn, float[] input);
-
-    abstract void getValues(int tileRow, int tileColumn, float[] output);
-
-    boolean isWritingRequired() {
-        return writingRequired;
-    }
-
-    int getTileIndex() {
-        return tileIndex;
-    }
-
-    void clearWritingRequired() {
-        writingRequired = false;
-    }
-
-    void clear() {
-        next = null;
-        prior = null;
-        writingRequired = false;
-    }
-
-    abstract boolean hasNullDataValues();
-
-    abstract boolean hasValidData();
-
-    abstract void setToNullState();
-
-    abstract int[][] getIntCoding();
-
-    @Override
-    public String toString() {
-        return String.format("tile %8d (%4d, %4d)%s",
-            tileIndex, tileRow, tileCol,
-            writingRequired ? " dirty" : "");
-    }
+  @Override
+  public String toString() {
+    return String.format("tile %8d (%4d, %4d)%s",
+      tileIndex, tileRow, tileCol,
+      writingRequired ? " dirty" : "");
+  }
 
 }

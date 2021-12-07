@@ -40,9 +40,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import org.gridfour.gvrs.GvrsCacheSize;
+import org.gridfour.gvrs.GvrsElement;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
-import org.gridfour.gvrs.VariableLengthRecord;
+import org.gridfour.gvrs.GvrsMetadata;
 
 /**
  * A simple demonstration application that reads the entire content of a Gvrs
@@ -99,20 +100,15 @@ public class ReadGvrs {
     // The VLR's are read during initial access, though their payload
     // (which may be quite large) is not read until requested by the
     // application code.
-    ps.println("\n\nVariable Length Record Content");
-    List<VariableLengthRecord> vlrList = gvrs.getVariableLengthRecords();
-    for (VariableLengthRecord vlr : vlrList) {
-      ps.println("------------------------------------------------");
-      ps.format("VLR: %-16.16s  %6d:  %d bytes  %s%n",
-        vlr.getUserId(),
-        vlr.getRecordId(),
-        vlr.getPayloadSize(),
-        vlr.hasTextPayload() ? "Text" : "Binary");
-      if (vlr.hasTextPayload()) {
-        String payloadText = vlr.readPayloadText();
-        ps.println(payloadText);
-        ps.println("");
-      }
+    ps.println("\n\nGVRS Metadata");
+          ps.println("------------------------------------------------");
+    List<GvrsMetadata> metadataList = gvrs.readMetadata();
+    for (GvrsMetadata metadata : metadataList) {
+      String description = metadata.getDescription();
+      ps.format("  %-24.24s  %6d:  %s%n",
+        metadata.getName(),
+        metadata.getRecordID(),
+        description==null?"":description);
     }
     gvrs.close();
 
@@ -133,10 +129,12 @@ public class ReadGvrs {
     for (int iTest = 0; iTest < nTest; iTest++) {
       time0 = System.nanoTime();
       gvrs = new GvrsFile(file, "r");
+      List<GvrsElement> elementList = gvrs.getElements();
+      GvrsElement zElement = elementList.get(0);
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
       for (int iRow = 0; iRow < nRows; iRow += rowStep) {
         for (int iCol = 0; iCol < nCols; iCol += colStep) {
-          double sample = gvrs.readValue(iRow, iCol);
+          double sample = zElement.readValue(iRow, iCol);
           sumSample += sample;
           nSample++;
         }
