@@ -49,9 +49,9 @@ public class MultiShortElementTest {
       testFile.delete();
     }
 
-    GvrsElementSpec eSpec0 = new GvrsElementSpecShort("z0");
-    GvrsElementSpec eSpec1 = new GvrsElementSpecShort("z1");
-    GvrsElementSpec eSpec2 = new GvrsElementSpecShort("z2");
+    GvrsElementSpecification eSpec0 = new GvrsElementSpecificationShort("z0");
+    GvrsElementSpecification eSpec1 = new GvrsElementSpecificationShort("z1");
+    GvrsElementSpecification eSpec2 = new GvrsElementSpecificationShort("z2");
 
     GvrsFileSpecification spec = new GvrsFileSpecification(10, 10, 10, 10);
     spec.addElementSpecification(eSpec0);

@@ -70,7 +70,7 @@ abstract class TileElement {
     RasterTile parent,
     int nRows,
     int nColumns,
-    GvrsElementSpec elementSpec) {
+    GvrsElementSpecification elementSpec) {
     this.parent = parent;
     this.nRows = nRows;
     this.nColumns = nColumns;

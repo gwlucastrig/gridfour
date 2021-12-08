@@ -79,7 +79,7 @@ package org.gridfour.gvrs;
  * </ul>
  *
  */
-public class GvrsElementSpecIntCodedFloat extends GvrsElementSpec {
+public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecification {
 
   final float scale;
   final float offset;
@@ -106,7 +106,7 @@ public class GvrsElementSpecIntCodedFloat extends GvrsElementSpec {
    * encoding as integers
    * @param offset a valid for adjusting an input value.
    */
-  public GvrsElementSpecIntCodedFloat(String name, float scale, float offset) {
+  public GvrsElementSpecificationIntCodedFloat(String name, float scale, float offset) {
     super(name, GvrsElementType.INTEGER_CODED_FLOAT);
     this.scale = scale;
     this.offset = offset;
@@ -138,7 +138,7 @@ public class GvrsElementSpecIntCodedFloat extends GvrsElementSpec {
    * @param offset a valid for adjusting an input value.
    *
    */
-  public GvrsElementSpecIntCodedFloat(String name, float fillValue, float scale, float offset) {
+  public GvrsElementSpecificationIntCodedFloat(String name, float fillValue, float scale, float offset) {
     super(name, GvrsElementType.INTEGER_CODED_FLOAT);
     this.scale = scale;
     this.offset = offset;
@@ -188,7 +188,7 @@ public class GvrsElementSpecIntCodedFloat extends GvrsElementSpec {
    * @param offset a valid for adjusting an input value.
    *
    */
-  public GvrsElementSpecIntCodedFloat(String name,
+  public GvrsElementSpecificationIntCodedFloat(String name,
     float minValue, float maxValue, float fillValue,
     float scale, float offset) {
     super(name, GvrsElementType.INTEGER_CODED_FLOAT);
@@ -203,8 +203,8 @@ public class GvrsElementSpecIntCodedFloat extends GvrsElementSpec {
   }
 
   @Override
-  GvrsElementSpec copy() {
-    GvrsElementSpec spec = new GvrsElementSpecIntCodedFloat(
+  GvrsElementSpecification copy() {
+    GvrsElementSpecification spec = new GvrsElementSpecificationIntCodedFloat(
       name, minValue, maxValue, fillValue, scale, offset);
     spec.copyApplicationData(this);
     return spec;

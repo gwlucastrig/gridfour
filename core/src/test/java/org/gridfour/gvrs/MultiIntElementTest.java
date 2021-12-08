@@ -49,9 +49,9 @@ public class MultiIntElementTest {
       testFile.delete();
     }
 
-    GvrsElementSpec eSpec0 = new GvrsElementSpecInt("z0");
-    GvrsElementSpec eSpec1 = new GvrsElementSpecInt("z1");
-    GvrsElementSpec eSpec2 = new GvrsElementSpecInt("z2");
+    GvrsElementSpecification eSpec0 = new GvrsElementSpecificationInt("z0");
+    GvrsElementSpecification eSpec1 = new GvrsElementSpecificationInt("z1");
+    GvrsElementSpecification eSpec2 = new GvrsElementSpecificationInt("z2");
 
     GvrsFileSpecification spec = new GvrsFileSpecification(10, 10, 10, 10);
     spec.addElementSpecification(eSpec0);

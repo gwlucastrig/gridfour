@@ -48,16 +48,16 @@ import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
  
-import org.gridfour.gvrs.GvrsElementSpec;
-import org.gridfour.gvrs.GvrsElementSpecFloat;
+import org.gridfour.gvrs.GvrsElementSpecification;
+import org.gridfour.gvrs.GvrsElementSpecificationFloat;
  
-import org.gridfour.gvrs.GvrsElementSpecIntCodedFloat;
-import org.gridfour.gvrs.GvrsElementSpecShort;
+import org.gridfour.gvrs.GvrsElementSpecificationIntCodedFloat;
+import org.gridfour.gvrs.GvrsElementSpecificationShort;
 import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.gvrs.GvrsMetadata;
-import org.gridfour.gvrs.GvrsMetadataEnum;
+import org.gridfour.gvrs.GvrsMetadataConstants;
 import org.gridfour.io.FastByteArrayOutputStream;
 import org.gridfour.lsop.LsCodecUtility;
 import ucar.ma2.Array;
@@ -216,19 +216,19 @@ public class PackageData {
     float zScale = (float) options.getZScale();
     float zOffset = (float) options.getZOffset();
     DataType sourceDataType = z.getDataType();  // data type from NetCDF file
-    GvrsElementSpec elementSpec = null;
+    GvrsElementSpecification elementSpec = null;
     GvrsElementType gvrsDataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      elementSpec = new GvrsElementSpecIntCodedFloat("z", zScale, zOffset);
+      elementSpec = new GvrsElementSpecificationIntCodedFloat("z", zScale, zOffset);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.INTEGER_CODED_FLOAT;
     } else if (sourceDataType.isIntegral()) {
-      elementSpec = new GvrsElementSpecShort("z");
+      elementSpec = new GvrsElementSpecificationShort("z");
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.SHORT;
     } else {
-      elementSpec = new GvrsElementSpecFloat("z");
+      elementSpec = new GvrsElementSpecificationFloat("z");
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.FLOAT;
     }
@@ -282,10 +282,10 @@ public class PackageData {
     double zSum = 0;
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
-      GvrsMetadata copyright = GvrsMetadataEnum.Copyright.newInstance();
+      GvrsMetadata copyright = GvrsMetadataConstants.Copyright.newInstance();
       copyright.setString("This data is in the public domain and may be used free of charge");
       gvrs.writeMetadata(copyright);
-      GvrsMetadata instructionsForUse = GvrsMetadataEnum.InstructionsForUse.newInstance();
+      GvrsMetadata instructionsForUse = GvrsMetadataConstants.InstructionsForUse.newInstance();
       instructionsForUse.setString("This data should not be used for navigation");
       gvrs.writeMetadata(instructionsForUse);
 
@@ -516,7 +516,7 @@ public class PackageData {
     b = fbaos.toByteArray();
     String wkt = new String(b, StandardCharsets.UTF_8);
 
-    GvrsMetadata metadataWKT = GvrsMetadataEnum.WKT.newInstance();
+    GvrsMetadata metadataWKT = GvrsMetadataConstants.WKT.newInstance();
     metadataWKT.setDescription("Well-Known Text, geographic metadata");
     metadataWKT.setString(wkt);
     gvrs.writeMetadata(metadataWKT);

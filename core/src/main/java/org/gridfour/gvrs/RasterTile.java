@@ -53,7 +53,7 @@ class RasterTile {
   final int tileRow;
   final int tileCol;
   final int nCellsInTile;
-  final List<GvrsElementSpec> elementSpecifications;
+  final List<GvrsElementSpecification> elementSpecifications;
   final TileElement[] elements;
   final int standardSize;
 
@@ -94,7 +94,7 @@ class RasterTile {
     int tileColumn,
     int nRows,
     int nColumns,
-    List<GvrsElementSpec> elementSpecifications,
+    List<GvrsElementSpecification> elementSpecifications,
     boolean initializeValues) {
 
     this.tileIndex = tileIndex;
@@ -107,7 +107,7 @@ class RasterTile {
     elements = new TileElement[elementSpecifications.size()];
     int k = 0;
     int sumStandardSize = 0;
-    for (GvrsElementSpec spec : elementSpecifications) {
+    for (GvrsElementSpecification spec : elementSpecifications) {
       TileElement e;
       switch (spec.dataType) {
         case INTEGER:

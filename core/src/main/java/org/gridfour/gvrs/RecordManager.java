@@ -794,7 +794,7 @@ class RecordManager {
  
       boolean compressed = false;
       for (int iElement = 0; iElement < spec.getNumberOfElements(); iElement++) {
-        GvrsElementSpec eSpec = spec.elementSpecifications.get(iElement);
+        GvrsElementSpecification eSpec = spec.elementSpecifications.get(iElement);
         int standardSize = spec.nCellsInTile * eSpec.dataType.bytesPerSample;
         standardSize = (standardSize + 3) & 0x7ffffffc; // adjustment for short type
         int n = braf.leReadInt();

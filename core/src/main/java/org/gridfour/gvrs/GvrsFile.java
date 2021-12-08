@@ -174,13 +174,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
     List<CodecHolder> csList = spec.getCompressionCodecs();
     if (!csList.isEmpty()) {
       String scratch = CodecHolder.formatSpecificationString(csList);
-      GvrsMetadata codecMetadata = GvrsMetadataEnum.GvrsJavaCodecs.newInstance(0);
+      GvrsMetadata codecMetadata = GvrsMetadataConstants.GvrsJavaCodecs.newInstance(0);
       codecMetadata.setString(scratch);
       codecMetadata.setDescription("Class paths for Java compressors");
       GvrsFile.this.writeMetadata(codecMetadata);
     }
 
-    for (GvrsElementSpec eSpec : specification.elementSpecifications) {
+    for (GvrsElementSpecification eSpec : specification.elementSpecifications) {
       GvrsElement e = eSpec.makeElement(this);
       elements.add(e);
     }
@@ -281,7 +281,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     // See if the source file specified Java codecs.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
     GvrsMetadata codecMetadata = 
-       GvrsFile.this.readMetadata(GvrsMetadataEnum.GvrsJavaCodecs.name(), 0);
+       GvrsFile.this.readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
       String codecStr = codecMetadata.getString();
       codecSpecificationList
@@ -290,7 +290,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     spec.integrateCodecSpecificationsFromFile(codecSpecificationList);
     rasterCodec.setCodecs(spec.codecList);
 
-    for (GvrsElementSpec eSpec : spec.elementSpecifications) {
+    for (GvrsElementSpecification eSpec : spec.elementSpecifications) {
       GvrsElement e = eSpec.makeElement(this);
       elements.add(e);
     }

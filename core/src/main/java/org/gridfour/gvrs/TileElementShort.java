@@ -73,10 +73,10 @@ class TileElementShort extends TileElement {
     RasterTile parent,
     int nRows,
     int nColumns,
-    GvrsElementSpec elementSpec,
+    GvrsElementSpecification elementSpec,
     boolean initializeValues) {
     super(parent, nRows, nColumns, elementSpec);
-    GvrsElementSpecShort sSpec = (GvrsElementSpecShort) elementSpec;
+    GvrsElementSpecificationShort sSpec = (GvrsElementSpecificationShort) elementSpec;
     minValue = sSpec.minValue;
     maxValue = sSpec.maxValue;
     fillValue = sSpec.fillValue;

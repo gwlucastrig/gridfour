@@ -46,7 +46,7 @@ public class GvrsFileChecksumTest {
       testFile.delete();
     }
 
-    GvrsElementSpec eSpec0 = new GvrsElementSpecInt("z0");
+    GvrsElementSpecification eSpec0 = new GvrsElementSpecificationInt("z0");
 
     GvrsFileSpecification spec = new GvrsFileSpecification(10, 20, 10, 10);
     spec.addElementSpecification(eSpec0);

@@ -58,7 +58,7 @@ package org.gridfour.gvrs;
  * <p>
  * The limit to the length of an element name name is 32 characters.
  */
-public abstract class GvrsElementSpec {
+public abstract class GvrsElementSpecification {
 
   public static final int GVRS_ELEMENT_MAX_IDENTIFIER_LENGTH = 32;
 
@@ -73,7 +73,7 @@ public abstract class GvrsElementSpec {
    * @param name The name of the element specified by instances.
    * @param elementType The type of the element specified by instances.
    */
-  GvrsElementSpec(String name, GvrsElementType elementType) {
+  GvrsElementSpecification(String name, GvrsElementType elementType) {
     GvrsIdentifier.checkIdentifier(name, GVRS_ELEMENT_MAX_IDENTIFIER_LENGTH);
     if (elementType == null) {
       throw new IllegalArgumentException(
@@ -146,7 +146,7 @@ public abstract class GvrsElementSpec {
     return unitOfMeasure;
   }
 
-  protected void copyApplicationData(GvrsElementSpec spec) {
+  protected void copyApplicationData(GvrsElementSpecification spec) {
     description = spec.description;
     unitOfMeasure = spec.unitOfMeasure;
   }
@@ -157,7 +157,7 @@ public abstract class GvrsElementSpec {
    *
    * @return a valid object with content identical to the current instance.
    */
-  abstract GvrsElementSpec copy();
+  abstract GvrsElementSpecification copy();
 
   /**
    * Makes an instance of a GVRS element based on the data type and

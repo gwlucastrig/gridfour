@@ -62,7 +62,7 @@ public class GvrsElementInt extends GvrsElement {
    * maximum values.
    * @param file The the file with which this instance is associated.
    */
-  GvrsElementInt(GvrsElementSpec eSpec, int minValue, int maxValue, int fillValue, GvrsFile file) {
+  GvrsElementInt(GvrsElementSpecification eSpec, int minValue, int maxValue, int fillValue, GvrsFile file) {
     super(eSpec, GvrsElementType.INTEGER, file);
     this.minValue = minValue;
     this.maxValue = maxValue;

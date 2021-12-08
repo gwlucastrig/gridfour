@@ -74,7 +74,7 @@ public abstract class GvrsElement {
    * @param elementType The type of the element specified by instances.
    * @param file The GVRS file with which this element is associated.
    */
-  GvrsElement(GvrsElementSpec eSpec, GvrsElementType elementType, GvrsFile file) {
+  GvrsElement(GvrsElementSpecification eSpec, GvrsElementType elementType, GvrsFile file) {
     this.name = eSpec.name;
     this.dataType = elementType;
     this.description = eSpec.description;
