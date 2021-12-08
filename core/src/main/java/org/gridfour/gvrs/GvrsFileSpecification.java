@@ -157,7 +157,7 @@ public class GvrsFileSpecification {
   List<CodecHolder> codecList = new ArrayList<>();
   List<String> codecIdentificationList = new ArrayList<>();
 
-  List<GvrsElementSpec> elementSpecifications = new ArrayList<>();
+  List<GvrsElementSpecification> elementSpecifications = new ArrayList<>();
 
   private void addCodecSpec(String key, Class<?> codec) {
     GvrsIdentifier.checkIdentifier(key, 32);
@@ -360,7 +360,7 @@ public class GvrsFileSpecification {
    */
   int getStandardTileSizeInBytes() {
     int k = 0;
-    for (GvrsElementSpec eSpec : elementSpecifications) {
+    for (GvrsElementSpecification eSpec : elementSpecifications) {
       int n = nRowsInTile * nColsInTile * eSpec.dataType.bytesPerSample;
       if (eSpec.dataType.bytesPerSample != 4) {
         n = (n + 3) & 0x7ffffffc;
@@ -615,15 +615,15 @@ public class GvrsFileSpecification {
       }
       GvrsElementType dataType = GvrsElementType.valueOf(dataTypeCode);
 
-      GvrsElementSpec spec;
+      GvrsElementSpecification spec;
       String name = braf.readUTF();
       switch (dataType) {
         case SHORT:
           short sMinValue = braf.leReadShort();
           short sMaxValue = braf.leReadShort();
           short sFillValue = braf.leReadShort();
-          GvrsElementSpecShort sSpec
-            = new GvrsElementSpecShort(name, sMinValue, sMaxValue, sFillValue);
+          GvrsElementSpecificationShort sSpec
+            = new GvrsElementSpecificationShort(name, sMinValue, sMaxValue, sFillValue);
           elementSpecifications.add(sSpec);
           spec = sSpec;
           break;
@@ -631,8 +631,8 @@ public class GvrsFileSpecification {
           float fMinValue = braf.leReadFloat();
           float fMaxValue = braf.leReadFloat();
           float fFillValue = braf.leReadFloat();
-          GvrsElementSpecFloat fSpec
-            = new GvrsElementSpecFloat(name, fMinValue, fMaxValue, fFillValue);
+          GvrsElementSpecificationFloat fSpec
+            = new GvrsElementSpecificationFloat(name, fMinValue, fMaxValue, fFillValue);
           elementSpecifications.add(fSpec);
             spec = fSpec;
         }
@@ -646,8 +646,8 @@ public class GvrsFileSpecification {
           int iMinValue = braf.leReadInt();  // NO PMD diagnostic
           int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
           int iFillValue = braf.leReadInt(); // NO PMD diagnostic    
-          GvrsElementSpecIntCodedFloat icfSpec
-            = new GvrsElementSpecIntCodedFloat(name, fMinValue, fMaxValue, fFillValue, scale, offset);
+          GvrsElementSpecificationIntCodedFloat icfSpec
+            = new GvrsElementSpecificationIntCodedFloat(name, fMinValue, fMaxValue, fFillValue, scale, offset);
           elementSpecifications.add(icfSpec);
           spec = icfSpec;
         }
@@ -658,8 +658,8 @@ public class GvrsFileSpecification {
           int iMinValue = braf.leReadInt();  // NO PMD diagnostic
           int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
           int iFillValue = braf.leReadInt(); // NO PMD diagnostic
-          GvrsElementSpecInt iSpec
-            = new GvrsElementSpecInt(name, iMinValue, iMaxValue, iFillValue);
+          GvrsElementSpecificationInt iSpec
+            = new GvrsElementSpecificationInt(name, iMinValue, iMaxValue, iFillValue);
           elementSpecifications.add(iSpec);
           spec = iSpec;
           break;
@@ -733,7 +733,7 @@ public class GvrsFileSpecification {
     }
 
     braf.leWriteInt(elementSpecifications.size());
-    for (GvrsElementSpec e : elementSpecifications) {
+    for (GvrsElementSpecification e : elementSpecifications) {
       GvrsElementType dataType = e.dataType;
       int codeValue = (byte) dataType.getCodeValue();
       braf.writeByte(codeValue);
@@ -743,19 +743,19 @@ public class GvrsFileSpecification {
       braf.writeUTF(e.name);
       switch (dataType) {
         case SHORT:
-          GvrsElementSpecShort sSpec = (GvrsElementSpecShort) e;
+          GvrsElementSpecificationShort sSpec = (GvrsElementSpecificationShort) e;
           braf.leWriteShort(sSpec.minValue);
           braf.leWriteShort(sSpec.maxValue);
           braf.leWriteShort(sSpec.fillValue);
           break;
         case FLOAT:
-          GvrsElementSpecFloat fSpec = (GvrsElementSpecFloat) e;
+          GvrsElementSpecificationFloat fSpec = (GvrsElementSpecificationFloat) e;
           braf.leWriteFloat(fSpec.minValue);
           braf.leWriteFloat(fSpec.maxValue);
           braf.leWriteFloat(fSpec.fillValue);
           break;
         case INTEGER_CODED_FLOAT:
-          GvrsElementSpecIntCodedFloat icfSpec = (GvrsElementSpecIntCodedFloat) e;
+          GvrsElementSpecificationIntCodedFloat icfSpec = (GvrsElementSpecificationIntCodedFloat) e;
           braf.leWriteFloat(icfSpec.minValue);
           braf.leWriteFloat(icfSpec.maxValue);
           braf.leWriteFloat(icfSpec.fillValue);
@@ -767,7 +767,7 @@ public class GvrsFileSpecification {
           break;
         case INTEGER:
         default:
-          GvrsElementSpecInt iSpec = (GvrsElementSpecInt) e;
+          GvrsElementSpecificationInt iSpec = (GvrsElementSpecificationInt) e;
           braf.leWriteInt(iSpec.minValue);
           braf.leWriteInt(iSpec.maxValue);
           braf.leWriteInt(iSpec.fillValue);
@@ -1419,11 +1419,11 @@ public class GvrsFileSpecification {
    *
    * @param specification a valid instance
    */
-  public void addElementSpecification(GvrsElementSpec specification) {
+  public void addElementSpecification(GvrsElementSpecification specification) {
     if (specification == null) {
       throw new IllegalArgumentException("Null specification not supported");
     }
-    for (GvrsElementSpec e : elementSpecifications) {
+    for (GvrsElementSpecification e : elementSpecifications) {
       if (e.name.equals(specification.name)) {
         throw new IllegalArgumentException("An element specification with name "
           + e.name + " already exists");

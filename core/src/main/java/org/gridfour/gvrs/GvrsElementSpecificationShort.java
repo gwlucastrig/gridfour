@@ -39,91 +39,87 @@ package org.gridfour.gvrs;
 
 /**
  * Provides a concrete definition of a GvrsElementSpec that specifies
- * floating-point data
+ * short-integer data
  */
-public class GvrsElementSpecFloat extends GvrsElementSpec {
+public class GvrsElementSpecificationShort extends GvrsElementSpecification {
 
-  final float minValue;
-  final float maxValue;
-  final float fillValue;
+  final short minValue;
+  final short maxValue;
+  final short fillValue;
 
   /**
-   * Constructs a instance giving parameters for a
-   * four-byte floating-point element. Default values are provided
+   * Constructs an instance giving parameters for a
+   * two-byte short-integer element. Default values are provided
    * as follows:
    * <ul>
-   * <li><strong>minimum value</strong> -Float.MAX_VALUE
-   * (-3.4028234663852886E38f)</li>
-   * <li><strong>maximum value</strong> FLOAT.MAX_VALUE
-   * (3.4028234663852886E38f)</li>
-   * <li><strong>fill value</strong> FLOAT.NaN</li>
+   * <li><strong>minimum value</strong> Short.MIN_VALUE+1 (-32767)</li>
+   * <li><strong>maximum value</strong> Short.MAX_VALUE (32767)</li>
+   * <li><strong>fill value</strong> Short.MIN_VALUE (-32768)</li>
    * </ul>
    *
    * @param name a valid, non-blank identifier for the intended element.
    */
-  public GvrsElementSpecFloat(String name) {
-    super(name, GvrsElementType.FLOAT);
-    this.minValue = Float.NEGATIVE_INFINITY;
-    this.maxValue = Float.POSITIVE_INFINITY;
-    this.fillValue = Float.NaN;
+  public GvrsElementSpecificationShort(String name) {
+    super(name, GvrsElementType.SHORT);
+    this.minValue = Short.MIN_VALUE + 1;
+    this.maxValue = Short.MAX_VALUE;
+    this.fillValue = Short.MIN_VALUE;
   }
 
   /**
    * Constructs a specification instance giving parameters for a
-   * four-byte integer element. Default values are provided
+   * four-byte short element. Default values are provided
    * as follows:
    * <ul>
-   * <li><strong>minimum value</strong> -Float.MAX_VALUE
-   * (-3.4028234663852886E38f)</li>
-   * <li><strong>maximum value</strong> FLOAT.MAX_VALUE
-   * (3.4028234663852886E38f)</li>
+   * <li><strong>minimum value</strong> Short.MIN_VALUE (-32768)</li>
+   * <li><strong>maximum value</strong> Short.MAX_VALUE (32767)</li>
    * </ul>
    *
    * @param name a valid, non-blank identifier for the intended element.
    * @param fillValue the value assigned to unpopulated raster cells.
    */
-  public GvrsElementSpecFloat(String name, float fillValue) {
-    super(name, GvrsElementType.FLOAT);
-    this.minValue = Float.NEGATIVE_INFINITY;
-    this.maxValue = Float.POSITIVE_INFINITY;
+  public GvrsElementSpecificationShort(String name, short fillValue) {
+    super(name, GvrsElementType.SHORT);
+    this.minValue = Short.MIN_VALUE;
+    this.maxValue = Short.MAX_VALUE;
     this.fillValue = fillValue;
   }
 
   /**
    * Constructs a specification instance giving parameters for a
-   * four-byte integer element. No default values are provided.
+   * two-byte short integer element. No default values are provided.
    *
    * @param name a valid, non-blank identifier for the intended element.
-   * @param minValue the minimum integer value allowed for input,
+   * @param minValue the minimum short value allowed for input,
    * must be less than or equal to the maximum value
-   * @param maxValue the maximum integer value allowed for input,
+   * @param maxValue the maximum short value allowed for input,
    * must be greater than or equal to the min value.
    * @param fillValue the value assigned to unpopulated raster cells,
    * does not necessarily have to be with the range of the minimum and
    * maximum values.
    */
-  public GvrsElementSpecFloat(String name, float minValue, float maxValue, float fillValue) {
-    super(name, GvrsElementType.FLOAT);
+  public GvrsElementSpecificationShort(String name, short minValue, short maxValue, short fillValue) {
+    super(name, GvrsElementType.SHORT);
     this.minValue = minValue;
     this.maxValue = maxValue;
     this.fillValue = fillValue;
   }
 
   @Override
-  GvrsElementSpec copy() {
-    GvrsElementSpec spec = new GvrsElementSpecFloat(name, minValue, maxValue, fillValue);
+  GvrsElementSpecification copy() {
+    GvrsElementSpecification spec = new GvrsElementSpecificationShort(name, minValue, maxValue, fillValue);
     spec.copyApplicationData(this);
     return spec;
   }
 
   @Override
   GvrsElement makeElement(GvrsFile file) {
-    return new GvrsElementFloat(this, minValue, maxValue, fillValue, file);
+    return new GvrsElementShort(this, minValue, maxValue, fillValue, file);
   }
 
   @Override
   public String toString() {
-    return String.format("GVRS Element Specification: float, range [%f,%f], fill %f",
+    return String.format("GVRS Element Specification: Short, range [%d,%d], fill %d",
       minValue, maxValue, fillValue);
   }
 }

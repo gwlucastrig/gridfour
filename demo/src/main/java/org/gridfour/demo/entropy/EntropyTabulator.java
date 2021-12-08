@@ -48,7 +48,7 @@ import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
 import org.gridfour.gvrs.GvrsElementInt;
-import org.gridfour.gvrs.GvrsElementSpecInt;
+import org.gridfour.gvrs.GvrsElementSpecificationInt;
 import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
@@ -153,7 +153,7 @@ public class EntropyTabulator {
     GvrsFileSpecification countsSpec
       = new GvrsFileSpecification(65536, 65536, 256, 256);
     countsSpec.setDataCompressionEnabled(false);
-    GvrsElementSpecInt countsElementSpec = new GvrsElementSpecInt("counts", 0);
+    GvrsElementSpecificationInt countsElementSpec = new GvrsElementSpecificationInt("counts", 0);
     countsSpec.addElementSpecification(countsElementSpec);
 
     try (GvrsFile source = new GvrsFile(inputFile, "r");

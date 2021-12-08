@@ -18,8 +18,8 @@ public class GvrsElementWriteAndReadMultiTileTest {
   private float fltFillValue = -999.9f;
   private int[] intSamples;
   private float[] fltSamples;
-  private GvrsElementSpec[] intSpecs;
-  private GvrsElementSpec[] fltSpecs;
+  private GvrsElementSpecification[] intSpecs;
+  private GvrsElementSpecification[] fltSpecs;
 
   @TempDir
   File tempDir;
@@ -34,12 +34,12 @@ public class GvrsElementWriteAndReadMultiTileTest {
     intSamples[intSamples.length - 1] = intFillValue;
     fltSamples[intSamples.length - 1] = fltFillValue;
 
-    intSpecs = new GvrsElementSpec[2];
-    intSpecs[0] = new GvrsElementSpecInt("zInt", intFillValue);
-    intSpecs[1] = new GvrsElementSpecShort("zShort", (short) intFillValue);
-    fltSpecs = new GvrsElementSpec[2];
-    fltSpecs[0] = new GvrsElementSpecFloat("zFloat", fltFillValue);
-    fltSpecs[1] = new GvrsElementSpecIntCodedFloat("zICF", fltFillValue, 10f, 0);
+    intSpecs = new GvrsElementSpecification[2];
+    intSpecs[0] = new GvrsElementSpecificationInt("zInt", intFillValue);
+    intSpecs[1] = new GvrsElementSpecificationShort("zShort", (short) intFillValue);
+    fltSpecs = new GvrsElementSpecification[2];
+    fltSpecs[0] = new GvrsElementSpecificationFloat("zFloat", fltFillValue);
+    fltSpecs[1] = new GvrsElementSpecificationIntCodedFloat("zICF", fltFillValue, 10f, 0);
   }
 
   @BeforeAll
@@ -72,7 +72,7 @@ public class GvrsElementWriteAndReadMultiTileTest {
 
       // Define two tiles side-by-side.
       GvrsFileSpecification spec = new GvrsFileSpecification(10, 20, 10, 10);
-      GvrsElementSpec eSpec = intSpecs[iSpec];
+      GvrsElementSpecification eSpec = intSpecs[iSpec];
       spec.addElementSpecification(eSpec);
       
       // populate the first tile, but not the second
@@ -137,7 +137,7 @@ public class GvrsElementWriteAndReadMultiTileTest {
 
       // Define two tiles side-by-side.
       GvrsFileSpecification spec = new GvrsFileSpecification(10, 20, 10, 10);
-      GvrsElementSpec eSpec = fltSpecs[iSpec];
+      GvrsElementSpecification eSpec = fltSpecs[iSpec];
       spec.addElementSpecification(eSpec);
       
       // populate the first tile, but not the second

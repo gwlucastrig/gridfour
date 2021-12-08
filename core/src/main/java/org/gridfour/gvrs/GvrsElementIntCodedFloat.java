@@ -60,7 +60,7 @@ public class GvrsElementIntCodedFloat extends GvrsElement {
    * @param eSpec The specification for the element
    * @param file The file with which this instance is associated.
    */
-  GvrsElementIntCodedFloat(GvrsElementSpecIntCodedFloat eSpec, GvrsFile file) {
+  GvrsElementIntCodedFloat(GvrsElementSpecificationIntCodedFloat eSpec, GvrsFile file) {
     super(eSpec, GvrsElementType.INTEGER_CODED_FLOAT, file);
     this.minValue = eSpec.minValue;
     this.maxValue = eSpec.maxValue;

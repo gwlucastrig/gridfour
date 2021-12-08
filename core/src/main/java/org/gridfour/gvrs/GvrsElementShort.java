@@ -62,7 +62,7 @@ public class GvrsElementShort extends GvrsElement {
    * maximum values.
    * @param file The the file with which this instance is associated.
    */
-  GvrsElementShort(GvrsElementSpec eSpec, short minValue, short maxValue, short fillValue, GvrsFile file) {
+  GvrsElementShort(GvrsElementSpecification eSpec, short minValue, short maxValue, short fillValue, GvrsFile file) {
     super(eSpec, GvrsElementType.SHORT, file);
     this.minValue = minValue;
     this.maxValue = maxValue;

@@ -62,7 +62,7 @@ public class GvrsElementFloat extends GvrsElement {
    * maximum values.
    * @param file The the file with which this instance is associated.
    */
-  GvrsElementFloat(GvrsElementSpec eSpec, float minValue, float maxValue, float fillValue, GvrsFile file) {
+  GvrsElementFloat(GvrsElementSpecification eSpec, float minValue, float maxValue, float fillValue, GvrsFile file) {
     super(eSpec, GvrsElementType.FLOAT, file);
     this.minValue = minValue;
     this.maxValue = maxValue;

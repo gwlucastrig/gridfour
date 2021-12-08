@@ -41,7 +41,7 @@ package org.gridfour.gvrs;
  * The purpose of this enumeration is to support uniform and consistent
  * specifications across all applications that use the GVRS file format.
  */
-public enum GvrsMetadataEnum {
+public enum GvrsMetadataConstants {
   /**
    * Defines a specification for the author of a data set.
    */
@@ -86,7 +86,7 @@ public enum GvrsMetadataEnum {
 
   private final GvrsMetadataType dataType;
 
-  GvrsMetadataEnum(GvrsMetadataType dataType) {
+  GvrsMetadataConstants(GvrsMetadataType dataType) {
     this.dataType = dataType;
   }
 

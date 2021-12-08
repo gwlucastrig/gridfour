@@ -73,10 +73,10 @@ class TileElementFloat extends TileElement {
     RasterTile parent,
     int nRows,
     int nColumns,
-    GvrsElementSpec elementSpec,
+    GvrsElementSpecification elementSpec,
     boolean initializeValues) {
     super(parent, nRows, nColumns, elementSpec);
-    GvrsElementSpecFloat fSpec = (GvrsElementSpecFloat) elementSpec;
+    GvrsElementSpecificationFloat fSpec = (GvrsElementSpecificationFloat) elementSpec;
     minValue = fSpec.minValue;
     maxValue = fSpec.maxValue;
     fillValue = fSpec.fillValue;
