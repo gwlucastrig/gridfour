@@ -39,7 +39,7 @@
 package org.gridfour.gvrs;
 
 /**
- * Specifies the size of a tile cache for the SimpleRasterTile class. In
+ * Specifies the size of a tile cache for the GvrsFile class. In
  * general, large caches support faster data access but require more memory.
  * Smaller caches conserve memory, but may result in reduced performance for
  * data queries and storage.

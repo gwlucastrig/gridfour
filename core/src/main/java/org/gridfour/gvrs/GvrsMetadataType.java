@@ -39,7 +39,7 @@
 package org.gridfour.gvrs;
 
 /**
- * Defines the possible representations of data stored as an element
+ * Defines the possible representations of data stored in an metadata object
  * in a GVRS file.
  */
 public enum GvrsMetadataType {
