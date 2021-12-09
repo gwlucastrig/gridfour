@@ -82,6 +82,11 @@ public enum GvrsMetadataConstants {
    * ignore metadata this specification.
    */
   GvrsJavaCodecs(GvrsMetadataType.ASCII),
+  /**
+   * Gets an ordered list of the names of the codecs used by the
+   * GvrsFile.  This specification is intended to support compatibility
+   * across development environments and is not limited to Java.
+   */
   GvrsCompressionCodecs(GvrsMetadataType.ASCII);
 
   private final GvrsMetadataType dataType;

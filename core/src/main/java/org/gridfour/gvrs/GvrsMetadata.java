@@ -205,7 +205,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     }
   }
 
-  public void write(BufferedRandomAccessFile braf) throws IOException {
+  void write(BufferedRandomAccessFile braf) throws IOException {
     braf.writeUTF(name);
     braf.leWriteInt(recordID);
     braf.write(dataType.getCodeValue());
@@ -513,7 +513,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     
   }
 
-  public GvrsMetadata(BufferedRandomAccessFile braf) throws IOException {
+   GvrsMetadata(BufferedRandomAccessFile braf) throws IOException {
 
     name = braf.readUTF();
     recordID = braf.leReadInt();

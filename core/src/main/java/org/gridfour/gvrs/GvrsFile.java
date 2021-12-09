@@ -115,11 +115,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
         + " feature not implemented");
     }
 
-    if (specification.elementSpecifications.isEmpty()) {
-      throw new IllegalArgumentException(
-        "Specification does not contain element defintions. At least one is required.");
-    }
-
     this.openedForWriting = true;
     this.file = file;
     this.spec = new GvrsFileSpecification(specification);
@@ -332,7 +327,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Gets the file in which the data for this raster is stored.
+   * Gets a file reference to the file in which the data
+   * for this raster is stored.
    *
    * @return a valid file reference.
    */
@@ -541,14 +537,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
    *
    * @return a valid instance.
    */
-  public TileAccessIndices getAccessIndices() {
+  TileAccessIndices getAccessIndices() {
     return new TileAccessIndices(spec);
   }
 
   /**
    * Sets or clears a flag indicating that the instance should generate an
-   * index
-   * file when a writable file is closed.
+   * index file when a writable file is closed.
    *
    * @param indexCreationEnabled true if an index is to be created; otherwise
    * false.
@@ -661,12 +656,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * in
    * an array in that order. If the x or y coordinate is outside the ranges
    * defined for these parameters, the resulting rows and columns may be
-   * outside
-   * the range of the valid grid coordinates.
+   * outside  the range of the valid grid coordinates.
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through a call to the
-   * SimpleRasterSpecification.setCartesianCoordinates{} method when the
+   * established through a call to the GvrsFileSpecification.setCartesianCoordinates{} method when the
    * associated file was created.
    *
    * @param x a valid floating-point coordinate
@@ -687,7 +680,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * <p>
    * The transformation performed by this method is based on the parameters
    * established through a call to the
-   * SimpleRasterSpecification.setCartesianCoordinates{} method when the
+   * GvrsFileSpecification.setCartesianCoordinates{} method when the
    * associated file was created.
    *
    * @param row a row (may be a non-integral value)
@@ -708,7 +701,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * <p>
    * The transformation performed by this method is based on the parameters
    * established through a call to the
-   * SimpleRasterSpecification.setGeographicCoordinates{} method when the
+   * GvrsFileSpecification.setGeographicCoordinates{} method when the
    * associated file was created.
    *
    * @param latitude a valid floating-point coordinate
@@ -730,7 +723,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * <p>
    * The transformation performed by this method is based on the parameters
    * established through a call to the
-   * SimpleRasterSpecification.setCartesianCoordinates{} method when the
+   * GvrsFileSpecification.setCartesianCoordinates{} method when the
    * associated file was created.
    *
    * @param row the row coordinate (may be non-integral)
@@ -852,6 +845,15 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return true;
   }
 
+  /**
+   * Gets the GVRS element (if any) that matches the specified
+   * name.  Note that element names are case sensitive.
+   * Note: There is one, and only one, element for each name
+   * in a GVRS file. So multiple calls to this method that use the
+   * same name will obtain the same object.
+   * @param name The name of the desired element.
+   * @return if matched, a valid instance; otherwise a null.
+   */
   public GvrsElement getElement(String name) {
     for (GvrsElement e : elements) {
       if (e.name.equals(name)) {
@@ -861,6 +863,11 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return null;
   }
 
+  /**
+   * Gets a list of all the elements that were specified for
+   * the GVRS file when it was created.
+   * @return a valid, potentially empty list.
+   */
   public List<GvrsElement> getElements() {
     List<GvrsElement> list = new ArrayList<>();
     list.addAll(elements);

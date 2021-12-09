@@ -34,19 +34,23 @@
  *
  * -----------------------------------------------------------------------
  */
-
 package org.gridfour.gvrs;
 
 import java.io.IOException;
 
+/**
+ * A class used to compute which tiles are associated with
+ * specified grid point and which row and column
+ * withing the tile are associated with the point.
+ */
 class TileAccessIndices {
 
-  public int tileIndex;
-  public int rowInTile;
-  public int colInTile;
-  public int tileRow;
-  public int tileCol;
-  public int indexInTile;
+  int tileIndex;
+  int rowInTile;
+  int colInTile;
+  int tileRow;
+  int tileCol;
+  int indexInTile;
 
   final int nRowsInRaster;
   final int nColsInRaster;
@@ -63,6 +67,14 @@ class TileAccessIndices {
     this.nColsOfTiles = spec.nColsOfTiles;
   }
 
+  /**
+   * Compute the indices for the specified row and column from the
+   * raster. This calculation populates member element in this instance.
+   *
+   * @param row the grid row coordinate of interest
+   * @param col the grid column column of interest.
+   * @throws IOException in the event of a bad specification for row and column.
+   */
   public void computeAccessIndices(int row, int col) throws IOException {
     if (row < 0 || row >= nRowsInRaster) {
       throw new IOException("Row out of bounds " + row);
@@ -76,6 +88,6 @@ class TileAccessIndices {
     tileIndex = tileRow * nColsOfTiles + tileCol;
     rowInTile = row - tileRow * nRowsInTile;
     colInTile = col - tileCol * nColsInTile;
-    indexInTile = rowInTile*nColsInTile+colInTile;
+    indexInTile = rowInTile * nColsInTile + colInTile;
   }
 }

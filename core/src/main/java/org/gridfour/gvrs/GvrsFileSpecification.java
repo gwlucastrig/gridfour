@@ -235,15 +235,12 @@ public class GvrsFileSpecification {
    * tile size.
    * <p>
    * For example, if an application were using geographic coordinates wait a
-   * one
-   * second of arc cell spacing for a grid, it would require a grid of
+   * one second of arc cell spacing for a grid, it would require a grid of
    * dimensions 1296000 by 648000. A tile size of 60-by-60 would ensure that
-   * the
-   * maximum number of tiles was just over 233 million, and well within the
+   * the maximum number of tiles was just over 233 million, and well within the
    * limits imposed by this implementation. However, a tile size of 10-by-10
    * would product a maximum number of tiles of over 8 billion, and would
-   * exceed
-   * the limits of the implementation.
+   * exceed the limits of the implementation.
    *
    * @param nRowsInRaster the number of rows in the raster
    * @param nColumnsInRaster the number of columns in the raster
@@ -306,13 +303,78 @@ public class GvrsFileSpecification {
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
 
     nCellsInTile = nRowsInTile * nColsInTile;
+  }
+  
+   /**
+   * Construct a specification for creating a GVRS raster with the indicated
+   * dimensions.  The internal tile sizes are automatically computed.
+   *
+   * @param nRowsInRaster the number of rows in the raster
+   * @param nColumnsInRaster the number of columns in the raster
+   * @param nRowsInTile the number of rows in the tiling scheme
+   * @param nColumnsInTile the number of columns in the tiling scheme
+   */
+  GvrsFileSpecification(int nRowsInRaster, int nColumnsInRaster){
+    int  nRowsInTile;
+    int nColumnsInTile;
+    
+    if(nRowsInRaster<=128){
+      nRowsInTile = nRowsInRaster;
+    }else{
+      int n = (nRowsInRaster+96-1)/96;
+      nRowsInTile = nRowsInRaster/n;
+    }
+    
+    if(nColumnsInRaster<=128){
+      nColumnsInTile = nColumnsInRaster;
+    }else{
+      int n = (nColumnsInRaster+96-1)/96;
+      nColumnsInTile = nColumnsInRaster/n;
+    }
+    
+    initDefaultCodecList();
 
+    uuid = UUID.randomUUID();
+    timeCreated = System.currentTimeMillis();
+    this.nRowsInRaster = nRowsInRaster;
+    this.nColsInRaster = nColumnsInRaster;
+    if (nRowsInTile == 0 && nColumnsInTile == 0) {
+      this.nRowsInTile = nRowsInRaster;
+      this.nColsInTile = nColsInRaster;
+    } else {
+      this.nRowsInTile = nRowsInTile;
+      this.nColsInTile = nColumnsInTile;
+    }
+
+    if (nRowsInRaster <= 0 || nColumnsInRaster <= 0) {
+      throw new IllegalArgumentException(
+        "Invalid dimensions for raster "
+        + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
+    }
+     
+    nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
+    nColsOfTiles = (nColsInRaster + nColsInTile - 1) / nColsInTile;
+
+    long nTiles = (long) nRowsOfTiles * (long) nColsOfTiles;
+    if (nTiles > Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+        "The number of potential tiles exceeds "
+        + "the size of a signed integer (2147483647)");
+    }
+    x0 = 0;
+    y0 = 0;
+    x1 = nColsInRaster - 1;
+    y1 = nRowsInRaster - 1;
+    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
+    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+
+    nCellsInTile = nRowsInTile * nColsInTile;
   }
 
   /**
    * Construct a new instance copying the values from the supplied object.
    *
-   * @param s a valid instance of SimpleRasterSpecification.
+   * @param s a valid instance of GvrsFileSpecification.
    */
   public GvrsFileSpecification(GvrsFileSpecification s) {
     uuid = s.uuid;
@@ -511,7 +573,7 @@ public class GvrsFileSpecification {
    *
    * @return a valid array of length 64, potentially all zeros if empty.
    */
-  public byte[] getIdentificationBytes() {
+  byte[] getIdentificationBytes() {
     return getUtfBytes(identification, IDENTIFICATION_SIZE);
   }
 
@@ -542,7 +604,7 @@ public class GvrsFileSpecification {
    * data.
    * @throws IOException in the event of an unrecoverable I/O error
    */
-  public GvrsFileSpecification(BufferedRandomAccessFile braf) throws IOException {
+  GvrsFileSpecification(BufferedRandomAccessFile braf) throws IOException {
     initDefaultCodecList();
 
     timeCreated = System.currentTimeMillis();
@@ -678,7 +740,7 @@ public class GvrsFileSpecification {
  
   }
 
-  public String readUTF(BufferedRandomAccessFile braf) throws IOException {
+ String readUTF(BufferedRandomAccessFile braf) throws IOException {
     int length = braf.readUnsignedShort();
     if (length == 0) {
       return "";
