@@ -97,7 +97,7 @@ public class GvrsFileInspector {
 
     try ( BufferedRandomAccessFile braf = new BufferedRandomAccessFile(file, "r")) {
       inspectContent(braf);
-    }catch(IOException ioex){
+    } catch (IOException ioex) {
       inspectionFailed = true;
       throw ioex;
     }
@@ -121,54 +121,48 @@ public class GvrsFileInspector {
       if (recordSize == 0) {
         break;
       }
-      if (recordSize < 0) {
-        // add the block of file space to the free list.
-        // the free list is ordered by file position, so the new node
-        // goes on the end of the list.
-        recordSize = -recordSize;
-      } else {
-        int tileIndex = braf.leReadInt();
-        if (tileIndex < 0) {
-          // negative tile indexes are used to introduce non-tile
-          // records.
-          if (tileIndex != -1) {
-            throw new IOException("Undefined record code " + (-tileIndex));
-          }
-        } else {
-          if (tileIndex >= maxTileIndex) {
-            this.badTileIndex = true;
-            terminationPosition = filePos;
-            return;
-          }
-          if (recordSize > maxTileRecordSize) {
-            terminationPosition = filePos;
-            badTiles.add(tileIndex);
-            invalidRecordSize = true;
-            return;
-          }
+
+      int tileIndex = braf.leReadInt();
+      if (tileIndex < 0) {
+        // negative tile indexes are used to introduce non-tile
+        // records.
+        if (tileIndex != -1 && tileIndex != -2) {
+          throw new IOException("Undefined record code " + tileIndex);
         }
-        if (spec.isChecksumEnabled()) {
-          braf.seek(filePos);
-          byte[] bytes = new byte[recordSize - 4];
-          braf.readFully(bytes);
-          GridfourCRC32C crc32 = new GridfourCRC32C();
-          crc32.update(bytes);
-          long checksum0 = crc32.getValue();
-          long checksum1 = braf.leReadInt() & 0xffffffffL;
-          if (checksum0 != checksum1) {
-            badTiles.add(tileIndex);
-            inspectionFailed = true;
-            // if we've seen two checksum failures in a row,
-            // we assume the file is profoundly corrupt and it is not
-            // safe to perform further inspection.
-            if (!previousCheckPassed) {
-              terminationPosition = filePos;
-              return;
-            }
-            previousCheckPassed = false;
-          } else {
-            previousCheckPassed = true;
+      } else {
+        if (tileIndex >= maxTileIndex) {
+          this.badTileIndex = true;
+          terminationPosition = filePos;
+          return;
+        }
+        if (recordSize > maxTileRecordSize) {
+          terminationPosition = filePos;
+          badTiles.add(tileIndex);
+          invalidRecordSize = true;
+          return;
+        }
+      }
+      if (spec.isChecksumEnabled()) {
+        braf.seek(filePos);
+        byte[] bytes = new byte[recordSize - 4];
+        braf.readFully(bytes);
+        GridfourCRC32C crc32 = new GridfourCRC32C();
+        crc32.update(bytes);
+        long checksum0 = crc32.getValue();
+        long checksum1 = braf.leReadInt() & 0xffffffffL;
+        if (checksum0 != checksum1) {
+          badTiles.add(tileIndex);
+          inspectionFailed = true;
+          // if we've seen two checksum failures in a row,
+          // we assume the file is profoundly corrupt and it is not
+          // safe to perform further inspection.
+          if (!previousCheckPassed) {
+            terminationPosition = filePos;
+            return;
           }
+          previousCheckPassed = false;
+        } else {
+          previousCheckPassed = true;
         }
       }
 
