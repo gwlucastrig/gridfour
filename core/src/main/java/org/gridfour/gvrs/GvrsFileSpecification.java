@@ -50,7 +50,6 @@ import static java.lang.Double.isFinite;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.Angle;
 
@@ -116,8 +115,6 @@ public class GvrsFileSpecification {
    * The product of the number of rows and columns in the tile.
    */
   final int nCellsInTile;
-
-  final UUID uuid;
 
   boolean isGeographicCoordinateSystemSet;
   boolean isCartesianCoordinateSystemSet;
@@ -255,7 +252,6 @@ public class GvrsFileSpecification {
 
     initDefaultCodecList();
 
-    uuid = UUID.randomUUID();
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
     this.nColsInRaster = nColumnsInRaster;
@@ -334,7 +330,6 @@ public class GvrsFileSpecification {
     
     initDefaultCodecList();
 
-    uuid = UUID.randomUUID();
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
     this.nColsInRaster = nColumnsInRaster;
@@ -377,7 +372,6 @@ public class GvrsFileSpecification {
    * @param s a valid instance of GvrsFileSpecification.
    */
   public GvrsFileSpecification(GvrsFileSpecification s) {
-    uuid = s.uuid;
     timeCreated = s.timeCreated;
     nRowsInRaster = s.nRowsInRaster;
     nColsInRaster = s.nColsInRaster;
@@ -609,10 +603,6 @@ public class GvrsFileSpecification {
 
     timeCreated = System.currentTimeMillis();
 
-    long uuidLow = braf.leReadLong();
-    long uuidHigh = braf.leReadLong();
-    uuid = new UUID(uuidHigh, uuidLow);
-  
       // TO DO: proper treatment of identification is still unresolved.
     //    identification = braf.readUTF();
 
@@ -759,8 +749,6 @@ public class GvrsFileSpecification {
    * @throws IOException in the event of an unhandled I/O error.
    */
   void write(BufferedRandomAccessFile braf) throws IOException {
-    braf.leWriteLong(uuid.getLeastSignificantBits());
-    braf.leWriteLong(uuid.getMostSignificantBits());
 
     braf.leWriteInt(nRowsInRaster);
     braf.leWriteInt(nColsInRaster);
@@ -1426,7 +1414,6 @@ public class GvrsFileSpecification {
       identification == null || identification.isEmpty()
       ? "Not Specified" : identification);
 
-    ps.format("UUID:              %s%n", uuid.toString());
     long cellsInRaster = (long) nRowsInRaster * (long) nColsInRaster;
 
     ps.format("Rows in Raster:    %12d%n", nRowsInRaster);
@@ -1456,26 +1443,6 @@ public class GvrsFileSpecification {
   }
 
   /**
-   * Gets the UUID assigned to this specification (and any GVRS files derived
-   * from it). The UUID is an arbitrary value automatically assigned to the
-   * specification. Its intended use it to allow GVRS to correlate files of
-   * different types (such as the main GVRS file and its associated index
-   * file).
-   * <p>
-   * Once established, the UUID is never modified.
-   * <p>
-   * Internally, the UUID is an arbitary set of 16 bytes. Non-Java language
-   * implementations in languages/environments that do not have built-in
-   * support
-   * for UUIDs are free to implement this feature as they see fit.
-   *
-   * @return a valid string.
-   */
-  public String getUuid() {
-    return uuid.toString();
-  }
-
-  /**
    * Adds an element specification to the file specification.
    * Each element added to a GVRS file must have a unique name.
    *
@@ -1493,6 +1460,5 @@ public class GvrsFileSpecification {
     }
     elementSpecifications.add(specification);
   }
-  
- 
+   
 }
