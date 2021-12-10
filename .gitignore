@@ -5,8 +5,8 @@ pmd_results.html
 nb*.xml
 test*.png
 test*.jpg;
-*.g93
-*.g9x
+*.gvrs
+*.gvrx
 nbproject
 target
 analysis/doc

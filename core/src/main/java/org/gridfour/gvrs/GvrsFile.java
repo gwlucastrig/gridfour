@@ -60,18 +60,20 @@ import org.gridfour.util.GridfourCRC32C;
  */
 public class GvrsFile implements Closeable, AutoCloseable {
 
-  private final static long FILEPOS_MODIFICATION_TIME = 16;
-  private final static long FILEPOS_OPEN_FOR_WRITING_TIME = 24;
+  private final static long FILEPOS_MODIFICATION_TIME = 32;
+  private final static long FILEPOS_OPEN_FOR_WRITING_TIME = 40;
 
   // Gives the offset to the field in the header that is used to
   // store the file position for the storage of content.
-  // The value in this field is also the size of the file header, in bytes. 
-  private final static long FILEPOS_OFFSET_TO_CONTENT = 32;
+  // The value in stored at this file position is also the size
+  // of the file header, in bytes. 
+  private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
 
   private final File file;
   private final GvrsFileSpecification spec;
   private final CodecMaster rasterCodec;
   private final BufferedRandomAccessFile braf;
+  private final UUID uuid;
   private boolean isClosed;
   private boolean openedForWriting;
   private boolean indexCreationEnabled;
@@ -129,16 +131,20 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.writeByte(0); // reserved
     braf.writeByte(0); // reserved
 
+    uuid = UUID.randomUUID();
+    braf.leWriteLong(uuid.getLeastSignificantBits());
+    braf.leWriteLong(uuid.getMostSignificantBits());
+
     braf.leWriteLong(timeModified);  // time modified
     braf.leWriteLong(timeModified);    // time opened
-    braf.leWriteLong(0); // offset to tile store, also length of the header
+    braf.leWriteLong(0); // offset to content, also length of the header
     // write a reserved block of 4 longs, which could be divided up in the future
     // or used for other writable file offsets or data
     braf.leWriteLong(0);
     braf.leWriteLong(0);
     braf.leWriteLong(0);
     braf.leWriteLong(0);
-    
+
     spec.write(braf);
 
     // write out 8 bytes reserved for future use
@@ -155,10 +161,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
     filePosContent = ((filePos + 4) + 7) & 0xfffffff8;
     sizeOfHeaderInBytes = (int) filePosContent;
     int padding = (int) (filePosContent - filePos);
-    for(int i=0; i<padding; i++){
+    for (int i = 0; i < padding; i++) {
       braf.writeByte(0);
     }
-    
+
     braf.seek(FILEPOS_OFFSET_TO_CONTENT);
     braf.leWriteLong(filePosContent);
     braf.flush();
@@ -226,6 +232,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
         + GvrsFileSpecification.SUB_VERSION);
     }
 
+    long uuidLow = braf.leReadLong();
+    long uuidHigh = braf.leReadLong();
+    uuid = new UUID(uuidHigh, uuidLow);
+
     timeModified = braf.leReadLong(); // time modified from old file
     long timeOpenedForWriting = braf.leReadLong();
     if (timeOpenedForWriting != 0) {
@@ -275,8 +285,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
     // See if the source file specified Java codecs.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
-    GvrsMetadata codecMetadata = 
-       GvrsFile.this.readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
+    GvrsMetadata codecMetadata
+      = GvrsFile.this.readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
       String codecStr = codecMetadata.getString();
       codecSpecificationList
@@ -599,8 +609,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
     idxraf.writeByte(0); // reserved
 
     idxraf.leWriteLong(closingTime);  // time modified
-    idxraf.leWriteLong(spec.uuid.getLeastSignificantBits());
-    idxraf.leWriteLong(spec.uuid.getMostSignificantBits());
+    idxraf.leWriteLong(uuid.getLeastSignificantBits());
+    idxraf.leWriteLong(uuid.getMostSignificantBits());
     recordMan.writeTilePositionsToIndexFile(idxraf);
     idxraf.flush();
     idxraf.close();
@@ -616,7 +626,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
       return false;
     }
 
-    try (BufferedRandomAccessFile idxraf
+    try ( BufferedRandomAccessFile idxraf
       = new BufferedRandomAccessFile(indexFile, "r");) {
 
       String s = idxraf.readASCII(12);
@@ -639,8 +649,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
       }
       long leastSigBits = idxraf.leReadLong();
       long mostSigBits = idxraf.leReadLong();
-      UUID uuid = new UUID(mostSigBits, leastSigBits);
-      if (!uuid.equals(spec.uuid)) {
+      UUID indexUuid = new UUID(mostSigBits, leastSigBits);
+      if (!indexUuid.equals(uuid)) {
         // not the same file as the index
         return false;
       }
@@ -656,10 +666,11 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * in
    * an array in that order. If the x or y coordinate is outside the ranges
    * defined for these parameters, the resulting rows and columns may be
-   * outside  the range of the valid grid coordinates.
+   * outside the range of the valid grid coordinates.
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through a call to the GvrsFileSpecification.setCartesianCoordinates{} method when the
+   * established through a call to the
+   * GvrsFileSpecification.setCartesianCoordinates{} method when the
    * associated file was created.
    *
    * @param x a valid floating-point coordinate
@@ -735,7 +746,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Reads the complete set of  metadata records stored in the file.
+   * Reads the complete set of metadata records stored in the file.
    *
    * @return a valid, potentially empty, list instance.
    * @throws IOException in the event of unrecoverable I/O exception
@@ -759,6 +770,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * Reads the unique metadata object identified by name and record ID from
    * the GVRS file. If the file does not contain a matching object,
    * a null reference is returned.
+   *
    * @param name a valid string giving a GVRS identifier
    * @param recordID the record ID for the specified metadata
    * @return if found, a safe copy of the metadata from the GVRS file;
@@ -777,6 +789,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * from the GVRS file. If no such metadata objects exist,
    * the resulting list will be empty. Because no record ID is specified,
    * it is possible that the list may contain multiple entries.
+   *
    * @param name a valid string giving a GVRS identifier
    * @return a valid, potentially empty list.
    * @throws IOException in the event of an unrecoverable I/O exception.
@@ -797,6 +810,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   /**
    * Store a GvrsMetadata instance providing metadata in the file.
+   *
    * @param metadata a valid instance
    * @throws IOException in the event of a unhandled I/O exception.
    */
@@ -808,7 +822,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * A convenience method for storing a GVRS metadata object with string content.
+   * A convenience method for storing a GVRS metadata object with string
+   * content.
+   *
    * @param name a valid string conforming to the GVRS identifier syntax.
    * @param content the string to be stored.
    * @throws IOException in the envent of an unrecoverable I/O exception
@@ -822,7 +838,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     metadata.setString(content);
     GvrsFile.this.writeMetadata(metadata);
   }
- 
+
   boolean loadTile(int tileIndex, boolean writeAccess) throws IOException {
     if (this.isClosed) {
       throw new IOException("Raster file is closed " + file.getPath());
@@ -847,10 +863,11 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   /**
    * Gets the GVRS element (if any) that matches the specified
-   * name.  Note that element names are case sensitive.
+   * name. Note that element names are case sensitive.
    * Note: There is one, and only one, element for each name
    * in a GVRS file. So multiple calls to this method that use the
    * same name will obtain the same object.
+   *
    * @param name The name of the desired element.
    * @return if matched, a valid instance; otherwise a null.
    */
@@ -866,6 +883,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   /**
    * Gets a list of all the elements that were specified for
    * the GVRS file when it was created.
+   *
    * @return a valid, potentially empty list.
    */
   public List<GvrsElement> getElements() {
@@ -883,4 +901,25 @@ public class GvrsFile implements Closeable, AutoCloseable {
   int getSizeOfHeader() {
     return sizeOfHeaderInBytes;
   }
+
+  /**
+   * Gets the UUID assigned to this specification (and any GVRS files derived
+   * from it). The UUID is an arbitrary value automatically assigned to the
+   * specification. Its intended use it to allow GVRS to correlate files of
+   * different types (such as the main GVRS file and its associated index
+   * file).
+   * <p>
+   * The UUID is established by the GvrsFile constructor when a GVRS
+   * file is first created. One set, it is never modified.
+   * <p>
+   * Internally, the UUID is an arbitrary set of 16 bytes. Non-Java language
+   * implementations in languages/environments that do not have built-in
+   * support for UUIDs are free to implement this feature as they see fit.
+   *
+   * @return a valid string.
+   */
+  public String getUUID() {
+    return uuid.toString();
+  }
+
 }
