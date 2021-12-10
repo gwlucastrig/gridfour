@@ -196,7 +196,7 @@ public class LsOptimalPredictor12 {
       }
 
 
-    // now process the samples and compute the 3x3 optimal predictor
+    // now process the samples and compute the 12-by-12 optimal predictor
     double[] ud = computeCoefficients(nRows, nColumns, values);
     if (ud == null) {
       return null;

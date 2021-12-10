@@ -452,7 +452,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public void summarize(PrintStream ps, boolean analyze) {
     ps.format("Gvrs Raster File:   " + file.getPath());
     ps.println("");
-
+    UUID uuid = getUUID();
+    ps.println("UUID:              " + uuid.toString());
+    ps.println("");
     spec.summarize(ps);
     Locale locale = Locale.getDefault();
     Date date = new Date(timeModified);
@@ -916,10 +918,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * implementations in languages/environments that do not have built-in
    * support for UUIDs are free to implement this feature as they see fit.
    *
-   * @return a valid string.
+   * @return a valid UUID
    */
-  public String getUUID() {
-    return uuid.toString();
+  public UUID getUUID() {
+    return uuid;
   }
 
 }

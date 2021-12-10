@@ -44,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.UUID;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
