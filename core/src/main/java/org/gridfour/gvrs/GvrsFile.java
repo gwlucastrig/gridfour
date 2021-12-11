@@ -57,6 +57,15 @@ import org.gridfour.util.GridfourCRC32C;
 
 /**
  * Provides methods and data elements for managing raster data in a file.
+ * <p>
+ * <strong>A Caution Regarding Thread Safety</strong>
+ * <p>
+ * GvrsFile and its related classes are not thread safe.  While a file
+ * may be opened on a read-only basis using multiple instances of
+ * GvrsFile, the individual objects implement state-variables and data
+ * caches that are not protected for concurrent access.  Application requiring
+ * multi-threaded access to a single GvrsFile object must manage
+ * concurrency issues themselves.
  */
 public class GvrsFile implements Closeable, AutoCloseable {
 
@@ -93,10 +102,15 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * the file reference points to an existing file, the old file will be
    * deleted and replaced. The dimensions and structure of the raster
    * file will be taken from the specification argument.
-   *
+   *<p>
+   * When a new instance of GvrsFile is constructed, the specification
+   * object will be copied. Therefore, any subsequent changes to the
+   * specification object supplied by the application will not affect
+   * the internal elements in the GvrsFile element.
+   * 
    * @param file a valid file reference giving the path to a new output file
    * in a location with write access.
-   * @param specification a valid gvrs raster specification
+   * @param specification a valid GVRS raster specification
    * @throws IOException in the event of an unrecoverable I/O error.
    */
   public GvrsFile(File file, GvrsFileSpecification specification)

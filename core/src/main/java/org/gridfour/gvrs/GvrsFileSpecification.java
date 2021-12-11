@@ -382,7 +382,9 @@ public class GvrsFileSpecification {
     nCellsInTile = s.nCellsInTile;
 
     identification = s.identification;
-    elementSpecifications.addAll(s.elementSpecifications);
+    for(GvrsElementSpecification eSpec : s.elementSpecifications){
+      elementSpecifications.add(eSpec.copy());
+    }
 
     isGeographicCoordinateSystemSet = s.isGeographicCoordinateSystemSet;
     isCartesianCoordinateSystemSet = s.isCartesianCoordinateSystemSet;
