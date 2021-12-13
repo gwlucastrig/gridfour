@@ -126,9 +126,10 @@ public class GvrsFileInspector {
       if (tileIndex < 0) {
         // negative tile indexes are used to introduce non-tile
         // records.
-        if (tileIndex != -1 && tileIndex != -2) {
+        if (tileIndex != -1 && tileIndex != -2 && tileIndex != -3) {
           throw new IOException("Undefined record code " + tileIndex);
         }
+        
       } else {
         if (tileIndex >= maxTileIndex) {
           this.badTileIndex = true;
@@ -142,7 +143,7 @@ public class GvrsFileInspector {
           return;
         }
       }
-      if (spec.isChecksumEnabled()) {
+      if (spec.isChecksumEnabled() && tileIndex!=-1) {
         braf.seek(filePos);
         byte[] bytes = new byte[recordSize - 4];
         braf.readFully(bytes);

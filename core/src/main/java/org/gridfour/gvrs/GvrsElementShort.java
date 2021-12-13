@@ -39,7 +39,7 @@ package org.gridfour.gvrs;
 import java.io.IOException;
 
 /**
- * Provides a concrete definition of a GvrsElementSpec that specifies
+ * Provides a concrete definition of a GvrsElementSpecification that specifies
  * integer data
  */
 public class GvrsElementShort extends GvrsElement {
