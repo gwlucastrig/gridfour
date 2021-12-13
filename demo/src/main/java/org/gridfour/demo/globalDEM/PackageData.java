@@ -292,7 +292,6 @@ public class PackageData {
 
       GvrsElement zElement = gvrs.getElement("z");
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
-      gvrs.setIndexCreationEnabled(true);
       storeGeoreferencingInformation(gvrs);
 
       // Initialize data-statistics collection ---------------------------

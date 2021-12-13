@@ -38,7 +38,7 @@
 package org.gridfour.gvrs;
 
 /**
- * Provides a concrete definition of a GvrsElementSpec that defines
+ * Provides a concrete definition of a GvrsElementSpecification that defines
  * an integer-based encoding for floating point values. In cases where
  * input data does not require the full precision supported by floating-point
  * data types, it can be useful to store their values as integer values.

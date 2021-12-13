@@ -54,10 +54,11 @@ public class GvrsFileChecksumTest {
  
     long size1 = 0; // size after tike 0 is written
  
-    try (
-       GvrsFile gvrs = new GvrsFile(testFile, spec)) {
+    try (GvrsFile gvrs = new GvrsFile(testFile, spec)) {
     } catch (IOException ex) {
+      ex.printStackTrace(System.out);
       fail("IOException in processing " + testFile + " " + ex.getMessage());
+      
     }
  
     // Write a single tile of data to the file.  Then get the size and

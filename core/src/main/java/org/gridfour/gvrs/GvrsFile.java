@@ -60,10 +60,10 @@ import org.gridfour.util.GridfourCRC32C;
  * <p>
  * <strong>A Caution Regarding Thread Safety</strong>
  * <p>
- * GvrsFile and its related classes are not thread safe.  While a file
+ * GvrsFile and its related classes are not thread safe. While a file
  * may be opened on a read-only basis using multiple instances of
  * GvrsFile, the individual objects implement state-variables and data
- * caches that are not protected for concurrent access.  Application requiring
+ * caches that are not protected for concurrent access. Application requiring
  * multi-threaded access to a single GvrsFile object must manage
  * concurrency issues themselves.
  */
@@ -78,6 +78,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
   // of the file header, in bytes. 
   private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
 
+  // Gives the offset to the field in the header that is used to
+  // store the file position for the index record.
+  private final static long FILEPOS_OFFSET_TO_INDEX_RECORD = 56;
+
   private final File file;
   private final GvrsFileSpecification spec;
   private final CodecMaster rasterCodec;
@@ -85,7 +89,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final UUID uuid;
   private boolean isClosed;
   private boolean openedForWriting;
-  private boolean indexCreationEnabled;
+  private boolean indexCreationEnabled = true;
   private long timeModified;
 
   // Content begins immediately after the header, so the position
@@ -102,12 +106,12 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * the file reference points to an existing file, the old file will be
    * deleted and replaced. The dimensions and structure of the raster
    * file will be taken from the specification argument.
-   *<p>
+   * <p>
    * When a new instance of GvrsFile is constructed, the specification
    * object will be copied. Therefore, any subsequent changes to the
    * specification object supplied by the application will not affect
    * the internal elements in the GvrsFile element.
-   * 
+   *
    * @param file a valid file reference giving the path to a new output file
    * in a location with write access.
    * @param specification a valid GVRS raster specification
@@ -192,7 +196,18 @@ public class GvrsFile implements Closeable, AutoCloseable {
       GvrsMetadata codecMetadata = GvrsMetadataConstants.GvrsJavaCodecs.newInstance(0);
       codecMetadata.setString(scratch);
       codecMetadata.setDescription("Class paths for Java compressors");
-      GvrsFile.this.writeMetadata(codecMetadata);
+      writeMetadata(codecMetadata);
+      StringBuilder sb = new StringBuilder();
+      for(CodecHolder holder: csList){
+        if(sb.length()>0){
+          sb.append('|');
+        }
+        sb.append(holder.getIdentification());
+      }
+      GvrsMetadata compCodecMetadata = GvrsMetadataConstants.GvrsCompressionCodecs.newInstance(0);
+      compCodecMetadata.setString(sb.toString());
+      compCodecMetadata.setDescription("Compession codecs");
+      writeMetadata(compCodecMetadata);
     }
 
     for (GvrsElementSpecification eSpec : specification.elementSpecifications) {
@@ -262,8 +277,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
     filePosContent = braf.leReadLong();
     sizeOfHeaderInBytes = (int) filePosContent;
 
-    // skip the currently reserved block of 32 bytes
-    braf.skipBytes(32);
+    long filePosIndexRecord = braf.leReadLong();
+
+    // skip the currently reserved block of 24 bytes
+    braf.skipBytes(24);
     spec = new GvrsFileSpecification(braf);
     if (spec.isExtendedFileSizeEnabled) {
       braf.close();
@@ -292,7 +309,19 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
     rasterCodec = new CodecMaster(spec.codecList);
     recordMan = new RecordManager(spec, rasterCodec, braf, filePosContent);
-    if (!readIndexFile(timeModified)) {
+    if (filePosIndexRecord > 0) {
+      recordMan.readIndexRecord(filePosIndexRecord);
+      if (writingEnabled) {
+        // presumably, the content is going to change and the existing
+        // index data will become obsolete.  So dispose of it and zero out
+        // the file position for the index record.
+        braf.seek(FILEPOS_OFFSET_TO_INDEX_RECORD);
+        braf.leWriteLong(0);
+        recordMan.fileSpaceDealloc(filePosIndexRecord);
+      }
+    } else {
+      // if the file position record was not set, scan the entire file
+      // to find if it was set.
       recordMan.scanFileForTiles();
     }
     tileCache = new RasterTileCache(spec, recordMan);
@@ -300,7 +329,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     // See if the source file specified Java codecs.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
     GvrsMetadata codecMetadata
-      = GvrsFile.this.readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
+      =  readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
       String codecStr = codecMetadata.getString();
       codecSpecificationList
@@ -315,41 +344,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     }
 
   }
-
-  private void resolveCodecs(GvrsFileSpecification fileSpec, List<CodecSpecification> specList) throws IOException {
-    List<String> identificationList = fileSpec.codecIdentificationList;
-    // List<CodecHolder> holderList = fileSpec.codecList;
-
-    List<CodecHolder> resultList = new ArrayList<>();
-    for (String s : identificationList) {
-      CodecHolder result;
-      CodecHolder registeredHolder = null;
-      for (CodecHolder holder : spec.codecList) {
-        if (s.equals(holder.getIdentification())) {
-          registeredHolder = holder;
-          break;
-        }
-      }
-      result = registeredHolder;
-      boolean mandatory = registeredHolder == null;
-      for (CodecSpecification test : specList) {
-        if (s.equals(test.getIdentification())) {
-          CodecHolder candidate = test.getHolder(mandatory);
-          if (candidate != null) {
-            result = candidate;
-          }
-        }
-      }
-
-      resultList.add(result);
-    }
-    spec.codecList.clear();
-    spec.codecList.addAll(resultList);
-
-    rasterCodec.setCodecs(resultList);
-
-  }
-
+ 
   /**
    * Gets a file reference to the file in which the data
    * for this raster is stored.
@@ -402,15 +397,15 @@ public class GvrsFile implements Closeable, AutoCloseable {
         long closingTime = System.currentTimeMillis();
         braf.leWriteLong(closingTime);
         braf.leWriteLong(0); // opened for writing time
+        
+        long indexRecordPos = recordMan.writeIndexRecord();
+        braf.seek(FILEPOS_OFFSET_TO_INDEX_RECORD);
+        braf.leWriteLong(indexRecordPos);
         if (spec.isChecksumEnabled) {
           long checksum = tabulateChecksumFromHeader();
           braf.leWriteInt((int) checksum);
         }
         braf.flush();
-
-        if (indexCreationEnabled) {
-          writeIndexFile(closingTime);
-        }
         timeModified = closingTime;
       }
       openedForWriting = false;
@@ -422,6 +417,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
         element.tileIndex = -1;
         element.tileElement = null;
       }
+      braf.flush();
       braf.close();
     }
   }
@@ -569,114 +565,17 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   /**
    * Sets or clears a flag indicating that the instance should generate an
-   * index file when a writable file is closed.
+   * index file when a writable file is closed.  This method is intended for
+   * test and development purposes and should not generally be set by
+   * calling applications.
    *
    * @param indexCreationEnabled true if an index is to be created; otherwise
    * false.
    */
-  public void setIndexCreationEnabled(boolean indexCreationEnabled) {
+  void setIndexCreationEnabled(boolean indexCreationEnabled) {
     this.indexCreationEnabled = indexCreationEnabled;
   }
-
-  private File getIndexFile() {
-    String name = file.getName();
-    int extensionIndex = name.lastIndexOf('.');
-    if (extensionIndex <= 0 || extensionIndex == name.length() - 1) {
-      return null;
-    }
-
-    String extension;
-    char c = name.charAt(extensionIndex + 1);
-    if (Character.isLowerCase(c)) {
-      extension = RasterFileType.GvrsIndex.getExtension().toLowerCase();
-    } else if (Character.isUpperCase(c)) {
-      extension = RasterFileType.GvrsIndex.getExtension().toUpperCase();
-    } else {
-      return null;
-    }
-
-    String indexName = name.substring(0, extensionIndex + 1) + extension;
-    File parent = file.getParentFile();
-    if (parent == null) {
-      return new File(indexName);
-    } else {
-      return new File(parent, indexName);
-    }
-  }
-
-  private void writeIndexFile(long closingTime) throws IOException {
-    File indexFile = getIndexFile();
-    if (indexFile == null) {
-      throw new IOException(
-        "Unable to resolve index name for " + file.getPath());
-    }
-
-    if (indexFile.exists() && !indexFile.delete()) {
-      throw new IOException(
-        "Unable to delete old index file " + file.getPath());
-    }
-
-    BufferedRandomAccessFile idxraf
-      = new BufferedRandomAccessFile(indexFile, "rw");
-    idxraf.writeASCII(RasterFileType.GvrsIndex.getIdentifier(), 12);
-    idxraf.writeByte(GvrsFileSpecification.VERSION);
-    idxraf.writeByte(GvrsFileSpecification.SUB_VERSION);
-    idxraf.writeByte(0); // reserved
-    idxraf.writeByte(0); // reserved
-
-    idxraf.leWriteLong(closingTime);  // time modified
-    idxraf.leWriteLong(uuid.getLeastSignificantBits());
-    idxraf.leWriteLong(uuid.getMostSignificantBits());
-    recordMan.writeTilePositionsToIndexFile(idxraf);
-    idxraf.flush();
-    idxraf.close();
-  }
-
-  private boolean readIndexFile(long timeLastModified) throws IOException {
-    File indexFile = getIndexFile();
-    if (indexFile == null) {
-      throw new IOException("Unable to resolve index name for " + file.getPath());
-    }
-
-    if (!indexFile.exists()) {
-      return false;
-    }
-
-    try ( BufferedRandomAccessFile idxraf
-      = new BufferedRandomAccessFile(indexFile, "r");) {
-
-      String s = idxraf.readASCII(12);
-      if (!RasterFileType.GvrsIndex.getIdentifier().equals(s)) {
-        throw new IOException("Improper identifier found in file "
-          + file.getPath() + ": " + s);
-      }
-      int version = idxraf.readUnsignedByte();
-      int subVersion = idxraf.readUnsignedByte();
-      if (version != GvrsFileSpecification.VERSION
-        || subVersion != GvrsFileSpecification.SUB_VERSION) {
-        return false;
-      }
-      idxraf.skipBytes(2); // reserved
-      long indexModificationTime = idxraf.leReadLong();
-      if (indexModificationTime != timeLastModified) {
-        // the index does not date from the same modification time as
-        // the file, so we cannot use it.
-        return false;
-      }
-      long leastSigBits = idxraf.leReadLong();
-      long mostSigBits = idxraf.leReadLong();
-      UUID indexUuid = new UUID(mostSigBits, leastSigBits);
-      if (!indexUuid.equals(uuid)) {
-        // not the same file as the index
-        return false;
-      }
-
-      recordMan.readTilePositionsFromIndexFile(idxraf);
-    }
-
-    return true;
-  }
-
+ 
   /**
    * Map Cartesian coordinates to grid coordinates storing the row and column
    * in
@@ -852,7 +751,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     }
     GvrsMetadata metadata = new GvrsMetadata(name, 0, GvrsMetadataType.STRING);
     metadata.setString(content);
-    GvrsFile.this.writeMetadata(metadata);
+    writeMetadata(metadata);
   }
 
   boolean loadTile(int tileIndex, boolean writeAccess) throws IOException {

@@ -40,7 +40,7 @@ package org.gridfour.gvrs;
 import java.io.IOException;
 
 /**
- * Provides a concrete definition of a GvrsElementSpec that specifies
+ * Provides a concrete definition of a GvrsElementSpecification that specifies
  * four-byte floating-point value encoded as an integer.
  */
 public class GvrsElementIntCodedFloat extends GvrsElement {

@@ -38,7 +38,7 @@
 package org.gridfour.gvrs;
 
 /**
- * Provides a concrete definition of a GvrsElementSpec that specifies
+ * Provides a concrete definition of a GvrsElementSpecification that specifies
  * short-integer data
  */
 public class GvrsElementSpecificationShort extends GvrsElementSpecification {
