@@ -34,7 +34,6 @@
  *
  * -----------------------------------------------------------------------
  */
-
 package org.gridfour.gvrs;
 
 import java.util.Objects;
@@ -42,13 +41,12 @@ import java.util.Objects;
 /**
  * Provides definitions and elements for managing GVRS metadata
  */
- public class GvrsMetadataReference implements Comparable<GvrsMetadataReference> {
+public class GvrsMetadataReference implements Comparable<GvrsMetadataReference> {
 
   final String name;
   final int recordID;
   final GvrsMetadataType dataType;
   long offset;
- 
 
   /**
    * Constructs a GVRS metadata object.
@@ -57,32 +55,43 @@ import java.util.Objects;
    * @param recordID the record ID.
    * @param long offset the file offset for the record
    */
-   GvrsMetadataReference(String name, int recordID, GvrsMetadataType dataType, long offset ) {
+  GvrsMetadataReference(String name, int recordID, GvrsMetadataType dataType, long offset) {
     this.name = name;
     this.recordID = recordID;
     this.dataType = dataType;
     this.offset = offset;
   }
- 
-  String getKey(){
-    return name+":"+Integer.toString(recordID);
+
+  /**
+   * Constructs a safe copy of the specified reference
+   *
+   * @param ref a valid reference
+   */
+  GvrsMetadataReference(GvrsMetadataReference ref) {
+    this.name = ref.name;
+    this.recordID = ref.recordID;
+    this.dataType = ref.dataType;
+    this.offset = ref.offset;
   }
- 
-  static String formatKey(String name, int recordID){
-    return name+":"+Integer.toString(recordID);
+
+  String getKey() {
+    return name + ":" + Integer.toString(recordID);
   }
-  
+
+  static String formatKey(String name, int recordID) {
+    return name + ":" + Integer.toString(recordID);
+  }
 
   @Override
-   public boolean equals(Object obj) {
-     if (obj instanceof GvrsMetadataReference) {
-       final GvrsMetadataReference other = (GvrsMetadataReference) obj;
-       if (recordID == other.recordID && Objects.equals(name, other.name)) {
-         return true;
-       }
-     }
-     return false;
-   }
+  public boolean equals(Object obj) {
+    if (obj instanceof GvrsMetadataReference) {
+      final GvrsMetadataReference other = (GvrsMetadataReference) obj;
+      if (recordID == other.recordID && Objects.equals(name, other.name)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   @Override
   public int hashCode() {
@@ -95,13 +104,12 @@ import java.util.Objects;
   @Override
   public int compareTo(GvrsMetadataReference o) {
     int test = name.compareTo(o.name);
-    if(test==0){
+    if (test == 0) {
       return Integer.compare(recordID, o.recordID);
     }
     return test;
   }
 
- 
   /**
    * Gets the application-defined "name" for the record.
    *
@@ -119,13 +127,14 @@ import java.util.Objects;
   public int getRecordID() {
     return recordID;
   }
-  
+
   /**
    * Gets the metadata type associated with this instanced.
+   *
    * @return a valid enumeration instance.
    */
-  public GvrsMetadataType getDataType(){
+  public GvrsMetadataType getDataType() {
     return dataType;
   }
- 
+
 }

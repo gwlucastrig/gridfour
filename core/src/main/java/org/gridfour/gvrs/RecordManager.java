@@ -518,12 +518,12 @@ class RecordManager {
         }
       });
 
-      ps.println("      User ID             Record ID");
+      ps.println("      User ID                  Record ID");
       int k = 0;
       for (GvrsMetadataReference gmd : trackerList) {
         k++;
         ps.format("%3d.  %-24.24s   %8d   %s%n",
-          k, gmd.name, gmd.recordID, gmd.dataType);
+          k, gmd.name, gmd.recordID, gmd.dataType.name());
       }
     }
 

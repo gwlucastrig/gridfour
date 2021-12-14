@@ -58,41 +58,49 @@ public enum GvrsMetadataConstants {
    */
   Copyright(GvrsMetadataType.STRING),
   /**
-   * Defines a specification for indicating instructions for use or
-   * limitations for applicability. For example: "not intended
+   * Defines a specification for indicating restrictions for use,
+   * limitations for applicability, etc. For example: "not intended
    * for navigation".
    */
-  InstructionsForUse(GvrsMetadataType.STRING),
+  Disclaimers(GvrsMetadataType.STRING),
   /**
    * Defines a specification for bundling tags from the industry-standard
    * Tagged Image File Format (TIFF) into a GVRS file.
    * By convention, the record ID used when creating GvrsTags for TIFF
    * specifications should reflect the integer TIFF tag ID.
    */
-  TIFF(GvrsMetadataType.UNSPECIFIED),
+  TIFF(GvrsMetadataType.UNSPECIFIED, "Tagged Image File Format (Tag specification)"),
   /**
    * Defines a specification for bundling "Well Known Text" specifications
    * from Geographic Information System (GIS) applications.
    */
-  WKT(GvrsMetadataType.STRING),
+  WKT(GvrsMetadataType.STRING, "Well-Known Text (map specification)"),
   /**
    * Defined for use by the GVRS Java implementation for tracking
    * data compression codecs. Metadata included under this specification
    * will include Java-specific information. Non-Java implementation should
    * ignore metadata this specification.
    */
-  GvrsJavaCodecs(GvrsMetadataType.ASCII),
+  GvrsJavaCodecs(GvrsMetadataType.ASCII, "Classpaths for codecs (Java only)"),
   /**
    * Gets an ordered list of the names of the codecs used by the
-   * GvrsFile.  This specification is intended to support compatibility
+   * GvrsFile. This specification is intended to support compatibility
    * across development environments and is not limited to Java.
    */
-  GvrsCompressionCodecs(GvrsMetadataType.ASCII);
+  GvrsCompressionCodecs(GvrsMetadataType.ASCII,
+    "Identification key for compression codecs (all languages)");
 
   private final GvrsMetadataType dataType;
+  private final String description;
 
   GvrsMetadataConstants(GvrsMetadataType dataType) {
     this.dataType = dataType;
+    description = null;
+  }
+
+  GvrsMetadataConstants(GvrsMetadataType dataType, String description) {
+    this.dataType = dataType;
+    this.description = description;
   }
 
   /**
@@ -116,7 +124,11 @@ public enum GvrsMetadataConstants {
    * @return a valid instance
    */
   public GvrsMetadata newInstance() {
-    return new GvrsMetadata(name(), dataType);
+    GvrsMetadata m = new GvrsMetadata(name(), dataType);
+    if (description != null) {
+      m.setDescription(description);
+    }
+    return m;
   }
 
   /**
@@ -129,10 +141,14 @@ public enum GvrsMetadataConstants {
    * @return a valid instance
    */
   public GvrsMetadata newInstance(int recordID) {
-    return new GvrsMetadata(name(), recordID, dataType);
+    GvrsMetadata m = new GvrsMetadata(name(), recordID, dataType);
+    if (description != null) {
+      m.setDescription(description);
+    }
+    return m;
   }
-  
-    /**
+
+  /**
    * Constructs a new instance of a GvrsMetadata object with the name,
    * data type, specified by the enumeration and the record ID
    * assigned to it by the calling application.
@@ -142,9 +158,8 @@ public enum GvrsMetadataConstants {
    * @param metadataType the type assigned to the metedata instance.
    * @return a valid instance
    */
-  public GvrsMetadata newInstance( int recordID, GvrsMetadataType metadataType) {
+  public GvrsMetadata newInstance(int recordID, GvrsMetadataType metadataType) {
     return new GvrsMetadata(name(), recordID, metadataType);
   }
-
 
 }
