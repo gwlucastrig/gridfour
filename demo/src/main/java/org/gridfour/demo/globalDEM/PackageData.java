@@ -286,9 +286,9 @@ public class PackageData {
       GvrsMetadata copyright = GvrsMetadataConstants.Copyright.newInstance();
       copyright.setString("This data is in the public domain and may be used free of charge");
       gvrs.writeMetadata(copyright);
-      GvrsMetadata instructionsForUse = GvrsMetadataConstants.InstructionsForUse.newInstance();
-      instructionsForUse.setString("This data should not be used for navigation");
-      gvrs.writeMetadata(instructionsForUse);
+      GvrsMetadata disclaimers = GvrsMetadataConstants.Disclaimers.newInstance();
+      disclaimers.setString("This data should not be used for navigation");
+      gvrs.writeMetadata(disclaimers);
 
       GvrsElement zElement = gvrs.getElement("z");
       gvrs.setTileCacheSize(GvrsCacheSize.Large);

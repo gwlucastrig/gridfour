@@ -54,17 +54,17 @@ import org.gridfour.io.BufferedRandomAccessFile;
  * values are cast to longs, they are converted to positive values
  * by applying a bit mask when.
  */
-class TilePositionIndex {
+class TilePositionIndex{
 
-  int[][] offsets;
-  int row0;
-  int col0;
-  int row1;
-  int col1;
-  int nRows;
-  int nCols;
-  final int nRowsOfTiles;
-  final int nColsOfTiles;
+  private int[][] offsets;
+  private int row0;
+  private int col0;
+  private int row1;
+  private int col1;
+  private int nRows;
+  private int nCols;
+  private final int nRowsOfTiles;
+  private final int nColsOfTiles;
 
   /**
    * Creates an empty tile index with potential dimensions
