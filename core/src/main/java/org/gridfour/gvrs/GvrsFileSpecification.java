@@ -310,10 +310,15 @@ public class GvrsFileSpecification {
    * @param nRowsInTile the number of rows in the tiling scheme
    * @param nColumnsInTile the number of columns in the tiling scheme
    */
-  GvrsFileSpecification(int nRowsInRaster, int nColumnsInRaster){
-    int  nRowsInTile;
+  public GvrsFileSpecification(int nRowsInRaster, int nColumnsInRaster){
+    int nRowsInTile;
     int nColumnsInTile;
     
+    // future work:  there is an advantage in making the number of
+    // rows in a tile be an integral divisor of the number of rows in
+    // the overall grid (similar for columns).  Perhaps we can
+    // try something more elegant based on factoring the grid dimensions
+    // and picking a good fit for the number of elements in tiles.
     if(nRowsInRaster<=128){
       nRowsInTile = nRowsInRaster;
     }else{
