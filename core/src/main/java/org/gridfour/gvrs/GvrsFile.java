@@ -129,11 +129,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
       throw new IOException(
         "Unable to delete existing file: " + file.getPath());
     }
-    if (specification.isExtendedFileSizeEnabled) {
-      throw new IOException(
-        "Unable to create file with extended file size option specified;"
-        + " feature not implemented");
-    }
 
     this.openedForWriting = true;
     this.file = file;
@@ -282,12 +277,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
     // skip the currently reserved block of 24 bytes
     braf.skipBytes(24);
     spec = new GvrsFileSpecification(braf);
-    if (spec.isExtendedFileSizeEnabled) {
-      braf.close();
-      throw new IOException(
-        "Unable to access file with extended file size option set,"
-        + " feature not implemented");
-    }
 
     if (spec.isChecksumEnabled) {
       braf.seek(sizeOfHeaderInBytes - 4);

@@ -35,7 +35,6 @@
  */
 package org.gridfour.demo.utils;
 
- 
 import java.io.File;
 import java.util.Arrays;
 
@@ -557,6 +556,15 @@ public class TestOptions {
   }
 
   /**
+   * Indicates whether the big-address space option is enabled.
+   *
+   * @return true if big-address space is enabled; otherwise, false
+   */
+  public boolean isBigAddressSpaceEnabled() {
+    return bigAddressSpace;
+  }
+
+  /**
    * Indicates whether data compression is enabled
    *
    * @return true if data compression is enabled; otherwise, false
@@ -565,8 +573,7 @@ public class TestOptions {
     return compress;
   }
 
-  
-   /**
+  /**
    * Indicates whether checksums should be computed when writing data
    *
    * @return true if checksum computations are enabled; otherwise, false

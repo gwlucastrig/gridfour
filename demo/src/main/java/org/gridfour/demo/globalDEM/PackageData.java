@@ -242,9 +242,11 @@ public class PackageData {
     // Determine whether data compression is used -------------------
     boolean compressionEnabled = options.isCompressionEnabled();
     spec.setDataCompressionEnabled(compressionEnabled);
-    boolean checksumsEnaled = options.isChecksumComputationEnabled();
-    spec.setChecksumEnabled(checksumsEnaled);
-
+    boolean checksumsEnalbed = options.isChecksumComputationEnabled();
+    spec.setChecksumEnabled(checksumsEnalbed);
+    boolean bigAddressSpaceEnabled = options.isBigAddressSpaceEnabled();
+    spec.setExtendedFileSizeEnabled(bigAddressSpaceEnabled);
+    
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
 
     spec.setGeographicCoordinates(

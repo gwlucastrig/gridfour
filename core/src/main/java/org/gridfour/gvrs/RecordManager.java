@@ -97,7 +97,7 @@ class RecordManager {
   private final BufferedRandomAccessFile braf;
   private final long basePosition;
   private final int standardTileSizeInBytes;
-  private final TilePositionIndex tilePositionIndex;
+  private final ITilePositionIndex tilePositionIndex;
 
   private FreeNode freeList;
 
@@ -115,8 +115,12 @@ class RecordManager {
     this.codecMaster = rasterCodec;
     this.braf = braf;
     this.basePosition = filePosBasePosition;
-    int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
-    tilePositionIndex = new TilePositionIndex(spec);
+    //int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
+    if(spec.isExtendedFileSizeEnabled()){
+    tilePositionIndex = new TilePositionExtendedIndex(spec);
+    }else{
+       tilePositionIndex = new TilePositionIndex(spec);
+    }
     standardTileSizeInBytes = spec.getStandardTileSizeInBytes();
 
   }
