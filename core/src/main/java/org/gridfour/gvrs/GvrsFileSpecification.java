@@ -307,51 +307,46 @@ public class GvrsFileSpecification {
    *
    * @param nRowsInRaster the number of rows in the raster
    * @param nColumnsInRaster the number of columns in the raster
-   * @param nRowsInTile the number of rows in the tiling scheme
-   * @param nColumnsInTile the number of columns in the tiling scheme
+
    */
   public GvrsFileSpecification(int nRowsInRaster, int nColumnsInRaster){
-    int nRowsInTile;
-    int nColumnsInTile;
     
-    // future work:  there is an advantage in making the number of
-    // rows in a tile be an integral divisor of the number of rows in
-    // the overall grid (similar for columns).  Perhaps we can
-    // try something more elegant based on factoring the grid dimensions
-    // and picking a good fit for the number of elements in tiles.
-    if(nRowsInRaster<=128){
-      nRowsInTile = nRowsInRaster;
-    }else{
-      int n = (nRowsInRaster+96-1)/96;
-      nRowsInTile = nRowsInRaster/n;
-    }
-    
-    if(nColumnsInRaster<=128){
-      nColumnsInTile = nColumnsInRaster;
-    }else{
-      int n = (nColumnsInRaster+96-1)/96;
-      nColumnsInTile = nColumnsInRaster/n;
-    }
-    
-    initDefaultCodecList();
-
-    timeCreated = System.currentTimeMillis();
-    this.nRowsInRaster = nRowsInRaster;
-    this.nColsInRaster = nColumnsInRaster;
-    if (nRowsInTile == 0 && nColumnsInTile == 0) {
-      this.nRowsInTile = nRowsInRaster;
-      this.nColsInTile = nColsInRaster;
-    } else {
-      this.nRowsInTile = nRowsInTile;
-      this.nColsInTile = nColumnsInTile;
-    }
-
     if (nRowsInRaster <= 0 || nColumnsInRaster <= 0) {
       throw new IllegalArgumentException(
         "Invalid dimensions for raster "
         + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
     }
-     
+
+    // future work:  there is an advantage in making the number of
+    // rows in a tile be an integral divisor of the number of rows in
+    // the overall grid (similar for columns).  Perhaps we can
+    // try something more elegant based on factoring the grid dimensions
+    // and picking a good fit for the number of elements in tiles.
+    int nRows;
+    int nCols;
+    if(nRowsInRaster<=120){
+      nRows = nRowsInRaster;
+    }else{
+      int n = (nRowsInRaster+120-1)/120;
+      nRows = nRowsInRaster/n;
+    }
+    
+    if(nColumnsInRaster<=120){
+      nCols = nColumnsInRaster;
+    }else{
+      int n = (nColumnsInRaster+120-1)/120;
+      nCols = nColumnsInRaster/n;
+    }
+    
+
+    initDefaultCodecList();
+
+    timeCreated = System.currentTimeMillis();
+    this.nRowsInRaster = nRowsInRaster;
+    this.nColsInRaster = nColumnsInRaster;
+    nRowsInTile = nRows;
+    nColsInTile = nCols;
+    
     nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
     nColsOfTiles = (nColsInRaster + nColsInTile - 1) / nColsInTile;
 
