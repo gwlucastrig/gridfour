@@ -292,7 +292,7 @@
                         <tr>
                             <th>Data Area</th>
                             <th>Bits per Elevation</th>
-                            <th>File Name (SE Corner)</th>
+                            <th>File Name (SW Corner)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -415,15 +415,17 @@
                     technique by permitting the specification of one or more constraints
                     on the minimization result. The method makes a tradeoff, permitting the overall sum of the squared errors
                     to increase slightly but guaranteeing that the constraint condition is met by the solution.
-                    In the case of the Optimal Predictors technique, Smith and Lewis specified that the mean error
-                    for the predictors must equal zero</p>
+                    In the case of the Optimal Predictors technique, Smith and Lewis specified the constraint condition
+                    that the mean error for the predictors must equal zero</p>
 
                 <img alt="Mean error" src="images/OptimalPredictors/image011.png" />
 
                 <p>This additional constraint is the key to the success of the Optimal Predictors method.
-                    While Ordinary Least Squares guarantees a minimum error, there is no requirement that the mean
-                    error it produces is zero. In fact, it often is not. But Smith and Lewis reported that by
-                    adding the constraint, they could improve the compression ratios by about 35 % (Lewis &#38; Smith, pg. 256).
+                    While Ordinary Least Squares minimizes the overall sum of the squared errors,
+                    there is no requirement that the mean error it produces is zero.
+                    In fact, for the Least Squares method, the mean error is often <i>not</i> zero.
+                    But Smith and Lewis reported that by adding the mean-error-of-zero constraint,
+                    they could improve the compression ratios by about 35 % (Lewis &#38; Smith, pg. 256).
                     So while we might expect that allowing the overall sum of the squared errors to increase might
                     degrade the effectiveness of the predictor, it turns out that just the opposite is true.
                     The mean-error-of-zero constraint improves the overall redundancy in the set of residuals
@@ -657,7 +659,7 @@
                     for the LSOP predictor, encoder, and decoder, required strict attention to the way computer
                     systems and the Java programming language perform floating-point operations.
                     One of the most important considerations in the design of the GVRS file format is that data created on one
-                    system, or in one development environment (Java, C/C++, .NET, etc.), can be accessed software
+                    system, or in one development environment (Java, C/C++, .NET, etc.), can be accessed by software
                     running on another. In order to support that goal, it essential that the floating-point
                     arithmetic needed for the Optimal Predictor be reproducible in a consistent manner.</p>
 
