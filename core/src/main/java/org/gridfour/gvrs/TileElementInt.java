@@ -40,7 +40,6 @@ package org.gridfour.gvrs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import org.gridfour.io.BufferedRandomAccessFile;
 

@@ -250,14 +250,30 @@ public class GvrsFileSpecification {
     int nRowsInTile,
     int nColumnsInTile) {
 
-    initDefaultCodecList();
 
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
     this.nColsInRaster = nColumnsInRaster;
-    if (nRowsInTile == 0 && nColumnsInTile == 0) {
-      this.nRowsInTile = nRowsInRaster;
-      this.nColsInTile = nColsInRaster;
+    
+     if (nRowsInTile == 0 && nColumnsInTile == 0) {
+      // GVRS interprets zero values for rows-in-tile and columns-in-tile
+      // as indicating that this class should compute values based
+      // on its own rules.   At this time, we use simple logic.
+      // In the future, we may try to develop something that ensures
+      // a better fit across grids of various sizes.
+      //   Note also that we use 120, rather than 128, because it has
+      // more factors and, thus, a higher probability of being an integral
+      // divisor of the overall grid size.
+      if (nRowsInRaster < 120) {
+        this.nRowsInTile = nRowsInRaster;
+      } else {
+        this.nRowsInTile = 120;
+      }
+      if (nColumnsInTile < 120) {
+        this.nColsInTile = nColsInRaster;
+      } else {
+        this.nColsInTile = 120;
+      }
     } else {
       this.nRowsInTile = nRowsInTile;
       this.nColsInTile = nColumnsInTile;
@@ -299,6 +315,9 @@ public class GvrsFileSpecification {
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
 
     nCellsInTile = nRowsInTile * nColsInTile;
+    
+    initDefaultCodecList();
+    
   }
   
    /**
@@ -307,63 +326,9 @@ public class GvrsFileSpecification {
    *
    * @param nRowsInRaster the number of rows in the raster
    * @param nColumnsInRaster the number of columns in the raster
-
    */
   public GvrsFileSpecification(int nRowsInRaster, int nColumnsInRaster){
-    
-    if (nRowsInRaster <= 0 || nColumnsInRaster <= 0) {
-      throw new IllegalArgumentException(
-        "Invalid dimensions for raster "
-        + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
-    }
-
-    // future work:  there is an advantage in making the number of
-    // rows in a tile be an integral divisor of the number of rows in
-    // the overall grid (similar for columns).  Perhaps we can
-    // try something more elegant based on factoring the grid dimensions
-    // and picking a good fit for the number of elements in tiles.
-    int nRows;
-    int nCols;
-    if(nRowsInRaster<=120){
-      nRows = nRowsInRaster;
-    }else{
-      int n = (nRowsInRaster+120-1)/120;
-      nRows = nRowsInRaster/n;
-    }
-    
-    if(nColumnsInRaster<=120){
-      nCols = nColumnsInRaster;
-    }else{
-      int n = (nColumnsInRaster+120-1)/120;
-      nCols = nColumnsInRaster/n;
-    }
-    
-
-    initDefaultCodecList();
-
-    timeCreated = System.currentTimeMillis();
-    this.nRowsInRaster = nRowsInRaster;
-    this.nColsInRaster = nColumnsInRaster;
-    nRowsInTile = nRows;
-    nColsInTile = nCols;
-    
-    nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
-    nColsOfTiles = (nColsInRaster + nColsInTile - 1) / nColsInTile;
-
-    long nTiles = (long) nRowsOfTiles * (long) nColsOfTiles;
-    if (nTiles > Integer.MAX_VALUE) {
-      throw new IllegalArgumentException(
-        "The number of potential tiles exceeds "
-        + "the size of a signed integer (2147483647)");
-    }
-    x0 = 0;
-    y0 = 0;
-    x1 = nColsInRaster - 1;
-    y1 = nRowsInRaster - 1;
-    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
-    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
-
-    nCellsInTile = nRowsInTile * nColsInTile;
+      this(nRowsInRaster, nColumnsInRaster, 0, 0);
   }
 
   /**
@@ -600,6 +565,7 @@ public class GvrsFileSpecification {
    * data.
    * @throws IOException in the event of an unrecoverable I/O error
    */
+  @SuppressWarnings("PMD.UnusedLocalVariables")
   GvrsFileSpecification(BufferedRandomAccessFile braf) throws IOException {
     initDefaultCodecList();
 

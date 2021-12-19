@@ -171,7 +171,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     // we will need to reserve 4 extra bytes for the checksum
     // and then pad out the record.
     long filePos = braf.getFilePosition();
-    filePosContent = ((filePos + 4) + 7) & 0xfffffff8;
+    filePosContent = (filePos + 4 + 7) & 0xfffffff8;
     sizeOfHeaderInBytes = (int) filePosContent;
     int padding = (int) (filePosContent - filePos);
     for (int i = 0; i < padding; i++) {
