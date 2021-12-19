@@ -285,9 +285,6 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   }
 
   public void setShorts(short[] values) {
-    if(dataType==GvrsMetadataType.SHORT || dataType==GvrsMetadataType.UNSIGNED_SHORT){
-      
-    }
     checkTypeCompatibility(GvrsMetadataType.SHORT);
     if (values == null || values.length == 0) {
       this.content = new byte[0];

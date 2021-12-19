@@ -41,7 +41,6 @@ package org.gridfour.gvrs;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Provides a cache for managing tiles
