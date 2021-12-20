@@ -85,7 +85,7 @@ public interface ITilePositionIndex {
    * <p>
    * File positions must be positive values and a multiple of eight.
    *
-   * @param index the index of the tile to be stored.
+   * @param tileIndex the index of the tile to be stored.
    * @param offset the file position, in bytes.
    */
   void setFilePosition(int tileIndex, long offset);
@@ -98,4 +98,13 @@ public interface ITilePositionIndex {
    */
   void writeTilePositions(BufferedRandomAccessFile braf) throws IOException;
   
+  
+  /**
+   * Gets the count of the number of tiles that are currently populated.
+   * This count does not include tiles that may have been written to, but are
+   * still being retained in the tile cache and so have
+   * not yet been committed to the output file.
+   * @return a positive integer.
+   */
+  int getCountOfPopulatedTiles();
 }
