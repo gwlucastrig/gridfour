@@ -205,8 +205,8 @@ public class GvrsInterpolatorBSpline {
     private int blockLimit(int i, int n) {
         if (i < 0) {
             return 0;
-        } else if (i > n - 3) {
-            return n - 3;
+        } else if (i > n - 4) {
+            return n - 4;
         }
         return i;
     }

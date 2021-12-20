@@ -259,4 +259,19 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
     return 16 + 8 * nCells;
   }
 
+  @Override
+   public int getCountOfPopulatedTiles() {
+    int count = 0;
+    for (int i = 0; i < offsets.length; i++) {
+      long[] strip = offsets[i];
+      for (int j = 0; j < strip.length; j++) {
+        if (strip[j] != 0) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+  
+  
 }

@@ -317,7 +317,6 @@ public class GvrsFileSpecification {
     nCellsInTile = nRowsInTile * nColsInTile;
     
     initDefaultCodecList();
-    
   }
   
    /**

@@ -713,7 +713,8 @@ class RecordManager {
         nNonCompressedTiles++;
       }
     }
-    codecMaster.reportAndClearAnalysisData(ps, spec.nRowsOfTiles * spec.nColsOfTiles);
+    int populatedTiles = nCompressedTiles+nNonCompressedTiles;
+    codecMaster.reportAndClearAnalysisData(ps, populatedTiles);
     if (nCompressedTiles > 0 && nNonCompressedTiles > 0) {
       int n = nCompressedTiles + nNonCompressedTiles;
       double percentNonCompressed
@@ -724,7 +725,6 @@ class RecordManager {
       ps.format("                        %8d (%4.1f %%)      %4.1f   %d bytes, %4.2f MB%n",
         nNonCompressedTiles, percentNonCompressed, 32.0,
         nonCompressedBytes, nonCompressedBytes / (1024.0 * 1024.0));
-
     }
   }
 
