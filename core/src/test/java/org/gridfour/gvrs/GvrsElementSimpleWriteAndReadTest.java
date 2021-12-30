@@ -14,12 +14,12 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class GvrsElementSimpleWriteAndReadTest {
 
-  private int intFillValue = -9999;
-  private float fltFillValue = -999.9f;
-  private int[] intSamples;
-  private float[] fltSamples;
-  private GvrsElementSpecification[] intSpecs;
-  private GvrsElementSpecification[] fltSpecs;
+  private final int intFillValue = -9999;
+  private final float fltFillValue = -999.9f;
+  private final int[] intSamples;
+  private final float[] fltSamples;
+  private final GvrsElementSpecification[] intSpecs;
+  private final GvrsElementSpecification[] fltSpecs;
 
   @TempDir
   File tempDir;

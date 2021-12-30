@@ -303,7 +303,9 @@ public class BufferedRandomAccessFile
   }
 
   /**
-   * Gets the size of the file in bytes.
+   * Gets the size of the file in bytes. If this instance is currently holding
+   * output data in its buffer, the return value from this method may be larger
+   * than the actual size of the file on disk.
    * @return a positive long integer value.
    */
   public long getFileSize() {

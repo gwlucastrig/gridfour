@@ -104,9 +104,6 @@ class CodecMaster {
             throw new IOException("Invalid compression-type code " + index);
         }
         CodecHolder codec = codecList.get(index);
-        if(codec==null){
-          System.out.println("diagnostic");
-        }
         ICompressionDecoder decompressor = codec.getDecoderInstance();
         return decompressor.decode(nRows, nColumns, packing);
     }

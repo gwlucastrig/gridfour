@@ -14,12 +14,12 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public class GvrsElementWriteAndReadMultiTileTest {
 
-  private int intFillValue = -9999;
-  private float fltFillValue = -999.9f;
-  private int[] intSamples;
-  private float[] fltSamples;
-  private GvrsElementSpecification[] intSpecs;
-  private GvrsElementSpecification[] fltSpecs;
+  private final int intFillValue = -9999;
+  private final float fltFillValue = -999.9f;
+  private final int[] intSamples;
+  private final float[] fltSamples;
+  private final GvrsElementSpecification[] intSpecs;
+  private final GvrsElementSpecification[] fltSpecs;
 
   @TempDir
   File tempDir;
@@ -50,20 +50,19 @@ public class GvrsElementWriteAndReadMultiTileTest {
   @BeforeEach
   public void setUp() {
   }
- 
-  
+
   /**
    * Performs a test to verify that GVRS detects non-populated tiles
-   * and handles them properly.  A non-populated tile should not be
-   * written to the file.  So we write a file containing two tiles,
-   * one populated, the second one is empty.  The empty tile should
-   * not be written to disk.  So when we store a single value in the
+   * and handles them properly. A non-populated tile should not be
+   * written to the file. So we write a file containing two tiles,
+   * one populated, the second one is empty. The empty tile should
+   * not be written to disk. So when we store a single value in the
    * second tile, the file size should grow by the size of one tile
    * (including 8-byte padding factor, tile header, and checksum).
    */
-  
   @Test
   void emptyNeighborTileWriteRead() {
+
     for (int iSpec = 0; iSpec < intSpecs.length; iSpec++) {
       File testFile = new File(tempDir, "WriteAndReadMultiTileTest.gvrs");
       if (testFile.exists()) {
@@ -74,10 +73,10 @@ public class GvrsElementWriteAndReadMultiTileTest {
       GvrsFileSpecification spec = new GvrsFileSpecification(10, 20, 10, 10);
       GvrsElementSpecification eSpec = intSpecs[iSpec];
       spec.addElementSpecification(eSpec);
-      
+
       // populate the first tile, but not the second
       try (
-        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
+         GvrsFile gvrs = new GvrsFile(testFile, spec)) {
         GvrsElement element = gvrs.getElement(eSpec.getName());
         for (int iRow = 0; iRow < 10; iRow++) {
           for (int iCol = 0; iCol < 10; iCol++) {
@@ -89,7 +88,8 @@ public class GvrsElementWriteAndReadMultiTileTest {
         fail("IOException in processing " + testFile + " " + ex.getMessage());
       }
 
-      try (GvrsFile gvrs = new GvrsFile(testFile, "rw")) {
+      try ( GvrsFile gvrs = new GvrsFile(testFile, "rw")) {
+        RecordManager recordMan = gvrs.getRecordManager();
         GvrsElement element = gvrs.getElement(eSpec.getName());
         for (int iRow = 0; iRow < 10; iRow++) {
           for (int iCol = 0; iCol < 10; iCol++) {
@@ -98,38 +98,40 @@ public class GvrsElementWriteAndReadMultiTileTest {
             assertEquals(intSamples[index], iTest);
           }
         }
-        
+
         // Test a read on the non-populated section of the grid to
         // confirm that the API returns the fill value.
         int iTest = element.readValueInt(0, 10);
         assertEquals(intFillValue, iTest, "Failed reading from non-populated tile");
-        
+
         // Test to see that a non-populated tile has not previously been
         // written to the disk.
-        
-        long size0 = testFile.length();
+        RecordManagerStats stats0 = recordMan.scanForFileSpaceStats();
+      
         element.writeValueInt(0, 10, intFillValue);
         gvrs.flush();
-             long size1 = testFile.length();
+        RecordManagerStats stats1 = recordMan.scanForFileSpaceStats();
+        long size0 = stats0.sizeAllocatedSpace;
+        long size1 = stats1.sizeAllocatedSpace;
         assertEquals(size0, size1, "Storing a fill value should not change empty tile");
-        
+
         // Now store a non-fill value to verify that file size increases by the
         // size of one tile.
         element.writeValueInt(0, 10, 1066);
         gvrs.flush();
-         size1 = testFile.length();
-        long targetOutputSize = (size0+spec.getStandardTileSizeInBytes()+16+7)&0xfffffff8L;
+        stats1 = recordMan.scanForFileSpaceStats();
+        size1 = stats1.sizeAllocatedSpace;
+        long targetOutputSize = (size0 + spec.getStandardTileSizeInBytes() + 12 + 7) & 0xfffffff8L;
         assertEquals(targetOutputSize, size1, "Before and After Size");
       } catch (IOException ex) {
         fail("IOException in processing " + eSpec.getName() + " " + ex.getMessage());
       }
-       if (testFile.exists()) {
+      if (testFile.exists()) {
         testFile.delete();
       }
     }
-    
-    
-     for (int iSpec = 0; iSpec < fltSpecs.length; iSpec++) {
+
+    for (int iSpec = 0; iSpec < fltSpecs.length; iSpec++) {
       File testFile = new File(tempDir, "singleTileInt.gvrs");
       if (testFile.exists()) {
         testFile.delete();
@@ -139,10 +141,10 @@ public class GvrsElementWriteAndReadMultiTileTest {
       GvrsFileSpecification spec = new GvrsFileSpecification(10, 20, 10, 10);
       GvrsElementSpecification eSpec = fltSpecs[iSpec];
       spec.addElementSpecification(eSpec);
-      
+
       // populate the first tile, but not the second
       try (
-        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
+         GvrsFile gvrs = new GvrsFile(testFile, spec)) {
         GvrsElement element = gvrs.getElement(eSpec.getName());
         for (int iRow = 0; iRow < 10; iRow++) {
           for (int iCol = 0; iCol < 10; iCol++) {
@@ -155,7 +157,8 @@ public class GvrsElementWriteAndReadMultiTileTest {
       }
 
       try (
-        GvrsFile gvrs = new GvrsFile(testFile, "rw")) {
+         GvrsFile gvrs = new GvrsFile(testFile, "rw")) {
+        RecordManager recordMan = gvrs.getRecordManager();
         GvrsElement element = gvrs.getElement(eSpec.getName());
         for (int iRow = 0; iRow < 10; iRow++) {
           for (int iCol = 0; iCol < 10; iCol++) {
@@ -164,35 +167,35 @@ public class GvrsElementWriteAndReadMultiTileTest {
             assertEquals(fltSamples[index], fTest);
           }
         }
-        
+
         // Test a read on the non-populated section of the grid to
         // confirm that the API returns the fill value.
         float fTest = element.readValue(0, 10);
         assertEquals(fltFillValue, fTest, "Failed reading from non-populated tile");
-        
+
         // Test to see that a non-populated tile has not previously been
         // written to the disk.
-        
-        long size0 = testFile.length();
+        RecordManagerStats stats0 = recordMan.scanForFileSpaceStats();
+        long size0 = stats0.sizeAllocatedSpace;
         element.writeValue(0, 10, fltFillValue);
         gvrs.flush();
-             long size1 = testFile.length();
-        assertEquals(size0, size1, "Storing a fill value should not change empty tile for "+element.getName());
-        
+        RecordManagerStats stats1 = recordMan.scanForFileSpaceStats();
+        long size1 = stats1.sizeAllocatedSpace;
+        assertEquals(size0, size1, "Storing a fill value should not change empty tile for " + element.getName());
+
         // Now store a non-fill value to verify that file size increases by the
         // size of one tile.
         element.writeValue(0, 10, 1066.0f);
         gvrs.flush();
-         size1 = testFile.length();
-        long targetOutputSize = (size0+spec.getStandardTileSizeInBytes()+16+7)&0xfffffff8L;
+        stats1 = recordMan.scanForFileSpaceStats();
+        size1 = stats1.sizeAllocatedSpace;
+        long targetOutputSize = (size0 + spec.getStandardTileSizeInBytes() + 16 + 7) & 0xfffffff8L;
         assertEquals(targetOutputSize, size1,
-          "Conflicting before and after file size for "+element.getName());
+          "Conflicting before and after file size for " + element.getName());
       } catch (IOException ex) {
         fail("IOException in processing " + eSpec.getName() + " " + ex.getMessage());
       }
     }
-    
-    
-    
+
   }
 }

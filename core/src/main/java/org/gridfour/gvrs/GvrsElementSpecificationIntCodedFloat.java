@@ -188,7 +188,8 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * @param offset a valid for adjusting an input value.
    *
    */
-  public GvrsElementSpecificationIntCodedFloat(String name,
+  public GvrsElementSpecificationIntCodedFloat(
+    String name,
     float minValue, float maxValue, float fillValue,
     float scale, float offset) {
     super(name, GvrsElementType.INTEGER_CODED_FLOAT);
@@ -200,6 +201,22 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
     this.minValueI = testValue("minimum value", minValue);
     this.maxValueI = testValue("maximum value", maxValue);
     this.fillValueI = testValue("fill value", fillValue);
+  }
+  
+  public GvrsElementSpecificationIntCodedFloat(
+    String name,
+    float minValue, float maxValue, float fillValue,
+    int minValueI, int maxValueI, int fillValueI,
+    float scale, float offset) {
+    super(name, GvrsElementType.INTEGER_CODED_FLOAT);
+    this.minValue = minValue;
+    this.maxValue = maxValue;
+    this.fillValue = fillValue;
+    this.scale = scale;
+    this.offset = offset;
+    this.minValueI = minValueI;
+    this.maxValueI = maxValueI;
+    this.fillValueI = fillValueI;
   }
 
   @Override

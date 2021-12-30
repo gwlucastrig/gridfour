@@ -327,7 +327,6 @@ public class CodecM32 {
     public int decode() {
 
         //assert offset < bufferLimit : "failed sequence in encoding";
-
         int symbol = buffer[offset++];
         if (symbol == -128) {
             return Integer.MIN_VALUE;

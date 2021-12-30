@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Provides the most basic test of writing and then reading a file
- * that contains only a single tile with only one element.
+ * Verifies that a tile containing multiple elements of different types
+ * can be written and read successfully.
  */
 public class MultiElementTest {
 
@@ -50,20 +50,27 @@ public class MultiElementTest {
   @Test
   void threeElementTest() {
     File testFile = new File(tempDir, "MultiElementTest.gvrs");
-    if (testFile.exists()) {
-      testFile.delete();
-    }
+
 
     GvrsElementSpecification eSpec0 = new GvrsElementSpecificationInt("zInt");
     GvrsElementSpecification eSpec1 = new GvrsElementSpecificationShort("zShort");
     GvrsElementSpecification eSpec2 = new GvrsElementSpecificationFloat("zFloat");
 
-    GvrsFileSpecification spec = new GvrsFileSpecification(9, 9, 9, 9);
+    for(int iTest=0; iTest<2; iTest++){
+          if (testFile.exists()) {
+      testFile.delete();
+    }
+ 
+    GvrsFileSpecification spec = new GvrsFileSpecification(9, 9);
     spec.addElementSpecification(eSpec0);
     spec.addElementSpecification(eSpec1);
     spec.addElementSpecification(eSpec2);
-    //spec.setDataCompressionEnabled(true);
-
+    String modeStr = "Standard";
+    if(iTest==1){
+    modeStr = "Compressed";
+       spec.setDataCompressionEnabled(true);
+    }
+    
     try (
       GvrsFile gvrs = new GvrsFile(testFile, spec)) {
       GvrsElement e0 = gvrs.getElement(eSpec0.getName());
@@ -90,14 +97,15 @@ public class MultiElementTest {
       int[] block0 = e0.readBlockInt(0, 0, 9, 9);
       int[] block1 = e1.readBlockInt(0, 0, 9, 9);
       float[] block2 = e2.readBlock(0, 0, 9, 9);
-      assertArrayEquals(intSamples, block0, "int elements");
+      assertArrayEquals(intSamples, block0, "Int elements "+modeStr);
       for (int i = 0; i < srtSamples.length; i++) {
-        assertEquals(srtSamples[i], (short) block1[i], "short elements");
+        assertEquals(srtSamples[i], (short) block1[i], "Short elements "+modeStr);
       }
-      assertArrayEquals(fltSamples, block2, "float elements");
+      assertArrayEquals(fltSamples, block2, "Float elements "+modeStr);
 
     } catch (IOException ex) {
       fail("IOException in processing " + ex.getMessage());
+    }
     }
     
     if (testFile.exists()) {

@@ -33,14 +33,7 @@
  * 10/2019  G. Lucas     Created
  *
  * Notes:
- *   At this time, the file space alloc and dealloc has serious shortcomings
- * in handling the case of variable size blocks of file space. Typically,
- * this happens when handling compressed data.  When the file-space
- * management is unable to fullfil an allocation using free-nodes,
- * it leaves behind a small block of unused space. Over time, these
- * can accumulate until the file is mostly unused space.
- *  It appears that some mechanism is needed for consolating sections
- * of free space to create blocks large enough to store data.
+ *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.gvrs;
@@ -80,7 +73,7 @@ class RecordManager {
   static final int RECORD_TYPE_METADATA = -2;
   static final int RECORD_TYPE_TILE_INDEX = -3;
 
-  private static final int MIN_FREE_BLOCK_SIZE = 1024;
+  private static final int MIN_FREE_BLOCK_SIZE = 32;
 
   // The filePosTooBig exception will be thrown when
   // the position address returned by a file-space allocation
@@ -100,7 +93,7 @@ class RecordManager {
   private final ITilePositionIndex tilePositionIndex;
 
   private FreeNode freeList;
-
+  private long expectedFileSize;
   int nTileReads;
   int nTileWrites;
 
@@ -116,12 +109,13 @@ class RecordManager {
     this.braf = braf;
     this.basePosition = filePosBasePosition;
     //int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
-    if(spec.isExtendedFileSizeEnabled()){
-    tilePositionIndex = new TilePositionExtendedIndex(spec);
-    }else{
-       tilePositionIndex = new TilePositionIndex(spec);
+    if (spec.isExtendedFileSizeEnabled()) {
+      tilePositionIndex = new TilePositionExtendedIndex(spec);
+    } else {
+      tilePositionIndex = new TilePositionIndex(spec);
     }
     standardTileSizeInBytes = spec.getStandardTileSizeInBytes();
+    expectedFileSize = braf.getFileSize();
 
   }
 
@@ -148,6 +142,33 @@ class RecordManager {
     return tilePositionIndex.getFilePosition(tileIndex) != 0;
   }
 
+  long fileSpaceAllocAndFill(int sizeToStore) throws IOException {
+    int n = multipleOf8(sizeToStore);
+    long filePos = fileSpaceAlloc(n);
+    byte[] zeroes = new byte[n - 8];
+    braf.seek(filePos);
+    braf.leWriteInt(n);
+    braf.leWriteInt(RECORD_TYPE_FREESPACE);
+    braf.writeFully(zeroes);
+    braf.seek(filePos);
+    return filePos;
+  }
+
+  /**
+   * Allocates a block of the specified size. It is assumed that the
+   * size will include space for both the content to be written as well
+   * as the record header (8 bytes) and the checksum (4 bytes). It is also
+   * assumed that the size to store is a multiple of 8.
+   * <p>
+   * Note that in cases where the allocation is to write to the end of the
+   * file, this method does not actually write data to the file. For it to
+   * work properly, it is imperative that the calling module write the
+   * exact number of bytes specified to the output.
+   *
+   * @param sizeToStore a valid size specification.
+   * @return the position where the data is to be written.
+   * @throws IOException in the event of an unrecoverable IO Exception
+   */
   long fileSpaceAlloc(int sizeToStore) throws IOException {
     assert multipleOf8(sizeToStore) == sizeToStore : "allocate invalid size " + sizeToStore;
     int minSizeForSplit = sizeToStore + MIN_FREE_BLOCK_SIZE;
@@ -157,19 +178,36 @@ class RecordManager {
     // a little bigger than our target will not work.
     //   We search the list for a first found strategy.  We don't look for
     // the best fit, just the first feasible fit.
+    FreeNode priorPrior = null;
     FreeNode prior = null;
     FreeNode node = freeList;
     while (node != null) {
       if (node.blockSize == sizeToStore || node.blockSize >= minSizeForSplit) {
         break;
       }
+      priorPrior = prior;
       prior = node;
       node = node.next;
     }
 
     if (node == null) {
       assert (braf.getFileSize() & 0x07L) == 0 : "File size not multiple of 8";
-      return braf.getFileSize();
+      long fileSize = braf.getFileSize();
+      if (prior != null && prior.filePos + prior.blockSize == fileSize) {
+        if (priorPrior != null) {
+          priorPrior.next = null;
+        } else {
+          freeList = null;
+        }
+        expectedFileSize = prior.filePos+sizeToStore;
+        braf.seek(prior.filePos);
+        braf.leWriteInt(sizeToStore);
+        braf.seek(prior.filePos);
+        return prior.filePos;
+      }
+
+      expectedFileSize = fileSize+sizeToStore;
+      return fileSize;
     }
 
     // Remove the node from the free list
@@ -190,14 +228,14 @@ class RecordManager {
     // storage, not the size of the packing.
     braf.seek(node.filePos);
     int foundSize = braf.leReadInt();
-    assert foundSize < 0 : "alloc found positive block size in file";
-    foundSize = -foundSize;
+    assert foundSize > 0 : "alloc found negative or zero block size in file";
     assert foundSize >= sizeToStore : "alloc found insufficient block size";
     int surplus = foundSize - sizeToStore;
     if (surplus > 0) {
       long surplusPos = node.filePos + sizeToStore;
       FreeNode surplusNode = new FreeNode(surplusPos, surplus);
-      braf.seek(surplusPos + 4);
+      braf.seek(surplusPos);
+      braf.leWriteInt(surplus);
       braf.leWriteInt(RECORD_TYPE_FREESPACE);
       prior = null;
       FreeNode next = freeList;
@@ -377,7 +415,6 @@ class RecordManager {
             braf.writeByte(0);
           }
           storeChecksumIfEnabled(posToStore, compressedSize);
-          braf.flush();
           return;
         }
       }
@@ -411,7 +448,6 @@ class RecordManager {
       braf.writeByte(0);
     }
     storeChecksumIfEnabled(posToStore, sizeToStore);
-    braf.flush();
   }
 
   void storeChecksumIfEnabled(long offset, int sizeToStore) throws IOException {
@@ -489,7 +525,7 @@ class RecordManager {
       filePos += recordSize;
     }
   }
- 
+
   void summarize(PrintStream ps) {
     ps.println("Tile IO");
     ps.format("   Tile Reads:   %8d%n", nTileReads);
@@ -568,8 +604,7 @@ class RecordManager {
     // is that non-tile records are only a small part of the over all
     // file content and the overhead doesn't matter.
     //   note that this calculation also includes the checksum
- 
-    byte[] zero = new byte[n-RECORD_HEADER_SIZE];
+    byte[] zero = new byte[n - RECORD_HEADER_SIZE];
     braf.writeFully(zero);
 
     // move into position to write the content
@@ -713,7 +748,7 @@ class RecordManager {
         nNonCompressedTiles++;
       }
     }
-    int populatedTiles = nCompressedTiles+nNonCompressedTiles;
+    int populatedTiles = nCompressedTiles + nNonCompressedTiles;
     codecMaster.reportAndClearAnalysisData(ps, populatedTiles);
     if (nCompressedTiles > 0 && nNonCompressedTiles > 0) {
       int n = nCompressedTiles + nNonCompressedTiles;
@@ -782,7 +817,7 @@ class RecordManager {
       sizeMetadata += 8; // gmr.offset
       sizeMetadata += 2 + gmr.name.length();
       sizeMetadata += 4; // size of record ID
-      sizeMetadata++; // size of code value
+      sizeMetadata++; // size of data-type code value
     }
 
     int sizeIndexContent
@@ -800,15 +835,26 @@ class RecordManager {
     long filePos
       = allocateNonTileRecord(RECORD_TYPE_TILE_INDEX, sizeIndexContent);
     tilePositionIndex.writeTilePositions(braf);
-
-    braf.leWriteInt(nFreeNodes);
+    
+    // Allocating space to store this record may have claimed space
+    // that was covered by one of the free nodes.  Thus the number of
+    // free nodes could change.  So it is necessary to count free nodes
+    // again.  The storage size actually used may be 12 bytes less than
+    // allocated, but that is of little concern.
+     nFreeNodes = 0;
     node = freeList;
     while (node != null) {
+      nFreeNodes++;
+      node = node.next;
+    }
+    braf.leWriteInt(nFreeNodes);
+    node = freeList;
+    for(int i=0; i<nFreeNodes; i++){
       braf.leWriteLong(node.filePos);
       braf.leWriteInt(node.blockSize);
       node = node.next;
     }
-
+    
     braf.leWriteInt(gmrList.size());
     for (GvrsMetadataReference gmr : gmrList) {
       braf.leWriteLong(gmr.offset);
@@ -817,8 +863,8 @@ class RecordManager {
       braf.writeByte((byte) gmr.dataType.getCodeValue());
     }
 
-    // The block allocation already filled the extra bytes for the record
-    // with zeroes. write the checksum, if enabled
+    // The allocateNonTileRecord method already filled any extra
+    // bytes for the record with zeroes. Write the checksum, if enabled
     int nBytesToStore = multipleOf8(RECORD_HEADER_SIZE + sizeIndexContent + 4);
     storeChecksumIfEnabled(filePos, nBytesToStore);
     braf.flush();
@@ -831,12 +877,17 @@ class RecordManager {
     tilePositionIndex.readTilePositions(braf);
 
     int nFreeNodes = braf.leReadInt();
+    FreeNode lastNode = null;
     for (int iFree = 0; iFree < nFreeNodes; iFree++) {
       long freePos = braf.leReadLong();
       int freeSize = braf.leReadInt();
       FreeNode node = new FreeNode(freePos, freeSize);
-      node.next = freeList;
-      freeList = node;
+      if (lastNode == null) {
+        freeList = node;
+      } else {
+        lastNode.next = node;
+      }
+      lastNode = node;
     }
 
     int nMetadataRecord = braf.leReadInt();
@@ -851,5 +902,38 @@ class RecordManager {
     }
 
   }
+  
+  long getExpectedFileSize(){
+    return expectedFileSize;
+  }
 
+  /**
+   * Performs a scan of a GVRS file to collect statistics on file space
+   * allocation.  Intended to support testing and development
+   * @return a valid instance
+   * @throws IOException in the event of an unrecoverable I/O exception.
+   */
+  RecordManagerStats scanForFileSpaceStats() throws IOException {
+ 
+    long fileSize = braf.getFileSize();
+    long filePos = basePosition;
+    long sizeFreeSpace = 0;
+    long sizeAllocatedSpace = 0;
+    while (filePos < fileSize - RECORD_HEADER_SIZE) {
+      braf.seek(filePos);
+      int recordSize = braf.leReadInt();
+      if (recordSize == 0) {
+        break;
+      }
+      int recordType = braf.leReadInt();
+      if (recordType ==RECORD_TYPE_FREESPACE) {
+        sizeFreeSpace += recordSize;
+      }else{
+        sizeAllocatedSpace += recordSize;
+      }
+      
+      filePos += recordSize;
+    }
+    return new RecordManagerStats(sizeFreeSpace, sizeAllocatedSpace);
+  }
 }
