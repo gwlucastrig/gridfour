@@ -251,8 +251,6 @@ public class HuffmanEncoder {
       int index = depth - 1;
       SymbolNode pNode = path[index];
       int pBranch = pathBranch[index];
-//      System.out.format("depth, branch, count %2d, %2d, %10d,  %s%n", depth, pBranch, pNode.count,
-//              pNode.isLeaf ? "L-" + Integer.toString(pNode.symbol) : "Branch");
       // pBranch is set as follows:
       //    0  we've just arrived at the node and have not yet
       //       identified whether it is a branch or a leaf.

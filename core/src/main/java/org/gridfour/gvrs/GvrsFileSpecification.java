@@ -274,6 +274,8 @@ public class GvrsFileSpecification {
       } else {
         this.nColsInTile = 120;
       }
+      nRowsInTile = this.nRowsInTile;
+      nColumnsInTile = this.nColsInTile;
     } else {
       this.nRowsInTile = nRowsInTile;
       this.nColsInTile = nColumnsInTile;
@@ -284,16 +286,16 @@ public class GvrsFileSpecification {
         "Invalid dimensions for raster "
         + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
     }
-    if (nRowsInTile <= 0 || nColumnsInTile <= 0) {
+    if (this.nRowsInTile <= 0 || this.nColsInTile <= 0) {
       throw new IllegalArgumentException(
-        "Invalid dimensions for raster "
-        + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
+        "Invalid tile dimensions for raster "
+        + "(" + nRowsInTile + "," + nColumnsInTile + ")");
     }
 
-    if (nRowsInTile > nRowsInRaster || nColumnsInTile > nColumnsInRaster) {
+    if (nRowsInTile > nRowsInRaster || nColsInTile > nColumnsInRaster) {
       throw new IllegalArgumentException(
         "Dimensions of tile "
-        + "(" + nRowsInTile + "," + nColumnsInTile + ")"
+        + "(" + nRowsInTile + "," + nColsInTile + ")"
         + " exceed those of overall raster ("
         + "(" + nRowsInRaster + "," + nColumnsInRaster + ")");
     }
@@ -666,7 +668,10 @@ public class GvrsFileSpecification {
           int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
           int iFillValue = braf.leReadInt(); // NO PMD diagnostic    
           GvrsElementSpecificationIntCodedFloat icfSpec
-            = new GvrsElementSpecificationIntCodedFloat(name, fMinValue, fMaxValue, fFillValue, scale, offset);
+            = new GvrsElementSpecificationIntCodedFloat(name, 
+              fMinValue, fMaxValue, fFillValue,
+              iMinValue, iMaxValue, iFillValue,
+              scale, offset);
           elementSpecifications.add(icfSpec);
           spec = icfSpec;
         }
@@ -778,9 +783,9 @@ public class GvrsFileSpecification {
           braf.leWriteFloat(icfSpec.fillValue);
           braf.leWriteFloat(icfSpec.scale);
           braf.leWriteFloat(icfSpec.offset);
-          braf.leWriteFloat(icfSpec.minValueI);
-          braf.leWriteFloat(icfSpec.maxValueI);
-          braf.leWriteFloat(icfSpec.fillValueI);
+          braf.leWriteInt(icfSpec.minValueI);
+          braf.leWriteInt(icfSpec.maxValueI);
+          braf.leWriteInt(icfSpec.fillValueI);
           break;
         case INTEGER:
         default:

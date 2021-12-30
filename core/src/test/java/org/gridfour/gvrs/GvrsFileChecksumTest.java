@@ -11,8 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Provides the most basic test of writing and then reading a file
- * that contains only a single tile with only one element.
+ * Verifies that the GVRS file inspector can detect checksum errors
  */
 public class GvrsFileChecksumTest {
 
@@ -39,6 +38,10 @@ public class GvrsFileChecksumTest {
   public void setUp() {
   }
 
+  /**
+   * Verifies the detection of checksum errors by writing a file
+   * and then introducing one-bit errors at selected locations.
+   */
   @Test
   void simpleChecksumTest() {
     File testFile = new File(tempDir, "SimpleChecksumTest.gvrs");
@@ -56,9 +59,7 @@ public class GvrsFileChecksumTest {
  
     try (GvrsFile gvrs = new GvrsFile(testFile, spec)) {
     } catch (IOException ex) {
-      ex.printStackTrace(System.out);
-      fail("IOException in processing " + testFile + " " + ex.getMessage());
-      
+      fail("IOException in processing " + testFile + " " + ex.getMessage());  
     }
  
     // Write a single tile of data to the file.  Then get the size and

@@ -148,7 +148,10 @@ class TileElementIntCodedFloat extends TileElement {
 
   @Override
   void setValue(int index, float value) {
-    if (minValue <= value && value <= maxValue || value == fillValue) {
+    if (value == fillValue) {
+      values[index] = fillValueI;
+      parent.writingRequired = true;
+    } else if (minValue <= value && value <= maxValue) {
       values[index] = (int) Math.floor((value - offset) * scale + 0.5);
       parent.writingRequired = true;
     } else if (Float.isNaN(value)) {

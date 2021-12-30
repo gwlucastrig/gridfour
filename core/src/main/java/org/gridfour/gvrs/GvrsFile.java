@@ -89,7 +89,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final UUID uuid;
   private boolean isClosed;
   private boolean openedForWriting;
-  private boolean indexCreationEnabled = true;
   private long timeModified;
 
   // Content begins immediately after the header, so the position
@@ -552,22 +551,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return new TileAccessIndices(spec);
   }
 
+  
   /**
-   * Sets or clears a flag indicating that the instance should generate an
-   * index file when a writable file is closed.  This method is intended for
-   * test and development purposes and should not generally be set by
-   * calling applications.
-   *
-   * @param indexCreationEnabled true if an index is to be created; otherwise
-   * false.
-   */
-  void setIndexCreationEnabled(boolean indexCreationEnabled) {
-    this.indexCreationEnabled = indexCreationEnabled;
-  }
- 
-  /**
-   * Map Cartesian coordinates to grid coordinates storing the row and column
-   * in
+   * Map Cartesian coordinates to grid coordinates storing the row and column in
    * an array in that order. If the x or y coordinate is outside the ranges
    * defined for these parameters, the resulting rows and columns may be
    * outside the range of the valid grid coordinates.
@@ -587,11 +573,11 @@ public class GvrsFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Map grid coordinates to Cartesian coordinates storing the resulting x and
-   * y
-   * values in an array in that order. If the row or column values are outside
-   * the ranges defined for those parameters, the resulting x and y values may
-   * be outside the bounds of the standard Cartesian coordinates.
+   * Map grid coordinates to Cartesian coordinates storing the resulting
+   * x and y values in an array in that order. If the row or column values
+   * are outside the ranges defined for those parameters, the resulting
+   * x and y values may be outside the bounds of the standard
+   * Cartesian coordinates.
    * <p>
    * The transformation performed by this method is based on the parameters
    * established through a call to the
@@ -826,4 +812,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return uuid;
   }
 
+  
+  /**
+   * Gets the record manager for this instance. Note that this method
+   * is intended for testing only and is <i>not</i> public.
+   * @return a valid instance.
+   */
+  RecordManager getRecordManager(){
+    return recordMan;
+  }
 }
