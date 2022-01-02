@@ -90,7 +90,13 @@ public class GvrsElementIntCodedFloat extends GvrsElement {
    */
   @Override
   public int readValueInt(int row, int column) throws IOException {
-    return (int) readValue(row, column);
+    accessIndices.computeAccessIndices(row, column);
+    if (tileIndex != accessIndices.tileIndex) {
+      if (!gvrsFile.loadTile(accessIndices.tileIndex, false)) {
+        return fillValueI;
+      }
+    }
+    return tileElement.getValueInt(accessIndices.indexInTile);
   }
 
   /**
