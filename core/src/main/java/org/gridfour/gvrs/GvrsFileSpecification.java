@@ -573,7 +573,7 @@ public class GvrsFileSpecification {
     timeCreated = System.currentTimeMillis();
 
       // TO DO: proper treatment of identification is still unresolved.
-    //    identification = braf.readUTF();
+    //    identification = braf.leReadUTF();
 
     nRowsInRaster = braf.leReadInt();
     nColsInRaster = braf.leReadInt();
@@ -618,7 +618,7 @@ public class GvrsFileSpecification {
     if (nCompressionSpecifications > 0) {
       this.dataCompressionEnabled = true;
       for (int i = 0; i < nCompressionSpecifications; i++) {
-        String codecID = braf.readUTF();
+        String codecID = braf.leReadUTF();
         codecIdentificationList.add(codecID);
       }
     }
@@ -637,7 +637,7 @@ public class GvrsFileSpecification {
       GvrsElementType dataType = GvrsElementType.valueOf(dataTypeCode);
 
       GvrsElementSpecification spec;
-      String name = braf.readUTF();
+      String name = braf.leReadUTF();
       switch (dataType) {
         case SHORT:
           short sMinValue = braf.leReadShort();
@@ -689,30 +689,19 @@ public class GvrsFileSpecification {
           break;
       }
       if(hasDescription){
-        spec.setDescription(braf.readUTF());
+        spec.setDescription(braf.leReadUTF());
       }
       if(hasUnitOfMeasure){
-        spec.setUnitOfMeasure(braf.readUTF());
+        spec.setUnitOfMeasure(braf.leReadUTF());
       }
     }
 
     if (elementSpecifications.isEmpty()) {
       throw new IOException("Empty specification for variable definitions");
     }
- 
   }
 
- String readUTF(BufferedRandomAccessFile braf) throws IOException {
-    int length = braf.readUnsignedShort();
-    if (length == 0) {
-      return "";
-    }
-    int k = length + (length & 1);
-    byte[] b = new byte[k];
-    braf.readFully(b, 0, k);
-    return new String(b, 0, length, StandardCharsets.UTF_8);
-  }
-
+  
   /**
    * Writes the part of the GvrsFile header that includes the parameters
    * from this specification.
@@ -748,7 +737,7 @@ public class GvrsFileSpecification {
       List<CodecHolder> sList = getCompressionCodecs();
       braf.leWriteInt(sList.size());
       for (CodecHolder srcs : sList) {
-        braf.writeUTF(srcs.getIdentification());
+        braf.leWriteUTF(srcs.getIdentification());
       }
     } else {
       braf.leWriteInt(0);
@@ -762,7 +751,7 @@ public class GvrsFileSpecification {
       braf.writeBoolean(e.description!=null); // has description
       braf.writeBoolean(e.unitOfMeasure!=null); // has unit of measure
       braf.writeByte(0);  // reserved
-      braf.writeUTF(e.name);
+      braf.leWriteUTF(e.name);
       switch (dataType) {
         case SHORT:
           GvrsElementSpecificationShort sSpec = (GvrsElementSpecificationShort) e;
@@ -796,10 +785,10 @@ public class GvrsFileSpecification {
           break;
       }
       if(e.description!=null){
-        braf.writeUTF(e.description);
+        braf.leWriteUTF(e.description);
       }
       if(e.unitOfMeasure!=null){
-        braf.writeUTF(e.unitOfMeasure);
+        braf.leWriteUTF(e.unitOfMeasure);
       }
     }
   }

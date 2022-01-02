@@ -218,17 +218,26 @@ public class CptReader {
       }
     }
 
-    // The line is not a comment.  Assume it is a valid line
+    // We are now positioned on the first non-whitespace character
+    // in the line
     sb.append((char) c);
     while (true) {
-      // build the string
+      // When we reach this point, there should be one character
+      // stored in the StringBuilder.
+      // The delimiter between fields may be either whitespace
+      // or a slash.  Read through the line, appending characters
+      // to the StringBuilder until we encounter whitespace or a delimiter 
       c = bins.read();
-      while (c > 0 && !Character.isWhitespace(c)) {
+      while (c > 0 && !Character.isWhitespace(c) && c!='/') {
         sb.append((char) c);
         c = bins.read();
       }
       sList.add(sb.toString());
       sb.setLength(0);
+      if(c=='/'){
+        c = bins.read();
+      }
+      // now advance until we find the next starting character.
       while (c > 0 && c != '\n' && Character.isWhitespace(c)) {
         c = bins.read();
       }
@@ -249,6 +258,14 @@ public class CptReader {
     // If we encounter these in the future, it may be necessary to
     // upgrade this logic.
     int n = sList.size() - index;
+    if (n == 1 ) {
+      // it may be a named color
+      Color color = ColorPaletteNameParser.parse(sList.get(index));
+      if (color != null) {
+        return color;
+      }
+    }
+        
     if (n < 3) {
       throw new IOException("Error in " + name
         + " insufficient parameters where 3 expected for RGB");
@@ -284,7 +301,7 @@ public class CptReader {
   }
 
   private int parsePartRGB(String name, List<String> sList, int index) throws IOException {
-    double d = this.parsePart(name, sList, index);
+    double d = parsePart(name, sList, index);
     if(d>=0 && d<256){
       return (int)d;
     }

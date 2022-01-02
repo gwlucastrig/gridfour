@@ -653,7 +653,52 @@ public class BufferedRandomAccessFile
   }
 
   
+  /**
+   * Reads a series of UTF-8 characters based on the little-endian byte order
+   * The first two bytes give a short integer indicating
+   * the length of the string specification in bytes. They are followed
+   * by the bytes comprising the UTF-8 encoded characters for the string.
+   * Note that some of the UTF-8 characters in the string may
+   * require more than a single byte for their representation.
+   *
+   * @return a valid, potentially empty string.
+   * @throws IOException in the event of an I/O error.
+   */
+  public String leReadUTF() throws IOException {
+    int length = leReadUnsignedShort();
+    if (length == 0) {
+      return "";
+    }
+    byte[] b = new byte[length];
+    readFully(b, 0, length);
+    return new String(b, StandardCharsets.UTF_8);
+  }
+
   
+  /**
+   * Writes a series of UTF-8 characters using the little-endian byte order.
+   * The first two bytes give an unsigned short integer indicating
+   * the length of the string specification. Next follow the bytes comprising
+   * the UTF-8 encoded characters for the string. Note that some of the UTF-8
+   * characters in the string may require more than a single byte for their
+   * representation.
+   *
+   * @param s a valid String
+   * @throws IOException in the event of an I/O error.
+   */
+  public void leWriteUTF(String s) throws IOException {
+    if (s == null) {
+      throw new NullPointerException("Null string passed to leWriteUTF");
+    }
+    byte[] b = s.getBytes(StandardCharsets.UTF_8);
+    if (b.length > 65535) {
+      throw new UTFDataFormatException(
+              "String passed to leWriteUTF exceeds 65535 byte maximum");
+    }
+    leWriteShort(b.length); // this will work even when length>32767
+    writeFully(b, 0, b.length);
+  }
+
   
   
   
@@ -1096,16 +1141,16 @@ public class BufferedRandomAccessFile
    * @param s a valid String
    * @throws IOException in the event of an I/O error.
    */
- 
+
   @Override
   public void writeUTF(String s) throws IOException {
     if (s == null) {
-      throw new NullPointerException("Null string passed to writeUTF");
+      throw new NullPointerException("Null string passed to leWriteUTF");
     }
     byte[] b = s.getBytes(StandardCharsets.UTF_8);
     if (b.length > 65535) {
       throw new UTFDataFormatException(
-              "String passed to writeUTF exceeds 65535 byte maximum");
+              "String passed to leWriteUTF exceeds 65535 byte maximum");
     }
     writeShort(b.length);
     writeFully(b, 0, b.length);
@@ -1230,7 +1275,7 @@ public class BufferedRandomAccessFile
   }
 
   /**
-   * Reads the next linhe of text from the input following the general
+   * Reads the next line of text from the input following the general
    * specifications of the DataInput interface. Note that this method reads
    * characters one byte at a time and does not fully implement the Unicode
    * character set.

@@ -858,7 +858,7 @@ class RecordManager {
     braf.leWriteInt(gmrList.size());
     for (GvrsMetadataReference gmr : gmrList) {
       braf.leWriteLong(gmr.offset);
-      braf.writeUTF(gmr.name);
+      braf.leWriteUTF(gmr.name);
       braf.leWriteInt(gmr.recordID);
       braf.writeByte((byte) gmr.dataType.getCodeValue());
     }
@@ -893,7 +893,7 @@ class RecordManager {
     int nMetadataRecord = braf.leReadInt();
     for (int i = 0; i < nMetadataRecord; i++) {
       long recordPos = braf.leReadLong();
-      String name = braf.readUTF();
+      String name = braf.leReadUTF();
       int recordID = braf.leReadInt();
       int typeCode = braf.readByte();
       GvrsMetadataType metadataType = GvrsMetadataType.valueOf(typeCode);
