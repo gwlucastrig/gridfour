@@ -83,7 +83,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.gridfour.demo.access.ReadG93</mainClass>
+              <mainClass>org.gridfour.demo.access.ReadGvrs</mainClass>
               <addClasspath>true</addClasspath>
             </manifest>
           </archive>
@@ -95,7 +95,7 @@
         <configuration>
           <archive>
             <manifest>
-          	<mainClass>org.gridfour.demo.access.ReadG93</mainClass>
+          	<mainClass>org.gridfour.demo.access.ReadGvrs</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

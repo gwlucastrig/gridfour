@@ -206,7 +206,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   }
 
   void write(BufferedRandomAccessFile braf) throws IOException {
-    braf.writeUTF(name);
+    braf.leWriteUTF(name);
     braf.leWriteInt(recordID);
     braf.write(dataType.getCodeValue());
     braf.writeBoolean(content.length > 0);
@@ -217,12 +217,12 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
       braf.write(content);
     }
     if (descriptionLength > 0) {
-      braf.writeUTF(description);
+      braf.leWriteUTF(description);
     }
   }
 
   static GvrsMetadataReference  readMetadataRef(BufferedRandomAccessFile braf, long offset) throws IOException {
-    String metadataName = braf.readUTF();
+    String metadataName = braf.leReadUTF();
     int metadataRecordID = braf.leReadInt();
     int codeValue = braf.readByte();
 
@@ -512,7 +512,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
 
    GvrsMetadata(BufferedRandomAccessFile braf) throws IOException {
 
-    name = braf.readUTF();
+    name = braf.leReadUTF();
     recordID = braf.leReadInt();
     int codeValue = braf.readByte();
     dataType = GvrsMetadataType.valueOf(codeValue);
@@ -529,7 +529,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
       long offset1 = braf.getFilePosition();
       descriptionLength = braf.readShort(); // note, this is Big-Endian
       braf.seek(offset1);
-      description = braf.readUTF();
+      description = braf.leReadUTF();
     }
 
   }

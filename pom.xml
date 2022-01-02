@@ -54,7 +54,6 @@
 
   <modules>
     <module>core</module>
-    <module>demo</module>
   </modules>
 
   <distributionManagement>
