@@ -61,7 +61,7 @@ public class GvrsElementSimpleWriteAndReadTest {
         testFile.delete();
       }
 
-      GvrsFileSpecification spec = new GvrsFileSpecification(10, 10, 10, 10);
+      GvrsFileSpecification spec = new GvrsFileSpecification(10, 10);
       GvrsElementSpecification eSpec = intSpecs[iSpec];
       spec.addElementSpecification(eSpec);
       try (
@@ -101,7 +101,7 @@ public class GvrsElementSimpleWriteAndReadTest {
         testFile.delete();
       }
 
-      GvrsFileSpecification spec = new GvrsFileSpecification(10, 10, 10, 10);
+      GvrsFileSpecification spec = new GvrsFileSpecification(10, 10);
       GvrsElementSpecification eSpec = fltSpecs[iSpec];
       spec.addElementSpecification(eSpec);
       try (
