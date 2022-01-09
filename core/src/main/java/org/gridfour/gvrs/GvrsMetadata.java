@@ -157,8 +157,6 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
    * @return a positive value, in bytes.
    */
   public int getStorageSize() {
-    // since the User ID can only include ASCII characters, its
-    // length and its storage size are the same
     int sumStorage =
       2 + name.length()
       + 4 // recordID

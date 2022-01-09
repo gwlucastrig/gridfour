@@ -107,7 +107,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * @param offset a valid for adjusting an input value.
    */
   public GvrsElementSpecificationIntCodedFloat(String name, float scale, float offset) {
-    super(name, GvrsElementType.INTEGER_CODED_FLOAT);
+    super(name, GvrsElementType.INT_CODED_FLOAT);
     this.scale = scale;
     this.offset = offset;
     this.minValueI = Integer.MIN_VALUE + 1;
@@ -139,7 +139,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    *
    */
   public GvrsElementSpecificationIntCodedFloat(String name, float fillValue, float scale, float offset) {
-    super(name, GvrsElementType.INTEGER_CODED_FLOAT);
+    super(name, GvrsElementType.INT_CODED_FLOAT);
     this.scale = scale;
     this.offset = offset;
     this.minValueI = Integer.MIN_VALUE + 1;
@@ -192,7 +192,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
     String name,
     float minValue, float maxValue, float fillValue,
     float scale, float offset) {
-    super(name, GvrsElementType.INTEGER_CODED_FLOAT);
+    super(name, GvrsElementType.INT_CODED_FLOAT);
     this.minValue = minValue;
     this.maxValue = maxValue;
     this.fillValue = fillValue;
@@ -208,7 +208,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
     float minValue, float maxValue, float fillValue,
     int minValueI, int maxValueI, int fillValueI,
     float scale, float offset) {
-    super(name, GvrsElementType.INTEGER_CODED_FLOAT);
+    super(name, GvrsElementType.INT_CODED_FLOAT);
     this.minValue = minValue;
     this.maxValue = maxValue;
     this.fillValue = fillValue;

@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (C) 2019  Gary W. Lucas.
+ * Copyright (C) 2022  Gary W. Lucas.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created
+ * 01/2022  G. Lucas     Created
  *
  * Notes:
  *
@@ -39,89 +39,78 @@
 package org.gridfour.gvrs;
 
 /**
- * Defines the possible representations of data stored as an element
- * in a GVRS file.
+ * Defines the possible types of records stored in a GVRS file.
  */
-public enum GvrsElementType {
+enum RecordType {
 
   /**
-   * Data is stored using the Java 4-byte signed integer data type.
+   * The record contains free space, available for reuse.
    */
-  INTEGER(0, 4),
+  Freespace(0),
   /**
-   * Floating point values are multiplied by a scaling factor and
-   * stored as a Java 4-byte integer data type.
+   * The record contains metadaa.
    */
-  INT_CODED_FLOAT(1, 4),
+  Metadata(1),
   /**
-   * Data is stored using the Java 4-byte float data type, the IEEE-754
-   * single-precision floating point format.
+   * The record contains a tile.
    */
-  FLOAT(2, 4),
+  Tile(2),
   /**
-   * Data is stored using the Java 2-byte signed short data type.
+   * The record contains an index of freespace records.
    */
-  SHORT(3, 2);
+  FreespaceIndex(3),
+  
+  /** 
+   * The record contains an index of metadata records.
+   */
+  MetadataIndex(4),
+  
+  /**
+   * The record contains an index of tile records.
+   */
+  TileIndex(5);
 
   final int codeValue;
-  final int bytesPerSample;
 
-  GvrsElementType(int codeValue, int bytesPerSample) {
+  RecordType(int codeValue) {
     this.codeValue = codeValue;
-    this.bytesPerSample = bytesPerSample;
   }
 
   /**
    * Gets the code value to be stored in a data file to indicate what
-   * data type was used for the non-compressed storage representation.
+   * record type was specified..
    *
-   * @return gets an integer code value indicating the data type; used
+   * @return gets an integer code value indicating the record type; used
    * internally.
    */
-  public int getCodeValue() {
+  int getCodeValue() {
     return codeValue;
   }
+ 
 
   /**
-   * Get the number of bytes required to store a single data sample
-   * of the associated type.
-   *
-   * @return an integer value of one or greater.
+   * Gets the enumeration type associated with the specified code value.
+   * Will return a null for an invalid code value.
+   * @param codeValue a value in the range 0 to 5
+   * @return if successful, a valid enumeration; otherwise, a null.
    */
-  public int getBytesPerSample() {
-    return bytesPerSample;
-  }
-
-  public static GvrsElementType valueOf(int codeValue) {
+  static RecordType valueOf(int codeValue) {
     switch (codeValue) {
       case 0:
-        return INTEGER;
+        return Freespace;
       case 1:
-        return INT_CODED_FLOAT;
+        return Metadata;
       case 2:
-        return FLOAT;
+        return Tile;
       case 3:
-        return SHORT;
+        return FreespaceIndex;
+      case 4:
+        return MetadataIndex;
+      case 5:
+        return TileIndex;
       default:
-        return INTEGER;
+        return null; // invalid type
     }
   }
-
-  /**
-   * Indicates whether this enumeration identifies an integer-based datatype
-   * for GVRS data.
-   *
-   * @return true if the identified data type is integral; otherwise, false.
-   */
-  public boolean isIntegral() {
-    switch (this) {
-      case INTEGER:
-      case INT_CODED_FLOAT:
-      case SHORT:
-        return true;
-      default:
-        return false;
-    }
-  }
-
+ 
 }

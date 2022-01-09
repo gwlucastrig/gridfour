@@ -55,7 +55,7 @@ public class GvrsFileChecksumTest {
     spec.addElementSpecification(eSpec0);
     spec.setChecksumEnabled(true);
  
-    long size1 = 0; // size after tike 0 is written
+    long size1 = 0; // size after tile 0 is written
  
     try (GvrsFile gvrs = new GvrsFile(testFile, spec)) {
     } catch (IOException ex) {

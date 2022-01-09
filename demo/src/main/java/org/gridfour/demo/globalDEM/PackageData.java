@@ -44,7 +44,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.UUID;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
@@ -73,7 +72,7 @@ import ucar.nc2.Variable;
  * distributed in the NetCDF file format.
  */
 public class PackageData {
-
+ 
   private static String[] usage = {
     "PackageData  -- create a Gvrs file from from ETOPO1 or GEBCO_2019 Global DEM files",
     "Arguments:",
@@ -223,7 +222,7 @@ public class PackageData {
       // the options define our data type
       elementSpec = new GvrsElementSpecificationIntCodedFloat("z", zScale, zOffset);
       spec.addElementSpecification(elementSpec);
-      gvrsDataType = GvrsElementType.INTEGER_CODED_FLOAT;
+      gvrsDataType = GvrsElementType.INT_CODED_FLOAT;
     } else if (sourceDataType.isIntegral()) {
       elementSpec = new GvrsElementSpecificationShort("z");
       spec.addElementSpecification(elementSpec);
@@ -235,7 +234,7 @@ public class PackageData {
     }
     elementSpec.setDescription("Elevation (positive values) or depth (negative), in meters");
     elementSpec.setUnitOfMeasure("m");
-
+    elementSpec.setLabel("die H\u00f6henlage"); // Example with special character
     ps.println("Source date type " + sourceDataType + ", stored as " + gvrsDataType);
     ps.println("");
 
@@ -248,7 +247,7 @@ public class PackageData {
     spec.setExtendedFileSizeEnabled(bigAddressSpaceEnabled);
     
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
-
+ 
     spec.setGeographicCoordinates(
       geoCoords[0],
       geoCoords[1],
@@ -354,7 +353,7 @@ public class PackageData {
                 nSum++;
               }
               break;
-            case INTEGER_CODED_FLOAT:
+            case INT_CODED_FLOAT:
             case FLOAT:
             default:
               for (int iCol = 0; iCol < nCols; iCol++) {
@@ -450,7 +449,7 @@ public class PackageData {
                   }
                 }
                 break;
-              case INTEGER_CODED_FLOAT:
+              case INT_CODED_FLOAT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
                   int iSample = (int) ((sample - zOffset) * zScale + 0.5);

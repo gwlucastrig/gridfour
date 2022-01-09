@@ -79,8 +79,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
 
   // Gives the offset to the field in the header that is used to
-  // store the file position for the index record.
-  private final static long FILEPOS_OFFSET_TO_INDEX_RECORD = 56;
+  // store the file positions for the index records.
+  private final static long FILEPOS_OFFSET_TO_FREESPACE_INDEX = 56;
+  private final static long FILEPOS_OFFSET_TO_METADATA_INDEX = 64;
+  private final static long FILEPOS_OFFSET_TO_TILE_INDEX = 80;
 
   private final File file;
   private final GvrsFileSpecification spec;
@@ -95,6 +97,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   // of the content is also the size of the header.
   private long filePosContent;
   private int sizeOfHeaderInBytes;
+  private int nLevels;
 
   private final RecordManager recordMan;
   private final RasterTileCache tileCache;
@@ -147,27 +150,33 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.leWriteLong(uuid.getLeastSignificantBits());
     braf.leWriteLong(uuid.getMostSignificantBits());
 
-    braf.leWriteLong(timeModified);  // time modified
-    braf.leWriteLong(timeModified);    // time opened
-    braf.leWriteLong(0); // offset to content, also length of the header
-    // write a reserved block of 4 longs, which could be divided up in the future
-    // or used for other writable file offsets or data
-    braf.leWriteLong(0);
-    braf.leWriteLong(0);
+    braf.leWriteLong(timeModified);  // pos 32: time modified
+    braf.leWriteLong(timeModified);    // pos 40: time opened
+    braf.leWriteLong(0); // pos 48: offset to content, also length of the header
+    braf.leWriteLong(0); // pos 56: offset to freespace index
+    braf.leWriteLong(0); // pos 64: offset to metadata index
+
+    braf.leWriteShort(1); // number of levels. Currently fixed at 1
+    byte[] zeroes = new byte[6];
+    braf.writeFully(zeroes);
+    braf.leWriteLong(0); // pos 80: offset to first (currently, only) tile index
+
+    // write a block of two reserved longs for future use.
     braf.leWriteLong(0);
     braf.leWriteLong(0);
 
+    // write the specification
     spec.write(braf);
 
     // write out 8 bytes reserved for future use
-    byte[] b = new byte[8];
-    braf.writeFully(b);  // reserved
+    zeroes = new byte[8];
+    braf.writeFully(zeroes);  // reserved
 
     // The offset to the end of the header needs to be a multiple
     // of 8 in order to support file position compression. The size is
     // not known a priori because it will depend on the structure
     // of the elements in the specification.  At this point,
-    // we will need to reserve 4 extra bytes for the checksum
+    // we will also need to reserve 4 extra bytes for the checksum
     // and then pad out the record.
     long filePos = braf.getFilePosition();
     filePosContent = (filePos + 4 + 7) & 0xfffffff8;
@@ -192,8 +201,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
       codecMetadata.setDescription("Class paths for Java compressors");
       writeMetadata(codecMetadata);
       StringBuilder sb = new StringBuilder();
-      for(CodecHolder holder: csList){
-        if(sb.length()>0){
+      for (CodecHolder holder : csList) {
+        if (sb.length() > 0) {
           sb.append('|');
         }
         sb.append(holder.getIdentification());
@@ -271,10 +280,16 @@ public class GvrsFile implements Closeable, AutoCloseable {
     filePosContent = braf.leReadLong();
     sizeOfHeaderInBytes = (int) filePosContent;
 
-    long filePosIndexRecord = braf.leReadLong();
+    long filePosFreeSpaceIndexRecord = braf.leReadLong();
+    long filePosMetadataIndexRecord = braf.leReadLong();
+    nLevels = braf.leReadShort(); // right now, always 1.
+    braf.skipBytes(6);
+    // for now, there is only one tile index record.  This may
+    // change in the future if we support raster pyramids.
+    long filePosTileIndexRecord = braf.leReadLong();
 
-    // skip the currently reserved block of 24 bytes
-    braf.skipBytes(24);
+    // skip the currently reserved block of 16 bytes
+    braf.skipBytes(16);
     spec = new GvrsFileSpecification(braf);
 
     if (spec.isChecksumEnabled) {
@@ -297,27 +312,45 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
     rasterCodec = new CodecMaster(spec.codecList);
     recordMan = new RecordManager(spec, rasterCodec, braf, filePosContent);
-    if (filePosIndexRecord > 0) {
-      recordMan.readIndexRecord(filePosIndexRecord);
+    long savePos = braf.getFilePosition();
+    if (filePosFreeSpaceIndexRecord > 0) {
+      recordMan.readFreespaceIndexRecord(filePosFreeSpaceIndexRecord);
       if (writingEnabled) {
         // presumably, the content is going to change and the existing
         // index data will become obsolete.  So dispose of it and zero out
         // the file position for the index record.
-        braf.seek(FILEPOS_OFFSET_TO_INDEX_RECORD);
+
+        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_INDEX);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosIndexRecord);
+        recordMan.fileSpaceDealloc(filePosFreeSpaceIndexRecord);
       }
-    } else {
-      // if the file position record was not set, scan the entire file
-      // to find if it was set.
-      recordMan.scanFileForTiles();
     }
+
+    if (filePosMetadataIndexRecord > 0) {
+      recordMan.readMetadataIndexRecord(filePosMetadataIndexRecord);
+      if (writingEnabled) {
+        braf.seek(FILEPOS_OFFSET_TO_METADATA_INDEX);
+        braf.leWriteLong(0);
+        recordMan.fileSpaceDealloc(filePosMetadataIndexRecord);
+      }
+    }
+
+    if (filePosTileIndexRecord > 0) {
+      recordMan.readTileIndexRecord(filePosTileIndexRecord);
+      if (writingEnabled) {
+        braf.seek(FILEPOS_OFFSET_TO_TILE_INDEX);
+        braf.leWriteLong(0);
+        recordMan.fileSpaceDealloc(filePosTileIndexRecord);
+      }
+    }
+    braf.seek(savePos);
+
     tileCache = new RasterTileCache(spec, recordMan);
 
     // See if the source file specified Java codecs.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
     GvrsMetadata codecMetadata
-      =  readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
+      = readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
       String codecStr = codecMetadata.getString();
       codecSpecificationList
@@ -332,7 +365,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     }
 
   }
- 
+
   /**
    * Gets a file reference to the file in which the data
    * for this raster is stored.
@@ -385,10 +418,21 @@ public class GvrsFile implements Closeable, AutoCloseable {
         long closingTime = System.currentTimeMillis();
         braf.leWriteLong(closingTime);
         braf.leWriteLong(0); // opened for writing time
-        
-        long indexRecordPos = recordMan.writeIndexRecord();
-        braf.seek(FILEPOS_OFFSET_TO_INDEX_RECORD);
-        braf.leWriteLong(indexRecordPos);
+
+        long freeSpaceIndexPos = recordMan.writeFreeSpaceIndexRecord();
+        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_INDEX);
+        braf.leWriteLong(freeSpaceIndexPos);
+
+        long metadataIndexPos = recordMan.writeMetadataIndexRecord();
+        braf.seek(FILEPOS_OFFSET_TO_METADATA_INDEX);
+        braf.leWriteLong(metadataIndexPos);
+
+        // At present, there is only one tile index record.
+        // In the future, addition records may be added.
+        long tileIndexPos = recordMan.writeTileIndexRecord();
+        braf.seek(FILEPOS_OFFSET_TO_TILE_INDEX);
+        braf.leWriteLong(tileIndexPos);
+
         if (spec.isChecksumEnabled) {
           long checksum = tabulateChecksumFromHeader();
           braf.leWriteInt((int) checksum);
@@ -551,7 +595,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return new TileAccessIndices(spec);
   }
 
-  
   /**
    * Map Cartesian coordinates to grid coordinates storing the row and column in
    * an array in that order. If the x or y coordinate is outside the ranges
@@ -812,13 +855,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return uuid;
   }
 
-  
   /**
    * Gets the record manager for this instance. Note that this method
    * is intended for testing only and is <i>not</i> public.
+   *
    * @return a valid instance.
    */
-  RecordManager getRecordManager(){
+  RecordManager getRecordManager() {
     return recordMan;
   }
 }
