@@ -38,6 +38,8 @@
  */
 package org.gridfour.gvrs;
 
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
 import org.gridfour.compress.CodecDeflate;
 import org.gridfour.compress.CodecHuffman;
 import org.gridfour.compress.CodecFloat;
@@ -124,6 +126,24 @@ public class GvrsFileSpecification {
   double y1;
   double cellSizeX;
   double cellSizeY;
+
+  double c2g00 = 1;
+  double c2g01 = 0;
+  double c2g02 = 0;
+  double c2g10 = 0;
+  double c2g11 = 1;
+  double c2g12 = 0;
+
+  double g2c00 = 1;
+  double g2c01 = 0;
+  double g2c02 = 0;
+  double g2c10 = 0;
+  double g2c11 = 1;
+  double g2c12 = 0;
+
+  AffineTransform c2g = new AffineTransform(); // identity
+  AffineTransform g2c = new AffineTransform(); // identify
+
 
   // the following will be set only in the case of a geographic
   // coordinate system
@@ -363,7 +383,24 @@ public class GvrsFileSpecification {
     y1 = s.y1;
     cellSizeX = s.cellSizeX;
     cellSizeY = s.cellSizeY;
-  
+    
+    c2g00 = s.c2g00;
+    c2g01 = s.c2g01;
+    c2g02 = s.c2g02;
+    c2g10 = s.c2g10;
+    c2g11 = s.c2g11;
+    c2g12 = s.c2g12;
+
+    g2c00 = s.g2c00;
+    g2c01 = s.g2c01;
+    g2c02 = s.g2c02;
+    g2c10 = s.g2c10;
+    g2c11 = s.g2c11;
+    g2c12 = s.g2c12;
+
+    c2g = s.c2g;
+    g2c = s.g2c;
+
     isExtendedFileSizeEnabled = s.isExtendedFileSizeEnabled;
     isChecksumEnabled = s.isChecksumEnabled;
     geometryType = s.geometryType;
@@ -378,7 +415,7 @@ public class GvrsFileSpecification {
    * Gets the standard size of the data when stored in non-compressed format.
    * This size is the product of dimension, number of rows and columns, and
    * and the sum of the data sizes in bytes for the elements defined for each
-   * raster cell.
+   * raster cell.  Logic is applied to ensure this value is a multiple of 4.
    *
    * @return a positive value greater than or equal to 1.
    */
@@ -450,6 +487,28 @@ public class GvrsFileSpecification {
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     checkGeographicCoverage();
+ 
+    c2g00 = 1 / cellSizeX;
+    c2g01 = 0;
+    c2g02 = -x0 * c2g00;
+    c2g10 = 0;
+    c2g11 = 1 / cellSizeY;
+    c2g12 = -y0 * c2g11;
+    c2g = new AffineTransform(c2g00, c2g10, c2g01, c2g11, c2g02, c2g12);
+    try {
+      g2c = c2g.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException(ex.getMessage(), ex);
+    }
+
+    double[] m = new double[6];
+    g2c.getMatrix(m);
+    g2c00 = m[0];
+    g2c10 = m[1];
+    g2c01 = m[2];
+    g2c11 = m[3];
+    g2c02 = m[4];
+    g2c12 = m[5];
 
   }
 
@@ -473,19 +532,17 @@ public class GvrsFileSpecification {
   /**
    * Set a Cartesian coordinate system to be used for interpreting the data.
    * Note that this setting is mutually exclusive with the geographic
-   * coordinate
-   * system setting. The last setting applied replaces any earlier settings
+   * coordinate system setting. The last setting applied replaces 
+   * any earlier settings
    *
    * @param x0 the X coordinate of the lower-left corner of the raster and the
    * first column of the raster (column 0).
    * @param y0 the Y coordinate of the lower-left corner of the raster and the
    * first row of the raster (row 0).
    * @param x1 the X coordinate of the upper-right corner of the raster and
-   * the
-   * last column of the raster.
+   * the last column of the raster.
    * @param y1 the Y coordinate of the upper-right corner of the raster and
-   * the
-   * last row of the raster.
+   * the last row of the raster.
    */
   public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
     isGeographicCoordinateSystemSet = false;
@@ -509,6 +566,34 @@ public class GvrsFileSpecification {
     this.y1 = y1;
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+    
+    // It would be easy enough to compute the g2c matric directly, but
+    // testing showed that when we used the Java createInverse() method
+    // and multiplied the two matrices togther, the values from createInverse
+    // actually produced a result closer to the identify matrix.
+   
+    c2g00 = 1 / cellSizeX;
+    c2g01 = 0;
+    c2g02 = -x0 * c2g00;
+    c2g10 = 0;
+    c2g11 = 1 / cellSizeY;
+    c2g12 = -y0 * c2g11;
+    c2g = new AffineTransform(c2g00, c2g10, c2g01, c2g11, c2g02, c2g12);
+    try {
+      g2c = c2g.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException(ex.getMessage(), ex);
+    }
+
+    double[] m = new double[6];
+    g2c.getMatrix(m);
+    g2c00 = m[0];
+    g2c10 = m[1];
+    g2c01 = m[2];
+    g2c11 = m[3];
+    g2c02 = m[4];
+    g2c12 = m[5];
+
   }
 
   /**
@@ -602,9 +687,30 @@ public class GvrsFileSpecification {
     y1 = braf.leReadDouble();
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+    
+    c2g00 = braf.leReadDouble();
+    c2g01 = braf.leReadDouble();
+    c2g02 = braf.leReadDouble();
+    c2g10 = braf.leReadDouble();
+    c2g11 = braf.leReadDouble();
+    c2g12 = braf.leReadDouble();
+
+    g2c00 = braf.leReadDouble();
+    g2c01 = braf.leReadDouble();
+    g2c02 = braf.leReadDouble();
+    g2c10 = braf.leReadDouble();
+    g2c11 = braf.leReadDouble();
+    g2c12 = braf.leReadDouble();
+       
+    c2g = new AffineTransform(c2g00, c2g10, c2g01, c2g11, c2g02, c2g12);
+    g2c = new AffineTransform(g2c00, g2c10, g2c01, g2c11, g2c02, g2c12);
+    
     if (isGeographicCoordinateSystemSet) {
       checkGeographicCoverage();
     }
+    
+    
+    
 
     // The source file may supply keys for compression encoder types.
     // Some keys are part of the GVRS specification, but others may
@@ -628,7 +734,7 @@ public class GvrsFileSpecification {
       int dataTypeCode = braf.readByte();
       boolean hasDescription = braf.readBoolean();
       boolean hasUnitOfMeasure = braf.readBoolean();
-      braf.skipBytes(1); // reserved for future use
+      boolean hasLabel = braf.readBoolean();
       
       if (dataTypeCode < 0 || dataTypeCode > 3) {
         throw new IOException(
@@ -658,7 +764,7 @@ public class GvrsFileSpecification {
             spec = fSpec;
         }
         break;
-        case INTEGER_CODED_FLOAT: {
+        case INT_CODED_FLOAT: {
           float fMinValue = braf.leReadFloat();
           float fMaxValue = braf.leReadFloat();
           float fFillValue = braf.leReadFloat();
@@ -694,6 +800,10 @@ public class GvrsFileSpecification {
       if(hasUnitOfMeasure){
         spec.setUnitOfMeasure(braf.leReadUTF());
       }
+      
+      if(hasLabel){
+        spec.setLabel(braf.leReadUTF());
+      }
     }
 
     if (elementSpecifications.isEmpty()) {
@@ -717,7 +827,7 @@ public class GvrsFileSpecification {
     braf.leWriteInt(nColsInTile);
 
     braf.writeBoolean(isExtendedFileSizeEnabled);
-     braf.writeBoolean(isChecksumEnabled);
+    braf.writeBoolean(isChecksumEnabled);
     braf.writeByte(geometryType.getCodeValue());
 
     int coordinateSystem = 0;
@@ -732,6 +842,26 @@ public class GvrsFileSpecification {
     braf.leWriteDouble(y0);
     braf.leWriteDouble(x1);
     braf.leWriteDouble(y1);
+    
+    // write the AffineTransform parameters.  We store the parameters
+    // for both the real-value-to-grid (c2g) and the grid-to-real (g2c)
+    // matrices even though one could easily be computed from the other.
+    // The reason for this is that we want to be able to ensure that
+    // the parameters used on whatever system reads this file will be
+    // identical to those used on the system that writes it.
+    braf.leWriteDouble(c2g00);
+    braf.leWriteDouble(c2g01);
+    braf.leWriteDouble(c2g02);
+    braf.leWriteDouble(c2g10);
+    braf.leWriteDouble(c2g11);
+    braf.leWriteDouble(c2g12);
+
+    braf.leWriteDouble(g2c00);
+    braf.leWriteDouble(g2c01);
+    braf.leWriteDouble(g2c02);
+    braf.leWriteDouble(g2c10);
+    braf.leWriteDouble(g2c11);
+    braf.leWriteDouble(g2c12);
 
     if (isDataCompressionEnabled()) {
       List<CodecHolder> sList = getCompressionCodecs();
@@ -750,7 +880,7 @@ public class GvrsFileSpecification {
       braf.writeByte(codeValue);
       braf.writeBoolean(e.description!=null); // has description
       braf.writeBoolean(e.unitOfMeasure!=null); // has unit of measure
-      braf.writeByte(0);  // reserved
+      braf.writeBoolean(e.label!=null); // has a label
       braf.leWriteUTF(e.name);
       switch (dataType) {
         case SHORT:
@@ -765,7 +895,7 @@ public class GvrsFileSpecification {
           braf.leWriteFloat(fSpec.maxValue);
           braf.leWriteFloat(fSpec.fillValue);
           break;
-        case INTEGER_CODED_FLOAT:
+        case INT_CODED_FLOAT:
           GvrsElementSpecificationIntCodedFloat icfSpec = (GvrsElementSpecificationIntCodedFloat) e;
           braf.leWriteFloat(icfSpec.minValue);
           braf.leWriteFloat(icfSpec.maxValue);
@@ -789,6 +919,9 @@ public class GvrsFileSpecification {
       }
       if(e.unitOfMeasure!=null){
         braf.leWriteUTF(e.unitOfMeasure);
+      }
+      if(e.label!=null){
+        braf.leWriteUTF(e.label);
       }
     }
   }
@@ -1097,17 +1230,14 @@ public class GvrsFileSpecification {
 
   /**
    * Sets the geometry type associated with the row and column positions in
-   * the
-   * raster. If the geometry type is Point, the value at a row and column is
+   * the raster. If the geometry type is Point, the value at a row and column is
    * intended to represent the value at a particular point on the surface
    * described by the raster. If the geometry type is Area, the value at a row
    * and column is intended to represent the value for an entire cell centered
    * at the coordinates associated with the row and column. In either case,
-   * Gvrs
-   * treats real-valued coordinates (Cartesian or geographic) as giving the
+   * GVRS treats real-valued coordinates (Cartesian or geographic) as giving the
    * position at which the data value for a grid point exactly matches the
-   * value
-   * at the surface that is represented by the data.
+   * value at the surface that is represented by the data.
    *
    * @param geometryType a valid instance of the enumeration.
    */
@@ -1383,15 +1513,55 @@ public class GvrsFileSpecification {
     ps.format("Columns in Tile:   %12d%n", nColsInTile);
     ps.format("Rows of Tiles:     %12d%n", nRowsOfTiles);
     ps.format("Columns of Tiles:  %12d%n", nColsOfTiles);
+    ps.format("Tiles in Raster:   %12d%n", nRowsOfTiles*nColsOfTiles);
     ps.format("Cells in Raster:   %12d%n", cellsInRaster);
     ps.format("Cells in Tile:     %12d%n", nCellsInTile);
+
     ps.println("");
     ps.format("Range x values:      %11.6f, %11.6f, (%f)%n", x0, x1, x1 - x0);
     ps.format("Range y values:      %11.6f, %11.6f, (%f)%n", y0, y1, y1 - y0);
-//    ps.format("Value scale factor:  %11.6f%n", valueScale);
-//    ps.format("Value offset factor: %11.6f%n", valueOffset);
     ps.format("Data compression:       %s%n",
       isDataCompressionEnabled() ? "enabled" : "disabled");
+    ps.println("");
+    
+    ps.println("Elements");
+    int namLen = 4; // for "name"
+    int labLen = 5; // for "label"
+    int typLen = 4; // for "type"
+     for(GvrsElementSpecification eSpec: this.elementSpecifications){
+      String dType = eSpec.dataType.name();
+      if(dType.length()>typLen){
+        typLen = dType.length();
+      }
+      String name = eSpec.getName();
+      if(name.length()>namLen){
+        namLen = name.length();
+      }
+      String label = eSpec.getLabel();
+      if(label!=null && label.length()>labLen){
+        labLen = label.length();
+      }
+     }
+      
+    String elmfmt = String.format(
+      "   %%-%d.%ds   %%-%d.%ds   %%-%d.%ds   %%s%%n",
+      namLen, namLen, labLen, labLen, typLen,typLen);
+    ps.format(elmfmt, "Name", "Label", "Type", "Description");
+      
+    for(GvrsElementSpecification eSpec: this.elementSpecifications){
+      String dType = eSpec.dataType.name();
+      String name = eSpec.getName();
+      String label = eSpec.getLabel();
+      if(label==null){
+        label = "";
+      }
+      String description = eSpec.getDescription();
+      if(description==null){
+        description="";
+      }
+      ps.format(elmfmt, name, label, dType, description);
+      ps.println("");
+    }
   }
 
   /**

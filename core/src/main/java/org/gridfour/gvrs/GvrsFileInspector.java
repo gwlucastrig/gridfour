@@ -45,7 +45,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import static org.gridfour.gvrs.RecordManager.RECORD_HEADER_SIZE;
 import static org.gridfour.gvrs.RecordManager.RECORD_OVERHEAD_SIZE;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.GridfourCRC32C;
@@ -105,9 +104,11 @@ public class GvrsFileInspector {
 
   private void inspectContent(BufferedRandomAccessFile braf) throws IOException {
     int maxTileRecordSize
-      = spec.getStandardTileSizeInBytes()
+      = 4 
       + spec.getNumberOfElements() * 4
+      + spec.getStandardTileSizeInBytes()
       + RECORD_OVERHEAD_SIZE;
+    maxTileRecordSize = (maxTileRecordSize+7)&0x7ffffff8;
     braf.seek(offsetToContent);
 
     int maxTileIndex = spec.nRowsOfTiles * spec.nColsOfTiles;
@@ -115,24 +116,25 @@ public class GvrsFileInspector {
     long filePos = offsetToContent;
 
     boolean previousCheckPassed = true; // at the start, we know that the header passed.
-    while (filePos < fileSize - RECORD_HEADER_SIZE) {
+    while (filePos < fileSize - RECORD_OVERHEAD_SIZE) {
       braf.seek(filePos);
       int recordSize = braf.leReadInt();
       if (recordSize == 0) {
         break;
       }
 
-      int tileIndex = braf.leReadInt();
-      if (tileIndex < 0) {
-        // negative tile indexes are used to introduce non-tile
-        // records.
-        if (tileIndex != -1 && tileIndex != -2 && tileIndex != -3) {
-          throw new IOException("Undefined record code " + tileIndex);
-        }
-        
-      } else {
-        if (tileIndex >= maxTileIndex) {
-          this.badTileIndex = true;
+      int recordTypeCode = braf.leReadInt();
+      RecordType recordType = RecordType.valueOf(recordTypeCode);
+      if(recordType==null){
+        throw new IOException("Invalid record-type code " + recordTypeCode);
+      }
+      
+      int tileIndex = 0;
+      if (recordType==recordType.Tile) {
+        tileIndex = braf.leReadInt();
+        if (tileIndex<0 || tileIndex >= maxTileIndex) {
+          badTileIndex = true;
+          inspectionFailed = true;
           terminationPosition = filePos;
           return;
         }
@@ -140,10 +142,13 @@ public class GvrsFileInspector {
           terminationPosition = filePos;
           badTiles.add(tileIndex);
           invalidRecordSize = true;
+          inspectionFailed = true;
           return;
         }
       }
-      if (spec.isChecksumEnabled() && tileIndex!=-1) {
+      
+      // note that checksums are not computed for free-space records.
+      if (spec.isChecksumEnabled() && recordType!=RecordType.Freespace) {
         braf.seek(filePos);
         byte[] bytes = new byte[recordSize - 4];
         braf.readFully(bytes);
@@ -152,7 +157,9 @@ public class GvrsFileInspector {
         long checksum0 = crc32.getValue();
         long checksum1 = braf.leReadInt() & 0xffffffffL;
         if (checksum0 != checksum1) {
-          badTiles.add(tileIndex);
+          if(recordType==RecordType.Tile){
+              badTiles.add(tileIndex);
+          }
           inspectionFailed = true;
           // if we've seen two checksum failures in a row,
           // we assume the file is profoundly corrupt and it is not

@@ -1,3 +1,12 @@
+
+// Note:  This test was written for an earlier version of the
+//        RecordManager in which the alloc method took the full size of
+//        the file-space to be allocated (including the header and checksum).
+//        The new version accepts just the size of the content, which is
+//        12 bytes less than is actually allocated.  I have adjusted the
+//        tests, but they are sort of messy and need to be cleaned up
+//        to be a better fit for the new model.
+
 package org.gridfour.gvrs;
 
 import java.io.File;
@@ -11,6 +20,10 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Verifies the implementation of the record allocation logic
  * in the RecordManager.
+ * <p>
+ * Note that the following tests allocate records of type Metadata because
+ * the record manager pre-poluates the specified record with zeroes
+ * to ensure that the file is correctly populated.
  */
 public class RecordAllocationTest {
 
@@ -48,16 +61,16 @@ public class RecordAllocationTest {
     try (
        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
       RecordManager recordMan = gvrs.getRecordManager();
-      long rec0 = recordMan.fileSpaceAllocAndFill(1024);
+      long rec0 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       recordMan.fileSpaceDealloc(rec0);
-      long recx = recordMan.fileSpaceAlloc(1024);
+      long recx = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       assertEquals(recx, rec0, "Re-allocation of same size failed for record 0");
 
       rec0 = recx;
-      long rec1 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec2 = recordMan.fileSpaceAllocAndFill(1024);
+      long rec1 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec2 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       recordMan.fileSpaceDealloc(rec1);
-      recx = recordMan.fileSpaceAlloc(1024);
+      recx = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       assertEquals(recx, rec1, "Re-allocation of same size failed for record 1");
     } catch (IOException ex) {
       fail("IOException in processing " + testFile + " " + ex.getMessage());
@@ -84,11 +97,11 @@ public class RecordAllocationTest {
     try (
        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
       RecordManager recordMan = gvrs.getRecordManager();
-      long rec0 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec1 = recordMan.fileSpaceAllocAndFill(1024);
+      long rec0 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec1 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       for (int i = 1; i < 10; i++) {
         recordMan.fileSpaceDealloc(rec1);
-        long recx = recordMan.fileSpaceAllocAndFill(1024 + i * 128);
+        long recx = recordMan.fileSpaceAlloc(1024 + i * 128, RecordType.Metadata);
         assertEquals(recx, rec1, "Last record not freed and reused on iteration " + i);
       }
 
@@ -114,15 +127,15 @@ public class RecordAllocationTest {
     try (
        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
       RecordManager recordMan = gvrs.getRecordManager();
-      long rec0 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec1 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec2 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec3 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec4 = recordMan.fileSpaceAllocAndFill(1024);
+      long rec0 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec1 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec2 = recordMan.fileSpaceAlloc(1500, RecordType.Metadata);
+      long rec3 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec4 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       // deallocate the first record, then the second
       recordMan.fileSpaceDealloc(rec1);
       recordMan.fileSpaceDealloc(rec2);
-      long recx = recordMan.fileSpaceAlloc(2048);
+      long recx = recordMan.fileSpaceAlloc(2048, RecordType.Metadata);
       assertEquals(recx, rec1, "Adjacent  free records not merged upward");
     } catch (IOException ex) {
       fail("IOException in processing " + testFile + " " + ex.getMessage());
@@ -135,15 +148,15 @@ public class RecordAllocationTest {
     try (
        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
       RecordManager recordMan = gvrs.getRecordManager();
-      long rec0 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec1 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec2 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec3 = recordMan.fileSpaceAllocAndFill(1024);
-      long rec4 = recordMan.fileSpaceAllocAndFill(1024);
+      long rec0 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec1 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec2 = recordMan.fileSpaceAlloc(1500, RecordType.Metadata);
+      long rec3 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec4 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       // delete the second record first
       recordMan.fileSpaceDealloc(rec3);
       recordMan.fileSpaceDealloc(rec2);
-      long recx = recordMan.fileSpaceAlloc(2048);
+      long recx = recordMan.fileSpaceAlloc(2048, RecordType.Metadata);
       assertEquals(recx, rec2, "Adjacent free records not merged downward");
     } catch (IOException ex) {
       fail("IOException in processing " + testFile + " " + ex.getMessage());
@@ -173,15 +186,15 @@ public class RecordAllocationTest {
     try (
        GvrsFile gvrs = new GvrsFile(testFile, spec)) {
       RecordManager recordMan = gvrs.getRecordManager();
-      long recx = recordMan.fileSpaceAllocAndFill(100);
-      long rec0 = recordMan.fileSpaceAllocAndFill(3*1024);
-      long rec1 = recordMan.fileSpaceAllocAndFill(1024);
+      long recx = recordMan.fileSpaceAlloc(100, RecordType.Metadata);
+      long rec0 = recordMan.fileSpaceAlloc(3*1024+512, RecordType.Metadata);
+      long rec1 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       recordMan.fileSpaceDealloc(rec0);
-      long recA = recordMan.fileSpaceAlloc(2*1024);
-      long recB = recordMan.fileSpaceAlloc(1024);
+      long recA = recordMan.fileSpaceAlloc(2*1024, RecordType.Metadata);
+      long recB = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
       assertEquals(recA, rec0, "Re-allocation with split failed for record 0-A");
-      assertEquals(recB, rec0+2*1024, 
-        "Re-allocation with split failed for record 0-B");
+      assertEquals(recB, rec0+2*1024+16, 
+        "Re-allocation with split failed for record 0-B "+(recB-rec0));
       recordMan.fileSpaceDealloc(recA);
       recordMan.fileSpaceDealloc(recB);
     } catch (IOException ex) {

@@ -119,7 +119,7 @@ class RasterTile {
         case SHORT:
           e = new TileElementShort(this, nRows, nColumns, spec, initializeValues);
           break;
-        case INTEGER_CODED_FLOAT:
+        case INT_CODED_FLOAT:
           e = new TileElementIntCodedFloat(this, nRows, nColumns, spec, initializeValues);
           break;
         default:

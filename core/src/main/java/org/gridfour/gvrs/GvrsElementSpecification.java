@@ -66,6 +66,7 @@ public abstract class GvrsElementSpecification {
   final GvrsElementType dataType;
   String description;
   String unitOfMeasure;
+  String label;
 
   /**
    * Standard constructor used to populate base elements.
@@ -146,9 +147,44 @@ public abstract class GvrsElementSpecification {
     return unitOfMeasure;
   }
 
+  
+  /**
+   * Sets an arbitrary unit of label string. Intended to provide
+   * applications with that ability to label elements using the full
+   * range of UTF-8 character sets. In particular, this method is useful
+   * for applications requiring specifications in non-western
+   * character sets.
+   *
+   * @param label valid non-empty string, or no label
+   * is to be specified.
+   */
+  public void setLabel(String label) {
+    if (label == null || label.isEmpty()) {
+      this.label = null;
+    } else {
+      this.label = label.trim();
+    }
+  }
+
+  /**
+   * Gets the arbitrary label string.  Intended to provide
+   * applications with that ability to label elements using the full
+   * range of UTF-8 character sets. In particular, this method is useful
+   * for applications requiring specifications in non-western
+   * character sets.
+   *
+   * @return a valid non-empty string, or a null if no description
+   * is to be supplied.
+   */
+  public String getLabel() {
+    return label;
+  }
+
+  
   protected void copyApplicationData(GvrsElementSpecification spec) {
     description = spec.description;
     unitOfMeasure = spec.unitOfMeasure;
+    label = spec.label;
   }
 
   /**

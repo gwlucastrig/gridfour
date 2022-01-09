@@ -121,7 +121,15 @@ public class GvrsElementWriteAndReadMultiTileTest {
         gvrs.flush();
         stats1 = recordMan.scanForFileSpaceStats();
         size1 = stats1.sizeAllocatedSpace;
-        long targetOutputSize = (size0 + spec.getStandardTileSizeInBytes() + 12 + 7) & 0xfffffff8L;
+        
+        // The size of one tile will be:
+        //    The record overhead (12 bytes)
+        //    4 byes for the tile index
+        //    4 bytes for the size of the tile data
+        //    the size of the tile data
+        int sizeOneTile = RecordManager.RECORD_OVERHEAD_SIZE
+          +8+spec.getStandardTileSizeInBytes();
+        long targetOutputSize = (size0 + sizeOneTile + 7) & 0xfffffff8L;
         assertEquals(targetOutputSize, size1, "Before and After Size");
       } catch (IOException ex) {
         fail("IOException in processing " + eSpec.getName() + " " + ex.getMessage());
@@ -189,7 +197,11 @@ public class GvrsElementWriteAndReadMultiTileTest {
         gvrs.flush();
         stats1 = recordMan.scanForFileSpaceStats();
         size1 = stats1.sizeAllocatedSpace;
-        long targetOutputSize = (size0 + spec.getStandardTileSizeInBytes() + 16 + 7) & 0xfffffff8L;
+        int sizeForTile = RecordManager.RECORD_OVERHEAD_SIZE
+          +4
+          +spec.getNumberOfElements()*4
+          +spec.getStandardTileSizeInBytes();
+        long targetOutputSize = (size0 + sizeForTile + 7) & 0xfffffff8L;
         assertEquals(targetOutputSize, size1,
           "Conflicting before and after file size for " + element.getName());
       } catch (IOException ex) {

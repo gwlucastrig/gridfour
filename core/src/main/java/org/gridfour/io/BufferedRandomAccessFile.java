@@ -925,6 +925,10 @@ public class BufferedRandomAccessFile
    * occurs.
    */
   public void seek(long position) throws IOException {
+    if(virtualPosition == position){
+      // nothing to do
+      return;
+    }
     if (writeDataIsInBuffer) {
       flushWrite();
     } else if (readDataIsInBuffer) {
