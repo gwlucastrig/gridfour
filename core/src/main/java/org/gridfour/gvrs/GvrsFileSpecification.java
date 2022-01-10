@@ -52,6 +52,8 @@ import static java.lang.Double.isFinite;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.Angle;
 
@@ -127,22 +129,24 @@ public class GvrsFileSpecification {
   double cellSizeX;
   double cellSizeY;
 
-  double c2g00 = 1;
-  double c2g01 = 0;
-  double c2g02 = 0;
-  double c2g10 = 0;
-  double c2g11 = 1;
-  double c2g12 = 0;
+  // Parameters for the model-to-raster transform
+  double m2r00 = 1;
+  double m2r01 = 0;
+  double m2r02 = 0;
+  double m2r10 = 0;
+  double m2r11 = 1;
+  double m2r12 = 0;
 
-  double g2c00 = 1;
-  double g2c01 = 0;
-  double g2c02 = 0;
-  double g2c10 = 0;
-  double g2c11 = 1;
-  double g2c12 = 0;
+  // Parameters for the raster-to-model transform
+  double r2m00 = 1;
+  double r2m01 = 0;
+  double r2m02 = 0;
+  double r2m10 = 0;
+  double r2m11 = 1;
+  double r2m12 = 0;
 
-  AffineTransform c2g = new AffineTransform(); // identity
-  AffineTransform g2c = new AffineTransform(); // identify
+  AffineTransform modelToRaster = new AffineTransform(); // identity
+  AffineTransform rasterToModel = new AffineTransform(); // identify
 
 
   // the following will be set only in the case of a geographic
@@ -384,22 +388,22 @@ public class GvrsFileSpecification {
     cellSizeX = s.cellSizeX;
     cellSizeY = s.cellSizeY;
     
-    c2g00 = s.c2g00;
-    c2g01 = s.c2g01;
-    c2g02 = s.c2g02;
-    c2g10 = s.c2g10;
-    c2g11 = s.c2g11;
-    c2g12 = s.c2g12;
+    m2r00 = s.m2r00;
+    m2r01 = s.m2r01;
+    m2r02 = s.m2r02;
+    m2r10 = s.m2r10;
+    m2r11 = s.m2r11;
+    m2r12 = s.m2r12;
 
-    g2c00 = s.g2c00;
-    g2c01 = s.g2c01;
-    g2c02 = s.g2c02;
-    g2c10 = s.g2c10;
-    g2c11 = s.g2c11;
-    g2c12 = s.g2c12;
+    r2m00 = s.r2m00;
+    r2m01 = s.r2m01;
+    r2m02 = s.r2m02;
+    r2m10 = s.r2m10;
+    r2m11 = s.r2m11;
+    r2m12 = s.r2m12;
 
-    c2g = s.c2g;
-    g2c = s.g2c;
+    modelToRaster = s.modelToRaster;
+    rasterToModel = s.rasterToModel;
 
     isExtendedFileSizeEnabled = s.isExtendedFileSizeEnabled;
     isChecksumEnabled = s.isChecksumEnabled;
@@ -488,27 +492,27 @@ public class GvrsFileSpecification {
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     checkGeographicCoverage();
  
-    c2g00 = 1 / cellSizeX;
-    c2g01 = 0;
-    c2g02 = -x0 * c2g00;
-    c2g10 = 0;
-    c2g11 = 1 / cellSizeY;
-    c2g12 = -y0 * c2g11;
-    c2g = new AffineTransform(c2g00, c2g10, c2g01, c2g11, c2g02, c2g12);
+    m2r00 = 1 / cellSizeX;
+    m2r01 = 0;
+    m2r02 = -x0 * m2r00;
+    m2r10 = 0;
+    m2r11 = 1 / cellSizeY;
+    m2r12 = -y0 * m2r11;
+    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
     try {
-      g2c = c2g.createInverse();
+      rasterToModel = modelToRaster.createInverse();
     } catch (NoninvertibleTransformException ex) {
       throw new IllegalArgumentException(ex.getMessage(), ex);
     }
 
     double[] m = new double[6];
-    g2c.getMatrix(m);
-    g2c00 = m[0];
-    g2c10 = m[1];
-    g2c01 = m[2];
-    g2c11 = m[3];
-    g2c02 = m[4];
-    g2c12 = m[5];
+    rasterToModel.getMatrix(m);
+    r2m00 = m[0];
+    r2m10 = m[1];
+    r2m01 = m[2];
+    r2m11 = m[3];
+    r2m02 = m[4];
+    r2m12 = m[5];
 
   }
 
@@ -567,32 +571,32 @@ public class GvrsFileSpecification {
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     
-    // It would be easy enough to compute the g2c matric directly, but
+    // It would be easy enough to compute the r2m matric directly, but
     // testing showed that when we used the Java createInverse() method
     // and multiplied the two matrices togther, the values from createInverse
     // actually produced a result closer to the identify matrix.
    
-    c2g00 = 1 / cellSizeX;
-    c2g01 = 0;
-    c2g02 = -x0 * c2g00;
-    c2g10 = 0;
-    c2g11 = 1 / cellSizeY;
-    c2g12 = -y0 * c2g11;
-    c2g = new AffineTransform(c2g00, c2g10, c2g01, c2g11, c2g02, c2g12);
+    m2r00 = 1 / cellSizeX;
+    m2r01 = 0;
+    m2r02 = -x0 * m2r00;
+    m2r10 = 0;
+    m2r11 = 1 / cellSizeY;
+    m2r12 = -y0 * m2r11;
+    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
     try {
-      g2c = c2g.createInverse();
+      rasterToModel = modelToRaster.createInverse();
     } catch (NoninvertibleTransformException ex) {
       throw new IllegalArgumentException(ex.getMessage(), ex);
     }
 
     double[] m = new double[6];
-    g2c.getMatrix(m);
-    g2c00 = m[0];
-    g2c10 = m[1];
-    g2c01 = m[2];
-    g2c11 = m[3];
-    g2c02 = m[4];
-    g2c12 = m[5];
+    rasterToModel.getMatrix(m);
+    r2m00 = m[0];
+    r2m10 = m[1];
+    r2m01 = m[2];
+    r2m11 = m[3];
+    r2m02 = m[4];
+    r2m12 = m[5];
 
   }
 
@@ -688,22 +692,22 @@ public class GvrsFileSpecification {
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     
-    c2g00 = braf.leReadDouble();
-    c2g01 = braf.leReadDouble();
-    c2g02 = braf.leReadDouble();
-    c2g10 = braf.leReadDouble();
-    c2g11 = braf.leReadDouble();
-    c2g12 = braf.leReadDouble();
+    m2r00 = braf.leReadDouble();
+    m2r01 = braf.leReadDouble();
+    m2r02 = braf.leReadDouble();
+    m2r10 = braf.leReadDouble();
+    m2r11 = braf.leReadDouble();
+    m2r12 = braf.leReadDouble();
 
-    g2c00 = braf.leReadDouble();
-    g2c01 = braf.leReadDouble();
-    g2c02 = braf.leReadDouble();
-    g2c10 = braf.leReadDouble();
-    g2c11 = braf.leReadDouble();
-    g2c12 = braf.leReadDouble();
+    r2m00 = braf.leReadDouble();
+    r2m01 = braf.leReadDouble();
+    r2m02 = braf.leReadDouble();
+    r2m10 = braf.leReadDouble();
+    r2m11 = braf.leReadDouble();
+    r2m12 = braf.leReadDouble();
        
-    c2g = new AffineTransform(c2g00, c2g10, c2g01, c2g11, c2g02, c2g12);
-    g2c = new AffineTransform(g2c00, g2c10, g2c01, g2c11, g2c02, g2c12);
+    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
+    rasterToModel = new AffineTransform(r2m00, r2m10, r2m01, r2m11, r2m02, r2m12);
     
     if (isGeographicCoordinateSystemSet) {
       checkGeographicCoverage();
@@ -844,24 +848,24 @@ public class GvrsFileSpecification {
     braf.leWriteDouble(y1);
     
     // write the AffineTransform parameters.  We store the parameters
-    // for both the real-value-to-grid (c2g) and the grid-to-real (g2c)
+    // for both the real-value-to-grid (m2r) and the grid-to-real (r2m)
     // matrices even though one could easily be computed from the other.
     // The reason for this is that we want to be able to ensure that
     // the parameters used on whatever system reads this file will be
     // identical to those used on the system that writes it.
-    braf.leWriteDouble(c2g00);
-    braf.leWriteDouble(c2g01);
-    braf.leWriteDouble(c2g02);
-    braf.leWriteDouble(c2g10);
-    braf.leWriteDouble(c2g11);
-    braf.leWriteDouble(c2g12);
+    braf.leWriteDouble(m2r00);
+    braf.leWriteDouble(m2r01);
+    braf.leWriteDouble(m2r02);
+    braf.leWriteDouble(m2r10);
+    braf.leWriteDouble(m2r11);
+    braf.leWriteDouble(m2r12);
 
-    braf.leWriteDouble(g2c00);
-    braf.leWriteDouble(g2c01);
-    braf.leWriteDouble(g2c02);
-    braf.leWriteDouble(g2c10);
-    braf.leWriteDouble(g2c11);
-    braf.leWriteDouble(g2c12);
+    braf.leWriteDouble(r2m00);
+    braf.leWriteDouble(r2m01);
+    braf.leWriteDouble(r2m02);
+    braf.leWriteDouble(r2m10);
+    braf.leWriteDouble(r2m11);
+    braf.leWriteDouble(r2m12);
 
     if (isDataCompressionEnabled()) {
       List<CodecHolder> sList = getCompressionCodecs();
@@ -1592,4 +1596,76 @@ public class GvrsFileSpecification {
     elementSpecifications.add(specification);
   }
    
+  
+  /**
+   * Gets an affine transform for mapping real-valued "model" coordinates
+   * to the raster grid. The model coordinates may be based on either the
+   * Cartesian or Geographic specifications, or specified arbitrarily by
+   * the application.
+   * @return a valid instance
+   */
+  public AffineTransform getTransformModelToRaster(){
+    return modelToRaster;
+  }
+  
+    /**
+   * Gets an affine transform for mapping grid (raster) coordinates to 
+   * real-valued "model" coordinates. The model coordinates may be based
+   * on either the Cartesian or Geographic specifications, or
+   * specified arbitrarily by  the application.
+   * @return a valid instance
+   */
+  public AffineTransform getTransformRasterToModel(){
+    return modelToRaster;
+  }
+  
+  /**
+   * Set the transform for mapping model coordinates to the raster grid.
+   * @param a  a valid, well-conditioned transformation matrix.
+   */
+  public void setTransformModelToRaster(AffineTransform a){
+    if(a==null){
+      throw new IllegalArgumentException(
+        "Null specification for model-to-raster transform");
+    }
+    
+    modelToRaster = a;
+    try{
+      rasterToModel = a.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException("Specified transform is not invertible");
+    }
+    
+    double [] c = new double[16];
+    c[0] = 0;
+    c[1] = 0;
+    c[2] = nColsInRaster - 1;
+    c[3] = 0;
+    c[4] = nColsInRaster-1;
+    c[5] = nRowsInRaster-1;
+    c[6] = 0;
+    c[7] = nRowsInRaster-1;
+    rasterToModel.transform(c, 0, c, 8, 4);
+    
+    x0 = c[8];
+    y0 = c[9];
+    x1 = x0;
+    y1 = y0;
+    for(int i=1; i<4; i++){
+      double x = c[8+i*2];
+      double y = c[8+i*2+1];
+      if(x<x0){
+        x0 = x;
+      }else  if(x>x1){
+        x1 = x;
+      }
+      if(y<y0){
+        y0 = y;
+      }else if(y>y1){
+        y1 = y;
+      }
+    }
+    
+    
+  }
 }
