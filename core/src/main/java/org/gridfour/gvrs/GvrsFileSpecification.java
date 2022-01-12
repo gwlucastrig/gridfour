@@ -52,8 +52,6 @@ import static java.lang.Double.isFinite;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.Angle;
 
@@ -1085,8 +1083,8 @@ public class GvrsFileSpecification {
    */
   public double[] mapCartesianToGrid(double x, double y) {
     double[] grid = new double[2];
-    grid[0] = (nRowsInRaster - 1) * (y - y0) / (y1 - y0);  // row
-    grid[1] = (nColsInRaster - 1) * (x - x0) / (x1 - x0);
+    grid[1] = x*m2r00 + y*m2r01 + m2r02;
+    grid[0] = x*m2r10 + y*m2r11 + m2r12;
     return grid;
   }
 
@@ -1107,8 +1105,8 @@ public class GvrsFileSpecification {
    */
   public double[] mapGridToCartesian(double row, double column) {
     double[] c = new double[2];
-    c[0] = (x1 - x0) * column / (nColsInRaster - 1) + x0;
-    c[1] = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
+    c[0] = column*r2m00 + row*r2m01 + r2m02;
+    c[1] = column*r2m10 + row*r2m11 + r2m12;
     return c;
   }
 
@@ -1619,23 +1617,25 @@ public class GvrsFileSpecification {
     return modelToRaster;
   }
   
-  /**
-   * Set the transform for mapping model coordinates to the raster grid.
-   * @param a  a valid, well-conditioned transformation matrix.
-   */
-  public void setTransformModelToRaster(AffineTransform a){
-    if(a==null){
-      throw new IllegalArgumentException(
-        "Null specification for model-to-raster transform");
-    }
-    
-    modelToRaster = a;
-    try{
-      rasterToModel = a.createInverse();
-    } catch (NoninvertibleTransformException ex) {
-      throw new IllegalArgumentException("Specified transform is not invertible");
-    }
-    
+  
+  private void applyTransforms(){
+    double [] m =new double[6];
+    modelToRaster.getMatrix(m);
+    m2r00 = m[0];
+    m2r10 = m[1];
+    m2r01 = m[2];
+    m2r11 = m[3];
+    m2r02 = m[4];
+    m2r12 = m[5];
+
+    rasterToModel.getMatrix(m);
+    r2m00 = m[0];
+    r2m10 = m[1];
+    r2m01 = m[2];
+    r2m11 = m[3];
+    r2m02 = m[4];
+    r2m12 = m[5];
+
     double [] c = new double[16];
     c[0] = 0;
     c[1] = 0;
@@ -1665,7 +1665,93 @@ public class GvrsFileSpecification {
         y1 = y;
       }
     }
-    
-    
   }
+  /**
+   * Set the transform for mapping model coordinates to the raster grid.
+   * @param a  a valid, well-conditioned transformation matrix.
+   */
+  public void setTransformModelToRaster(AffineTransform a){
+    if(a==null){
+      throw new IllegalArgumentException(
+        "Null specification for model-to-raster transform");
+    }
+    
+    modelToRaster = a;
+    try{
+      rasterToModel = a.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException("Specified transform is not invertible");
+    }
+    
+    applyTransforms();
+     
+  }
+  
+  
+  /**
+   * Set the transform for mapping model coordinates to the raster grid.
+   * @param a  a valid, well-conditioned transformation matrix.
+   */
+  public void setTransformRasterToModel(AffineTransform a){
+    if(a==null){
+      throw new IllegalArgumentException(
+        "Null specification for raster-to-model transform");
+    }
+    
+    rasterToModel = a;
+    try{
+      modelToRaster = a.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException("Specified transform is not invertible");
+    }
+    
+     applyTransforms();
+  }
+  
+  
+  /**
+   * Gets the minimum X coordinate in the model-coordinate-system
+   * (a Cartesian coordinate system, or longitude for a geographic coordinate
+   * system).
+   * @return a finite floating-point value.
+   */
+  public double getX0(){
+    return x0;
+  }
+  
+  
+  /**
+   * Gets the minimum Y coordinate in the model-coordinate-system
+   * (a Cartesian coordinate system, or latitude for a geographic coordinate
+   * system).
+   * @return a finite floating-point value.
+   */
+  public double getY0(){
+    return y0;
+  }
+  
+   
+  /**
+   * Gets the maximum X coordinate in the model-coordinate-system
+   * (a Cartesian coordinate system, or longitude for a geographic coordinate
+   * system).
+   * @return a finite floating-point value.
+   */
+  public double getX1(){
+    return x1;
+  }
+  
+  
+  /**
+   * Gets the maximum Y coordinate in the model-coordinate-system
+   * (a Cartesian coordinate system, or latitude for a geographic coordinate
+   * system).
+   * @return a finite floating-point value.
+   */
+  public double getY1(){
+    return y1;
+  }
+  
+  
+  
 }
