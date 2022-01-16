@@ -170,17 +170,23 @@ public class PackageData {
     lon = ncfile.findVariable("lon");
     z = ncfile.findVariable("elevation");
     int[] tileSize;
-    String identification;
+    
+    // Use the input file name to format a product label
+    File inputFile = new File(inputPath);
+    String productLabel = inputFile.getName();
+    if(productLabel.toLowerCase().endsWith(".nc")){
+      productLabel = productLabel.substring(0, productLabel.length()-3);
+    }
+   
+    
     if (lat == null) {
       // ETOPO1 specification
       tileSize = options.getTileSize(90, 120);
       lat = ncfile.findVariable("y");
       lon = ncfile.findVariable("x");
       z = ncfile.findVariable("z");
-      identification = "ETOPO1";
     } else {
       tileSize = options.getTileSize(90, 120);
-      identification = "GEBCO";
     }
     if (lat == null || lon == null || z == null) {
       throw new IllegalArgumentException(
@@ -206,7 +212,7 @@ public class PackageData {
     // Initialize the specification used to initialize the Gvrs file -------
     GvrsFileSpecification spec
       = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
-    spec.setIdentification(identification);
+    spec.setLabel(productLabel);
 
     // Initialize the data type.  If a zScale option was specified,
     // use integer-coded floats.  Otherwise, pick the data type
@@ -284,12 +290,13 @@ public class PackageData {
     double zSum = 0;
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
-      GvrsMetadata copyright = GvrsMetadataConstants.Copyright.newInstance();
-      copyright.setString("This data is in the public domain and may be used free of charge");
-      gvrs.writeMetadata(copyright);
-      GvrsMetadata disclaimers = GvrsMetadataConstants.Disclaimers.newInstance();
-      disclaimers.setString("This data should not be used for navigation");
-      gvrs.writeMetadata(disclaimers);
+      gvrs.writeMetadata(
+        GvrsMetadataConstants.Copyright, 
+        "This data is in the public domain and may be used free of charge");
+
+      gvrs.writeMetadata(
+        GvrsMetadataConstants.Disclaimers, 
+        "This data should not be used for navigation");
 
       GvrsElement zElement = gvrs.getElement("z");
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
@@ -406,15 +413,19 @@ public class PackageData {
       ps.println("Opening gvrs file for reading");
       long time0 = System.currentTimeMillis();
       try (GvrsFile gvrs = new GvrsFile(outputFile, "r")) {
-        GvrsMetadata m = gvrs.readMetadata("Copyright", 0);
-        if (m != null) {
-          System.out.println("Copyright: " + m.getString());
-        }
-        GvrsElement zElement = gvrs.getElement("z");
-        System.out.println("Element " + zElement.getName() + ", " + zElement.getDescription());
         long time1 = System.currentTimeMillis();
         ps.println("Opening complete in " + (time1 - time0) + " ms");
-        System.out.println("  Element: " + zElement);
+        GvrsFileSpecification testSpec = gvrs.getSpecification();
+        String testLabel = testSpec.getLabel();
+                  ps.println("Label:     "+testLabel);
+        GvrsMetadata m = gvrs.readMetadata("Copyright", 0);
+        if (m != null) {
+
+        ps.println("Copyright: " + m.getString());
+        }
+        GvrsElement zElement = gvrs.getElement("z");
+        ps.println("Element:   " + zElement.getName() + ", " + zElement.getDescription());
+
         gvrs.setTileCacheSize(GvrsCacheSize.Large);
         for (int iRow = 0; iRow < nRows; iRow++) {
           if (iRow % 10000 == 9999) {
@@ -481,7 +492,7 @@ public class PackageData {
 
         time1 = System.currentTimeMillis();
         ps.println("Exhaustive cross check complete in " + (time1 - time0) + " ms");
-        gvrs.summarize(System.out, false);
+        gvrs.summarize(ps, false);
       }
 
     }

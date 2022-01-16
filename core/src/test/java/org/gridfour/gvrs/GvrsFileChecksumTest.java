@@ -87,7 +87,7 @@ public class GvrsFileChecksumTest {
     }
 
     try {
-      GvrsFileInspector inspector = new GvrsFileInspector(testFile);
+      GvrsInspector inspector = new GvrsInspector(testFile);
       boolean checksumFailed = inspector.didFileFailInspection();
       assertFalse(checksumFailed, "Bad checksum on good file");
     } catch (IOException ex) {
@@ -106,7 +106,7 @@ public class GvrsFileChecksumTest {
     }
 
     try {
-      GvrsFileInspector inspector = new GvrsFileInspector(testFile);
+      GvrsInspector inspector = new GvrsInspector(testFile);
       boolean checksumFailed = inspector.didFileFailInspection();
       boolean headerFailed = inspector.didFileHeaderFailInspction();
       assertTrue(checksumFailed, "Inspection did not detect bad file");
@@ -132,7 +132,7 @@ public class GvrsFileChecksumTest {
     }
 
     try {
-      GvrsFileInspector inspector = new GvrsFileInspector(testFile);
+      GvrsInspector inspector = new GvrsInspector(testFile);
       boolean checksumFailed = inspector.didFileFailInspection();
       boolean headerFailed = inspector.didFileHeaderFailInspction();
       assertTrue(checksumFailed, "Inspection did not detect bad file");

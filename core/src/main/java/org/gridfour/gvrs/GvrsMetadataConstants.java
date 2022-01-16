@@ -40,6 +40,16 @@ package org.gridfour.gvrs;
  * Provides specifications for the GVRS predefined metadata.
  * The purpose of this enumeration is to support uniform and consistent
  * specifications across all applications that use the GVRS file format.
+ * <p>
+ * This class is provided as a preliminary implementation to illustrate
+ * a concept of how a metadata standard could be facilitated. However,
+ * no such standard is established at this time. This class is provided
+ * with the hope that it will foster discussion and the eventual
+ * creation of a metadata standard for GVRS. Ideally, this enumeration
+ * will specify a small set of standard metadata names and data types
+ * that would be recognized by most or all applications.  Beyond that,
+ * applications would remain free to specify custom metadata definitions
+ * according to their own requirements.
  */
 public enum GvrsMetadataConstants {
   /**

@@ -49,7 +49,6 @@ import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.PrintStream;
 import static java.lang.Double.isFinite;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.gridfour.io.BufferedRandomAccessFile;
@@ -69,9 +68,7 @@ public class GvrsFileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 4;
-
-  private static final int IDENTIFICATION_SIZE = 64;
+  static final byte SUB_VERSION = 7;
  
 
   /**
@@ -168,7 +165,7 @@ public class GvrsFileSpecification {
   /**
    * An arbitrary, application-assigned identification string.
    */
-  String identification;
+  String productLabel;
  
 
   GvrsGeometryType geometryType  = GvrsGeometryType.Unspecified;
@@ -369,7 +366,7 @@ public class GvrsFileSpecification {
     nColsOfTiles = s.nColsOfTiles;
     nCellsInTile = s.nCellsInTile;
 
-    identification = s.identification;
+    productLabel = s.productLabel;
     for(GvrsElementSpecification eSpec : s.elementSpecifications){
       elementSpecifications.add(eSpec.copy());
     }
@@ -599,51 +596,27 @@ public class GvrsFileSpecification {
   }
 
   /**
-   * Set an arbitrary identification string for the raster. The identification
-   * may be a string of characters in UTF-8 encoding of up to 64 bytes in
-   * length. For most European alphabets, this size equates to 64 characters.
+   * Set an arbitrary label string for the raster file. The label
+   * may be a string of characters in UTF-8 encoding. This text is intended
+   * for identifying GVRS products in user interfaces or printed material.
+   * No explicit syntax is applied to its content.
    *
-   * @param identification the identification string
+   * @param label an application-defined string for labeling a GVRS file
    */
-  public void setIdentification(String identification) {
-    this.identification = identification;
-
-    byte[] b = identification.getBytes(StandardCharsets.UTF_8);
-    if (b.length > IDENTIFICATION_SIZE) {
-      throw new IllegalArgumentException(
-        "Identification string exceeds "+IDENTIFICATION_SIZE+" byte limit "
-        + "when encoded in UTF-8 character set (size="+ b.length + ")");
-    }
-
+  public void setLabel(String label) {
+    this.productLabel = label;
   }
- 
+
+  
   /**
-   * Gets array of bytes of length 64, intended for writing a GVRS Raster file.
-   *
-   * @return a valid array of length 64, potentially all zeros if empty.
-   */
-  byte[] getIdentificationBytes() {
-    return getUtfBytes(identification, IDENTIFICATION_SIZE);
-  }
-
-  private byte[] getUtfBytes(String subject, int fixedLength) {
-    byte[] output = new byte[fixedLength];
-    if (subject != null && !subject.isEmpty()) {
-      byte[] b = subject.getBytes(StandardCharsets.UTF_8);
-      System.arraycopy(b, 0, output, 0, b.length);
-    }
-    return output;
-  }
-
-  /**
-   * Gets the identification string associated with this specification and the
-   * GvrsFile that is created from it. The identification is supplied by the
+   * Gets the product-label string associated with this specification and the
+   * GvrsFile that is created from it. The label is supplied by the
    * application that creates a GVRS file and is not required to be populated.
    *
-   * @return a string of up to 64 characters, potentially null.
+   * @return an arbitrary string, potentially null.
    */
-  public String getIdentification() {
-    return identification;
+  public String getLabel() {
+    return productLabel;
   }
 
   /**
@@ -659,14 +632,14 @@ public class GvrsFileSpecification {
 
     timeCreated = System.currentTimeMillis();
 
-      // TO DO: proper treatment of identification is still unresolved.
-    //    identification = braf.leReadUTF();
-
     nRowsInRaster = braf.leReadInt();
     nColsInRaster = braf.leReadInt();
     nRowsInTile = braf.leReadInt();
     nColsInTile = braf.leReadInt();
     nCellsInTile = nRowsInTile * nColsInTile;
+    
+    // Skip the space reserved for future variations of the tile index
+    braf.skipBytes(5*4);
 
     nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
     nColsOfTiles = (nColsInRaster + nColsInTile - 1) / nColsInTile;
@@ -776,10 +749,10 @@ public class GvrsFileSpecification {
           int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
           int iFillValue = braf.leReadInt(); // NO PMD diagnostic    
           GvrsElementSpecificationIntCodedFloat icfSpec
-            = new GvrsElementSpecificationIntCodedFloat(name, 
-              fMinValue, fMaxValue, fFillValue,
+            = new GvrsElementSpecificationIntCodedFloat(
+              name, scale, offset,
               iMinValue, iMaxValue, iFillValue,
-              scale, offset);
+              fMinValue, fMaxValue, fFillValue);
           elementSpecifications.add(icfSpec);
           spec = icfSpec;
         }
@@ -807,10 +780,8 @@ public class GvrsFileSpecification {
         spec.setLabel(braf.leReadUTF());
       }
     }
-
-    if (elementSpecifications.isEmpty()) {
-      throw new IOException("Empty specification for variable definitions");
-    }
+ 
+    productLabel = braf.leReadUTF();
   }
 
   
@@ -827,6 +798,11 @@ public class GvrsFileSpecification {
     braf.leWriteInt(nColsInRaster);
     braf.leWriteInt(nRowsInTile);
     braf.leWriteInt(nColsInTile);
+    braf.leWriteInt(0); // specify type of tile index (for future use)
+    braf.leWriteInt(0); // reserved for future use
+    braf.leWriteInt(0);
+    braf.leWriteInt(0);
+    braf.leWriteInt(0);
 
     braf.writeBoolean(isExtendedFileSizeEnabled);
     braf.writeBoolean(isChecksumEnabled);
@@ -925,6 +901,12 @@ public class GvrsFileSpecification {
       if(e.label!=null){
         braf.leWriteUTF(e.label);
       }
+    }
+    
+    if(productLabel==null){
+      braf.leWriteShort(0);
+    }else{
+      braf.leWriteUTF(productLabel);
     }
   }
 
@@ -1504,8 +1486,8 @@ public class GvrsFileSpecification {
    */
   public void summarize(PrintStream ps) {
     ps.format("Identification:    %s%n",
-      identification == null || identification.isEmpty()
-      ? "Not Specified" : identification);
+      productLabel == null || productLabel.isEmpty()
+      ? "Not Specified" : productLabel);
 
     long cellsInRaster = (long) nRowsInRaster * (long) nColsInRaster;
 

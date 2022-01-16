@@ -39,7 +39,7 @@ public class GvrsElementWriteAndReadMultiTileTest {
     intSpecs[1] = new GvrsElementSpecificationShort("zShort", (short) intFillValue);
     fltSpecs = new GvrsElementSpecification[2];
     fltSpecs[0] = new GvrsElementSpecificationFloat("zFloat", fltFillValue);
-    fltSpecs[1] = new GvrsElementSpecificationIntCodedFloat("zICF", fltFillValue, 10f, 0);
+    fltSpecs[1] = new GvrsElementSpecificationIntCodedFloat("zICF",  10f, 0, intFillValue);
   }
 
   @BeforeAll

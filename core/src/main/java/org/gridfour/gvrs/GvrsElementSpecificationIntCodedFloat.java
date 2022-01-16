@@ -34,7 +34,6 @@
  *
  * -----------------------------------------------------------------------
  */
-
 package org.gridfour.gvrs;
 
 /**
@@ -63,8 +62,7 @@ package org.gridfour.gvrs;
  * the scale and offset must be selected so that the resulting
  * integral values must be within the range of a standard Java 4-byte
  * integer. Gridfour applies an additional restriction that the
- * computed integral values must be within the range
- * must be within the range:
+ * computed integral values must be within the range:
  * <pre>
  *     [Integer.MIN_VALUE+1,   Integer.MAX_VALUE-1]
  * </pre>
@@ -72,23 +70,25 @@ package org.gridfour.gvrs;
  * computed incorrectly due to round off.
  * <p>
  * <strong>Special considerations</strong>
- * <ul>
- * <li>Infinite floating-point values are not supported</li>
- * <li>Float.NaN maps to the integer-coded fill value for the
- * instance</li>
- * </ul>
+ * <p>
+ * The key to using the integer-coded float specification is to realize that,
+ * at its core, it is an integer data format. This the range and fill-value
+ * specifications in the constructors are given as integers.
+ * <p>
+ * Special logic is applied for mapping the fill-value to a Float.NaN
+ * and vice versa.
  *
  */
 public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecification {
 
   final float scale;
   final float offset;
-  final float minValue;
-  final float maxValue;
-  final float fillValue;
   final int minValueI;
   final int maxValueI;
   final int fillValueI;
+  final float minValue;
+  final float maxValue;
+  final float fillValue;
 
   /**
    * Constructs a specification instance giving parameters for a
@@ -99,7 +99,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * </pre>
    * The limits for the input range are computed based on the
    * largest-magnitude values that can be represented by the
-   * integer encodings. Fill values are treated as being Float.NaN.
+   * integer encoding. Fill values are treated as being Float.NaN.
    *
    * @param name a valid, non-blank identifier for the intended element.
    * @param scale a non-zero value used to scale floating point values for
@@ -130,15 +130,16 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * integer encodings.
    *
    * @param name a valid, non-blank identifier for the intended element.
-   * @param fillValue the value assigned to unpopulated raster cells,
+   * @param scale a non-zero value used to scale floating point values for
+   * encoding as integers.
+   * @param offset a valid for adjusting an input value.
+   * @param fillValueI the value assigned to unpopulated raster cells,
    * does not necessarily have to be with the range of the minimum and
    * maximum values.
-   * @param scale a non-zero value used to scale floating point values for
-   * encoding as integers
-   * @param offset a valid for adjusting an input value.
    *
    */
-  public GvrsElementSpecificationIntCodedFloat(String name, float fillValue, float scale, float offset) {
+  public GvrsElementSpecificationIntCodedFloat(
+    String name, float scale, float offset, int fillValueI) {
     super(name, GvrsElementType.INT_CODED_FLOAT);
     this.scale = scale;
     this.offset = offset;
@@ -146,26 +147,26 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
     this.maxValueI = Integer.MAX_VALUE - 1;
     this.minValue = minValueI / scale + offset;
     this.maxValue = maxValueI / scale + offset;
-    this.fillValue = fillValue;
-    this.fillValueI = testValue("fill value", fillValue);
+    this.fillValueI = fillValueI;
+    this.fillValue = fillValueI / scale + offset;
   }
 
-  private int testValue(String parameter, float v) {
-    if (Float.isNaN(v)) {
-      return Integer.MIN_VALUE;
-    }
-    if (!Float.isFinite(v)) {
-      throw new IllegalArgumentException("Specified " + parameter + " " + v
-        + " is not finite and not supported");
-    }
-    float test = (v - offset) * scale;
-    if (test < Integer.MIN_VALUE + 1 || test > Integer.MAX_VALUE - 1) {
-      throw new IllegalArgumentException("Specified " + parameter + " " + v
-        + " is out-of-range when scaled to an integer value");
-    }
-    return (int) Math.floor(test + 0.5);
-  }
-
+  //No longer used but retained for future reference
+  //private int testValue(String parameter, float v) {
+  //  if (Float.isNaN(v)) {
+  //    return Integer.MIN_VALUE;
+  //  }
+  //  if (!Float.isFinite(v)) {
+  //    throw new IllegalArgumentException("Specified " + parameter + " " + v
+  //      + " is not finite and not supported");
+  //  }
+  //  float test = (v - offset) * scale;
+  //  if (test < Integer.MIN_VALUE + 1 || test > Integer.MAX_VALUE - 1) {
+  //    throw new IllegalArgumentException("Specified " + parameter + " " + v
+  //      + " is out-of-range when scaled to an integer value");
+  //  }
+  //  return (int) Math.floor(test + 0.5);
+  //}
   /**
    * Constructs a specification instance giving parameters for a
    * the integer encoding of floating point valuesFloating point
@@ -175,54 +176,78 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * </pre>
    * The limits for the input range are computed based on the
    * largest-magnitude values that can be represented by the
-   * integer encodings.
+   * integer encoding.
+   * <p>
+   * This boolean fillValueIsNull parameters supplied to this constructor
+   * allows an application to specify that the integer
+   * fill value be treated as a Float.NaN when converted.
    *
    * @param name a valid, non-blank identifier for the intended element
-   * @param minValue the minimum value allowed for input
-   * @param maxValue the maximum value allowed for input
-   * @param fillValue the value assigned to unpopulated raster cells,
-   * does not necessarily have to be with the range of the minimum and
-   * maximum values.
    * @param scale a non-zero value used to scale floating point values for
    * encoding as integers
    * @param offset a valid for adjusting an input value.
+   * @param minValueI the minimum value allowed for input
+   * @param maxValueI the maximum value allowed for input
+   * @param fillValueI the value assigned to unpopulated raster cells,
+   * does not necessarily have to be with the range of the minimum and
+   * maximum values.
+   * @param fillValueIsNull indicates that the floating-point equivalent
+   * for the fill value is to be treated as Float&#46;NaN.
    *
    */
   public GvrsElementSpecificationIntCodedFloat(
-    String name,
-    float minValue, float maxValue, float fillValue,
-    float scale, float offset) {
-    super(name, GvrsElementType.INT_CODED_FLOAT);
-    this.minValue = minValue;
-    this.maxValue = maxValue;
-    this.fillValue = fillValue;
-    this.scale = scale;
-    this.offset = offset;
-    this.minValueI = testValue("minimum value", minValue);
-    this.maxValueI = testValue("maximum value", maxValue);
-    this.fillValueI = testValue("fill value", fillValue);
-  }
-  
-  public GvrsElementSpecificationIntCodedFloat(
-    String name,
-    float minValue, float maxValue, float fillValue,
+    String name, float scale, float offset,
     int minValueI, int maxValueI, int fillValueI,
-    float scale, float offset) {
+    boolean fillValueIsNull) {
     super(name, GvrsElementType.INT_CODED_FLOAT);
-    this.minValue = minValue;
-    this.maxValue = maxValue;
-    this.fillValue = fillValue;
     this.scale = scale;
     this.offset = offset;
     this.minValueI = minValueI;
     this.maxValueI = maxValueI;
     this.fillValueI = fillValueI;
+
+    this.minValue = minValueI / scale + offset;
+    this.maxValue = maxValueI / scale + offset;
+    if (fillValueIsNull) {
+      if (minValueI <= fillValueI && fillValueI <= maxValueI) {
+        throw new IllegalArgumentException(
+          "Fill value must not be in range of normal values when it is treated as null");
+      }
+      this.fillValue = Float.NaN;
+    } else {
+      this.fillValue = fillValueI / scale + offset;
+    }
+  }
+
+  GvrsElementSpecificationIntCodedFloat(
+    String name,
+    float scale,
+    float offset,
+    int minValueI,
+    int maxValueI,
+    int fillValueI,
+    float minValue,
+    float maxValue,
+    float fillValue
+  ) {
+    super(name, GvrsElementType.INT_CODED_FLOAT);
+    this.scale = scale;
+    this.offset = offset;
+    this.minValueI = minValueI;
+    this.maxValueI = maxValueI;
+    this.fillValueI = fillValueI;
+    this.minValue = minValue;
+    this.maxValue = maxValue;
+    this.fillValue = fillValue;
   }
 
   @Override
   GvrsElementSpecification copy() {
-    GvrsElementSpecification spec = new GvrsElementSpecificationIntCodedFloat(
-      name, minValue, maxValue, fillValue, scale, offset);
+    GvrsElementSpecificationIntCodedFloat spec
+      = new GvrsElementSpecificationIntCodedFloat(
+        name, scale, offset,
+        minValueI, maxValueI, fillValueI,
+        minValue, maxValue, fillValue);
     spec.copyApplicationData(this);
     return spec;
   }
