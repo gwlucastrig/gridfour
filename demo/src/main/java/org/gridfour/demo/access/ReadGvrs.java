@@ -101,14 +101,14 @@ public class ReadGvrs {
     // (which may be quite large) is not read until requested by the
     // application code.
     ps.println("\n\nGVRS Metadata");
-          ps.println("------------------------------------------------");
+    ps.println("------------------------------------------------");
     List<GvrsMetadata> metadataList = gvrs.readMetadata();
     for (GvrsMetadata metadata : metadataList) {
       String description = metadata.getDescription();
       ps.format("  %-24.24s  %6d:  %s%n",
         metadata.getName(),
         metadata.getRecordID(),
-        description==null?"":description);
+        description == null ? "" : description);
     }
     gvrs.close();
 

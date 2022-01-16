@@ -57,7 +57,7 @@ import org.gridfour.util.GridfourCRC32C;
  * <p>
  * This class is not fully implemented at this time
  */
-public class GvrsFileInspector {
+public class GvrsInspector {
 
   boolean inspectionFailed;
   boolean inspectionComplete;
@@ -78,7 +78,7 @@ public class GvrsFileInspector {
    * @param file a valid file reference
    * @throws IOException in the event of a unrecoverable I/O exception.
    */
-  public GvrsFileInspector(File file) throws IOException {
+  public GvrsInspector(File file) throws IOException {
     // if checksums are enabled, reading a file with a bad header
     // will throw a checksum error.
     try ( GvrsFile gvrsFile = new GvrsFile(file, "r")) {

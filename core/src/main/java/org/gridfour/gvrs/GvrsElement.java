@@ -458,6 +458,10 @@ public abstract class GvrsElement {
     return block;
   }
 
+  @Override
+  public String toString(){
+    return name+" "+dataType.name();
+  }
 
   
 }

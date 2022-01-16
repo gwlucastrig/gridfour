@@ -690,8 +690,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
     List<GvrsMetadataReference> trackerList = recordMan.getMetadataReferences(true);
     List<GvrsMetadata> result = new ArrayList<>();
     for (GvrsMetadataReference tracker : trackerList) {
-      braf.seek(tracker.offset + RECORD_HEADER_SIZE);
-      result.add(new GvrsMetadata(braf));
+      braf.seek(tracker.offset);
+      GvrsMetadata mData = new GvrsMetadata(braf);
+      result.add(mData);
     }
 
     // The built-in metadata order is by name and recordID
@@ -760,7 +761,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    *
    * @param name a valid string conforming to the GVRS identifier syntax.
    * @param content the string to be stored.
-   * @throws IOException in the envent of an unrecoverable I/O exception
+   * @throws IOException in the event of an unrecoverable I/O exception
    */
   public void writeMetadata(String name, String content) throws IOException {
     if (name == null || name.isEmpty()) {
@@ -772,6 +773,35 @@ public class GvrsFile implements Closeable, AutoCloseable {
     writeMetadata(metadata);
   }
 
+  /**
+   * A convenience method for storing a GVRS metadata object with string
+   * content. This method will interpret a metadata-constant.
+   * While it provides a more compact way of writing metadata,
+   * it requires that the constant specifies a string type.
+   *
+   * @param gmConstant valid instance.
+   * @param content the string to be stored.
+   * @throws IOException in the event of an unrecoverable I/O exception
+   */
+  public void writeMetadata(
+    GvrsMetadataConstants gmConstant, String content) throws IOException {
+    String name = gmConstant.name();
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException(
+        "Attempt to store metadata with null or empty name specification");
+    }
+    GvrsMetadataType gmType = gmConstant.getDataType();
+    if (gmType != GvrsMetadataType.STRING && gmType != GvrsMetadataType.ASCII) {
+      throw new IllegalArgumentException(
+        "Specified constant must specify a string type");
+    }
+
+    GvrsMetadata metadata = new GvrsMetadata(name, 0, GvrsMetadataType.STRING);
+    metadata.setString(content);
+    writeMetadata(metadata);
+  }
+
+  
   boolean loadTile(int tileIndex, boolean writeAccess) throws IOException {
     if (this.isClosed) {
       throw new IOException("Raster file is closed " + file.getPath());
