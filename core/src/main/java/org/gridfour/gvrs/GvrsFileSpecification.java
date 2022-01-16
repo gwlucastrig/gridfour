@@ -63,12 +63,12 @@ public class GvrsFileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte VERSION = 0;
+  static final byte VERSION = 1;
   /**
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 7;
+  static final byte SUB_VERSION = 0;
  
 
   /**
