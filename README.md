@@ -44,7 +44,7 @@ inspired by the work of Kidner and Smith (1992). You can read more about them at
 
 Of course, the state of the art has advanced quite a bit since 1993.
 And although the foundation for GVRS comes from old ideas, we hope you find that our API provides a fresh take on their implementation
-We intend out GVRS library to provide
+We intend our GVRS library to provide
 a convenient tool for investigators developing new techniques for compressing
 geophysical and scientific data in raster form. GVRS makes it very easy to
 extend the Gridfour code and add new data compression capabilities &#40; to see
