@@ -155,14 +155,14 @@ public abstract class GvrsElementSpecification {
    * for applications requiring specifications in non-western
    * character sets.
    *
-   * @param label valid non-empty string, or no label
+   * @param label valid non-empty string, or null if no label
    * is to be specified.
    */
   public void setLabel(String label) {
     if (label == null || label.isEmpty()) {
       this.label = null;
     } else {
-      this.label = label.trim();
+      this.label = label;
     }
   }
 

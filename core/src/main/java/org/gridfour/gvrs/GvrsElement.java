@@ -57,6 +57,7 @@ public abstract class GvrsElement {
   final String name;
   final GvrsElementType dataType;
   final String description;
+  final String label;
   final String unitOfMeasure;
 
   final GvrsFile gvrsFile;
@@ -78,6 +79,7 @@ public abstract class GvrsElement {
     this.name = eSpec.name;
     this.dataType = elementType;
     this.description = eSpec.description;
+    this.label = eSpec.label;
     this.unitOfMeasure = eSpec.unitOfMeasure;
     this.gvrsFile = file;
     this.accessIndices = file.getAccessIndices();
@@ -127,6 +129,20 @@ public abstract class GvrsElement {
     return description;
   }
 
+    /**
+   * Gets the arbitrary label string.  Intended to provide
+   * applications with that ability to label elements using the full
+   * range of UTF-8 character sets. In particular, this method is useful
+   * for applications requiring specifications in non-western
+   * character sets.
+   *
+   * @return a valid non-empty string, or a null if no description
+   * is to be supplied.
+   */
+  public String getLabel() {
+    return label;
+  }
+  
   /**
    * Gets the arbitrary unit of measure string. Intended to allow applications
    * to provide documentation for elements.
