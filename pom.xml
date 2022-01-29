@@ -18,7 +18,7 @@
     Java library providing generic utilities for Raster (Grid) formatted data 
   </description>
   
-  <url>http://www.gridfour.org</url>
+  <url>https://www.gridfour.org</url>
 
   <licenses>
     <license>
@@ -34,15 +34,15 @@
       <name>G.W. Lucas</name>
       <email>contact.tinfour@gmail.com</email>
       <organization>gridfour.org</organization>
-      <organizationUrl>http://gridfour.org</organizationUrl>
+      <organizationUrl>https://gridfour.org</organizationUrl>
       <timezone>America/New_York</timezone>
     </developer>
   </developers>
 
   <scm>
-    <connection>scm:git:https://github.com/gwlucastrig/Gridfour.git</connection>
-    <developerConnection>scm:git:git@github.com:gwlucastrig/Gridfour.git</developerConnection>
-    <url>https://github.com/gwlucastrig/Gridfour/tree/master</url>
+    <connection>scm:git:https://github.com/gwlucastrig/gridfour.git</connection>
+    <developerConnection>scm:git:git@github.com:gwlucastrig/gridfour.git</developerConnection>
+    <url>https://github.com/gwlucastrig/gridfour</url>
   </scm>
 
   <properties>
@@ -225,7 +225,7 @@
             <extensions>true</extensions>
             <configuration>
               <serverId>ossrh</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+              <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
               <autoReleaseAfterClose>true</autoReleaseAfterClose>
             </configuration>
           </plugin>
