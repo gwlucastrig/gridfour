@@ -48,6 +48,7 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
   final double range0;
   final double range1;
   boolean termination;
+  String label;
 
   /**
    * Construct a record populating the range of values for which
@@ -97,6 +98,14 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
   public abstract Color getColor(double z);
 
   /**
+   * Gets the color for the minimum value in the range specified
+   * by this record.  This method is intended primarily to support
+   * categorical palettes. It can also be useful in creating
+   * legends and keys in graphical presentations.
+   * @return a valid Color instance.
+   */
+  public abstract Color getBaseColor();
+  /**
    * Indicates whether the specified value z is within the
    * range of values covered by this instance.
    *
@@ -135,5 +144,28 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
       test = Double.compare(range1, o.range1);
     }
     return test;
+  }
+  
+  /**
+   * Sets an arbitrary label string for the record
+   * @param label a valid string, or a null if not specified.
+   */
+  public void setLabel(String label){
+    if(label==null || label.isEmpty()){
+      this.label = null;
+    }
+    this.label = label;
+  }
+  
+  /**
+   * Gets a label for the record.  If the record does not have a label,
+   * returns an empty string.
+   * @return a valid, potentially empty instance.
+   */
+  public String getLabel(){
+    if(label==null){
+      return "";
+    }
+    return label;
   }
 }

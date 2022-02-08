@@ -34,22 +34,51 @@
  *
  * Notes:
  *
+ *  Unfortunately, the CPT specification is messy.  It has evolved over
+ *  time and been adopted by multiple projects who hava modified it
+ *  to suit their needs.  Thus, the parsing rules are also complicated.
+ *
+ *  
  * -----------------------------------------------------------------------
  */
 package org.gridfour.util.palette;
 
 import java.awt.Color;
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Provides methods for reading specifications from a
  * Color Palette Table file (usually, files with the extension &#46;cpt).
+ * <p>
+ * Unfortunately, the CPT specification is messy. It has evolved over
+ * time and been adopted by multiple projects who modified it
+ * to suit their needs. Thus, the parsing rules are also complicated.
+ * <p>
+ * The logic for this class was developed using examples from the
+ * Generic Mapping Tools (GMT) project at
+ * https://github.com/GenericMappingTools/gmt
+ * and from the cpycmap.m project at https://github.com/kakearney/cptcmap-pkg
+ * <p>
+ * Not all of the GMT files are processed correctly at this time.
+ * Some of the GMT files contain named colors such as "darkorange1"
+ * and "mediumaquamarine" that are not supported by this package.
+ * At this time, the ColorPaletteNameParser class only supports the
+ * simple, primary colors from the Java Color class.
+ *
+ * <p>
+ * A discussion of the CPT file format can be found at the
+ * "CPT Designer" web page in an article by Tim Makins and MapAbility.com
+ * https://www.mapability.com/cptd/help/hs70.htm
  */
 public class CptReader {
 
@@ -61,14 +90,27 @@ public class CptReader {
   private Color background = Color.white;
   private Color foreground = Color.black;
   private Color colorForNull;
- 
+
+  private boolean hingeSpecified;
+  private double hingeValue;
+
+  private boolean rangeSpecified;
+  private double range0;
+  private double range1;
+
+  private List<ColorPaletteRecord> records = new ArrayList<>();
+
   ColorModel colorModel = ColorModel.RGB;
   int lineIndex;
-  
- 
+
+  Pattern assignmentPattern
+    = Pattern.compile("\\#.\\s*([a-zA-Z0-9_]+)\\s*=\\s*(\\S+)");
+
+  Pattern hardHingePattern
+    = Pattern.compile("\\#.\\s*[Hh][Aa][Rr][Dd]_[Hh][Ii][Nn][Gg][Ee]");
 
   /**
-   * Constructs a ColorPaletteTile with specifications obtained
+   * Constructs a ColorPaletteTable instance using the specifications obtained
    * from the specified file reference.
    *
    * @param file a valid input file reference
@@ -78,14 +120,14 @@ public class CptReader {
    * or specification-format error
    */
   public ColorPaletteTable read(File file) throws IOException {
-    try (FileInputStream fins = new FileInputStream(file);
-      BufferedInputStream bins = new BufferedInputStream(fins)) {
-      return read(bins);
+    try (FileReader fileReader = new FileReader(file);
+      BufferedReader reader = new BufferedReader(fileReader);) {
+      return read(reader);
     }
   }
 
   /**
-   * Constructs a ColorPaletteTile with specifications obtained
+   * Constructs a ColorPaletteTable instance with specifications obtained
    * from the specified input stream.
    *
    * @param ins a valid input stream reference
@@ -94,201 +136,287 @@ public class CptReader {
    * or specification-format error
    */
   public ColorPaletteTable read(InputStream ins) throws IOException {
+    InputStreamReader insReader = new InputStreamReader(ins, StandardCharsets.UTF_8);
+    BufferedReader reader = new BufferedReader(insReader);
+    return read(reader);
+  }
+
+  ColorPaletteTable read(BufferedReader reader) throws IOException {
     // reset state variables
     lineIndex = 0;
     colorModel = ColorModel.RGB;
     background = Color.white;
     foreground = Color.black;
     colorForNull = null;
-    List<ColorPaletteRecord> records = new ArrayList<>();
 
     // read each line of the file and parse as appropriate
-    List<String> sList = new ArrayList<>();
-    while (readStrings(ins, sList) > 0) {
-      String s = sList.get(0);
-      char c = s.charAt(0);
-      if (c == '#') {
-        // comment, we are interested in the color specification scheme
-        //   the documentation indicates acceptable values are
-        //        RGB 
-        //        HSV
-        //        CMYK  (extra parameters for this one?)
-        //   One problem is that I don't yet know the specifics for
-        //   the HSV and CMYK and haven't found samples
-        s = s.toUpperCase();
-        if (s.contains("COLOR_MODEL")) {
-          String[] a = s.split("=");
-          if (a.length != 2 || a[1].isEmpty()) {
-            throw new IOException("Invalid COLOR_MODEL specification");
-          }
-          String modelName = a[1].trim();
-          switch (modelName) {
-            case "RGB":
-              colorModel = ColorModel.RGB;
-              break;
-            case "HSV":
-              colorModel = ColorModel.HSV;
-              break;
-            default:
-              throw new IOException("Unsupported color model " + a[1]);
-          }
+    String line;
+    while ((line = reader.readLine()) != null) {
+      lineIndex++;
+      for (int i = 0; i < line.length(); i++) {
+        char c = line.charAt(i);
+        if (c == '#') {
+          // it's a comment
+          processComment(line);
+          break;
+        } else if (!Character.isWhitespace(c)) {
+          processSpecification(line);
+          break;
         }
-      } else if (c == 'B') {
-        background = parseColor("B", sList, 1);
-      } else if (c == 'F') {
-        foreground = parseColor("F", sList, 1);
-      } else if (c == 'N') {
-        colorForNull = parseColor("N", sList, 1);
-      } else {
-        if (sList.size() < 8) {
-          throw new IOException("Unsupported syntax on line " + lineIndex
-            + " where expecting 8 parameters");
-        }
-        double v0, v1;
-        try {
-          v0 = Double.parseDouble(sList.get(0));
-          v1 = Double.parseDouble(sList.get(4));
-        } catch (NumberFormatException nex) {
-          throw new IOException("Misformed range values on line " + lineIndex);
-        }
-        String name = "line " + lineIndex;
-        ColorPaletteRecord record;
-        if (colorModel == ColorModel.RGB) {
-          Color rgb0 = parseRGB(name, sList, 1);
-          Color rgb1 = parseRGB(name, sList, 5);
-          record = new ColorPaletteRecordRGB(v0, v1, rgb0, rgb1);
-        } else {
-          double[] hsv0 = parseHSV(name, sList, 1);
-          double[] hsv1 = parseHSV(name, sList, 5);
-          record = new ColorPaletteRecordHSV(v0, v1, hsv0, hsv1);
-        }
-        records.add(record);
-
       }
     }
+
     if (records.isEmpty()) {
       throw new IOException("Empty specification");
     }
-    return new ColorPaletteTable(records, background, foreground ,colorForNull);
 
+    if (rangeSpecified) {
+      return new ColorPaletteTable(
+        records, background, foreground, colorForNull,
+        hingeSpecified, hingeValue, range0, range1);
+    }
+    return new ColorPaletteTable(records, background, foreground, colorForNull);
   }
 
-  /**
-   * Read a row of strings from the file, storing the results in
-   * a reusable list. Each call to this routine clears any content
-   * that may already be in the list before extracting it from the file.
-   *
-   * @param sList a list in which the strings will be stored
-   * @return the number of strings that were stored in the list;
-   * zero at the end of the file.
-   * @throws IOException in the event of an unsuccessful I/O operation.
-   */
-  private int readStrings(InputStream bins, final List<String> sList) throws IOException {
-    int c;
-    final StringBuilder sb = new StringBuilder();
-    sList.clear();
-    // read past any leading whitespace characters
-    while (true) {
-      c = bins.read();
-      if (c <= 0) {
-        // end of file
-        return 0;
+  void processComment(String line) throws IOException {
+    // Pretty much anything can go in a comment.
+    // The only kind of line we're interested in is an assignment
+    // However, there is one special syntax (of course there is)
+    // for HARD_HINGE
+    Matcher matcher = hardHingePattern.matcher(line);
+    if (matcher.matches()) {
+      hingeSpecified = true;
+      hingeValue = 0;
+      return;
+    }
+
+    matcher = assignmentPattern.matcher(line);
+    if (!matcher.matches()) {
+      return;
+    }
+
+    String key = matcher.group(1).toUpperCase();
+    String value = matcher.group(2).toUpperCase();
+
+    if ("COLOR_MODEL".equals(key)) {
+      switch (value) {
+        case "RGB":
+          colorModel = ColorModel.RGB;
+          break;
+        case "HSV":
+          colorModel = ColorModel.HSV;
+          break;
+        default:
+          throw new IOException("Unsupported color model " + value);
+      }
+    } else if ("HINGE".equals(key)) {
+      hingeSpecified = true;
+      try {
+        hingeValue = Double.parseDouble(value);
+      } catch (NumberFormatException nex) {
+        throw new IOException("Invalid HINGE specification");
+      }
+    } else if ("RANGE".equals(key)) {
+      // Range could be two numbers separated by space or /
+      int i = line.indexOf('=');
+      String s = line.substring(i + 1, line.length()).trim();
+      String[] a = s.split("[\\s/]+");
+      if (a.length != 2 || a[1].isEmpty()) {
+        throw new IOException("Invalid RANGE specification");
+      }
+      if (a.length != 2) {
+        throw new IOException("Invalid RANGE specification");
+      }
+
+      try {
+        range0 = Double.parseDouble(a[0]);
+        range1 = Double.parseDouble(a[1]);
+        rangeSpecified = true;
+      } catch (NumberFormatException nex) {
+        throw new IOException("Invalid RANGE specification");
+      }
+    }
+  }
+
+  void processSpecification(String line) throws IOException {
+    // Even with a fancier regular expression, the Java String.split("[\\s]+")
+    // method wasn't quite working out here, so I implemented logic
+    // to do this by hand
+    //    Note that a line may include special syntax introduced by a
+    // semi-colon to specify a label for the color range
+    int lineLength = line.length();
+    StringBuilder sb = new StringBuilder();
+    int nString = 0;
+    String[] a = new String[10];
+    String label = null;
+    for (int i = 0; i < lineLength; i++) {
+      char c = line.charAt(i);
+      if (c == ';') {
+        // protect against pathological case where there is a semi-colon,
+        // but no label
+        if (i < lineLength - 1) {
+          label = line.substring(i + 1, lineLength).trim();
+        }
+        // Any text in the builder will be handled post-loop
+        break;
       } else if (Character.isWhitespace(c)) {
-        if (c == '\n') {
-          // blank line
-          lineIndex++;
+        if (sb.length() > 0) {
+          if (nString < 8) {
+            a[nString++] = sb.toString();
+          }
+          sb.setLength(0);
         }
       } else {
-        break;
+        sb.append(c);
       }
     }
-
-    if (c == '#') {
-      // the first character on the line is a comment-introducer
-      sb.append((char) c);
-      while (true) {
-        c = bins.read();
-        if (c < 0 || c == '\n') {
-          // end of line
-          lineIndex++;
-          sList.add(sb.toString());
-          return 1;
-        }
-        sb.append((char) c);
-      }
+    if (sb.length() > 0 && nString < 8) {
+      a[nString++] = sb.toString();
     }
 
-    // We are now positioned on the first non-whitespace character
-    // in the line
-    sb.append((char) c);
-    while (true) {
-      // When we reach this point, there should be one character
-      // stored in the StringBuilder.
-      // The delimiter between fields may be either whitespace
-      // or a slash.  Read through the line, appending characters
-      // to the StringBuilder until we encounter whitespace or a delimiter 
-      c = bins.read();
-      while (c > 0 && !Character.isWhitespace(c) && c!='/') {
-        sb.append((char) c);
-        c = bins.read();
-      }
-      sList.add(sb.toString());
-      sb.setLength(0);
-      if(c=='/'){
-        c = bins.read();
-      }
-      // now advance until we find the next starting character.
-      while (c > 0 && c != '\n' && Character.isWhitespace(c)) {
-        c = bins.read();
-      }
-      if (c <= 0 || c == '\n') {
-        lineIndex++;
-        return sList.size();
-      }
-      sb.append((char) c);
+    if (a.length == 0) {
+      // empty line
+      return;
     }
 
+    String name = "line " + lineIndex;
+
+    char c = a[0].charAt(0);
+    if (Character.isLowerCase(c)) {
+      c = Character.toUpperCase(c);
+    }
+    if (c == 'B' || c == 'F' || c == 'N') {
+      Color color = null;
+      if (nString == 2) {
+        color = parseSingleColorString(name, a[1]);
+      } else if (nString == 4) {
+        color = parseColor(name, a, 1);
+      }
+      if (c == 'B') {
+        background = color;
+      } else if (c == 'F') {
+        foreground = color;
+      } else {
+        colorForNull = color;
+      }
+      return;
+    }
+
+    double v0, v1;
+    Color rgb0, rgb1;
+
+    ColorPaletteRecord record;
+    if (nString == 2) {
+      // This would be a case where a color is assigned to
+      // single values rather than a range of values.
+      // The ColorPaletteRecord classes support this imperfectly,
+      // but this should suffice until improvements are available in the future
+      // This allows for syntax that might include named colors
+      try {
+        v0 = Double.parseDouble(a[0]);
+      } catch (NumberFormatException nex) {
+        throw new IOException("Misformed value on line " + lineIndex);
+      }
+      if (colorModel == ColorModel.RGB) {
+        rgb0 = parseSingleColorString(name, a[1]);
+        record = new ColorPaletteRecordRGB(v0, v0, rgb0, rgb0);
+      } else {
+        double[] hsv0 = parseSingleHsvString(name, a[1]);
+        record = new ColorPaletteRecordHSV(v0, v0, hsv0, hsv0);
+      }
+    } else if (nString == 4) {
+      // This allows for syntax that might include named colors
+      try {
+        v0 = Double.parseDouble(a[0]);
+        v1 = Double.parseDouble(a[2]);
+      } catch (NumberFormatException nex) {
+        throw new IOException("Misformed range values on line " + lineIndex);
+      }
+      if (colorModel == ColorModel.RGB) {
+        rgb0 = parseSingleColorString(name, a[1]);
+        rgb1 = parseSingleColorString(name, a[3]);
+        record = new ColorPaletteRecordRGB(v0, v1, rgb0, rgb1);
+      } else {
+        double[] hsv0 = parseSingleHsvString(name, a[1]);
+        double[] hsv1 = parseSingleHsvString(name, a[3]);
+        record = new ColorPaletteRecordHSV(v0, v1, hsv0, hsv1);
+      }
+    } else if (nString == 8) {
+      try {
+        v0 = Double.parseDouble(a[0]);
+        v1 = Double.parseDouble(a[4]);
+      } catch (NumberFormatException nex) {
+        throw new IOException("Misformed range values on line " + lineIndex);
+      }
+
+      if (colorModel == ColorModel.RGB) {
+        rgb0 = parseRGB(name, a, 1);
+        rgb1 = parseRGB(name, a, 5);
+        record = new ColorPaletteRecordRGB(v0, v1, rgb0, rgb1);
+      } else {
+        double[] hsv0 = parseHSV(name, a, 1);
+        double[] hsv1 = parseHSV(name, a, 5);
+        record = new ColorPaletteRecordHSV(v0, v1, hsv0, hsv1);
+      }
+    } else {
+      throw new IOException("Unsupported syntax on line " + lineIndex
+        + ", found " + nString + " parameters where expecting either 4 or 8");
+    }
+    record.setLabel(label);
+    records.add(record);
   }
 
- 
-  private Color parseRGB(String name, List<String> sList, int index) throws IOException {
+  private Color parseRGB(String name, String[] strings, int index) throws IOException {
     // allegedly, the CPT specification allows single-values and also
     // named colors.  Hopefully application developers have the good sense
     // to avoid these problematic specifications.
     // If we encounter these in the future, it may be necessary to
     // upgrade this logic.
-    int n = sList.size() - index;
-    if (n == 1 ) {
+    int n = strings.length - index;
+    if (n == 1) {
       // it may be a named color
-      Color color = ColorPaletteNameParser.parse(sList.get(index));
+      Color color = ColorPaletteNameParser.parse(strings[index]);
       if (color != null) {
         return color;
       }
+
+      int gray = -1;
+      try {
+        gray = Integer.parseInt(strings[index]);
+      } catch (NumberFormatException nex) {
+        gray = -1;
+      }
+
+      if (0 <= gray && gray <= 255) {
+        return new Color(gray, gray, gray);
+      }
+      throw new IOException("Error in " + name
+        + " unable to resolve single argument where expecting RGB");
     }
-        
+
     if (n < 3) {
       throw new IOException("Error in " + name
         + " insufficient parameters where 3 expected for RGB");
     }
 
-    int r = parsePartRGB(name, sList, index);
-    int g = parsePartRGB(name, sList, index + 1);
-    int b = parsePartRGB(name, sList, index + 2);
- 
-    return new Color(r,g, b);
+    int r = parsePartRGB(name, strings, index);
+    int g = parsePartRGB(name, strings, index + 1);
+    int b = parsePartRGB(name, strings, index + 2);
+
+    return new Color(r, g, b);
   }
 
-  private double[] parseHSV(String name, List<String> sList, int index) throws IOException {
-    int n = sList.size() - index;
+  private double[] parseHSV(String name, String[] strings, int index) throws IOException {
+    int n = strings.length - index;
     if (n < 3) {
       throw new IOException("Error in " + name
         + " insufficient parameters where 3 expected");
     }
     double[] p = new double[3];
 
-    p[0] = parsePart(name, sList, index);
-    p[1] = parsePart(name, sList, index + 1);
-    p[2] = parsePart(name, sList, index + 2);
+    p[0] = parsePart(name, strings, index);
+    p[1] = parsePart(name, strings, index + 1);
+    p[2] = parsePart(name, strings, index + 2);
     if (p[0] < 0 || p[0] > 360) {
       throw new IOException("HSV value for Hue out of range [0..360] for " + name);
     }
@@ -300,29 +428,32 @@ public class CptReader {
     return p;
   }
 
-  private int parsePartRGB(String name, List<String> sList, int index) throws IOException {
-    double d = parsePart(name, sList, index);
-    if(d>=0 && d<256){
-      return (int)d;
+  private int parsePartRGB(String name, String[] strings, int index) throws IOException {
+    double d = parsePart(name, strings, index);
+    if (d >= 0 && d < 256) {
+      return (int) d;
     }
-     throw new IOException("RGB specification for " + name + " is not in range [0..255]");
+    throw new IOException("RGB specification for " + name + " is not in range [0..255]");
   }
-  
-  private double parsePart(String name, List<String> sList, int index) throws IOException {
+
+  private double parsePart(String name, String[] strings, int index) throws IOException {
     try {
-      return Double.parseDouble(sList.get(index));
+      if (strings[index] == null) {
+        System.out.println("ouch");
+      }
+      return Double.parseDouble(strings[index]);
     } catch (NumberFormatException nex) {
       throw new IOException("Bad specification for " + name + ": " + nex.getMessage(), nex);
     }
   }
 
-  private Color parseColor(String name, List<String> sList, int index) throws IOException {
+  private Color parseColor(String name, String[] strings, int index) throws IOException {
     if (colorModel == ColorModel.RGB) {
-      return  parseRGB(name, sList, index);
+      return parseRGB(name, strings, index);
     } else {
       // Java's HSB color model is similar to the CPT's HSV model
       // scale the source H value (p[0]) down to range 0 to 1 for Java
-      double[] p = parseHSV(name, sList, index);
+      double[] p = parseHSV(name, strings, index);
       float hue = (float) (p[0] / 360.0);
       float sat = (float) p[1];
       float brt = (float) p[2];
@@ -330,4 +461,76 @@ public class CptReader {
       return new Color(argb);
     }
   }
+
+  private Color parseSingleColorString(String name, String string) throws IOException {
+    String[] s = null;
+    if (string.indexOf('/') > 0) {
+      s = string.split("/");
+    } else if (string.indexOf('-') > 0) {
+      s = string.split("-");
+    }
+    if (s != null) {
+      if (s.length != 3) {
+        throw new IOException(
+          "Illegal syntax where color specification expected for " + name);
+      }
+      return parseColor(name, s, 0);
+    }
+
+    if (Character.isAlphabetic(string.charAt(0))) {
+      Color test = ColorPaletteNameParser.parse(string);
+      if (test == null) {
+        throw new IOException("Unrecognized color value \"" + string + "\" at " + name);
+      }
+      return test;
+    }
+
+    if (colorModel == ColorModel.RGB) {
+      try {
+        int gray = Integer.parseInt(string);
+        return new Color(gray, gray, gray);
+      } catch (NumberFormatException nex) {
+        throw new IOException("Bad value where integer gray value expected at " + name);
+      }
+    }
+    throw new IOException("Gray tone not supported for non RGB color model at " + name);
+  }
+
+  private double[] parseSingleHsvString(String name, String string) throws IOException {
+    String[] s = null;
+    if (string.indexOf('/') > 0) {
+      s = string.split("/");
+    } else if (string.indexOf('-') > 0) {
+      s = string.split("-");
+    }
+    if (s != null) {
+      if (s.length != 3) {
+        throw new IOException(
+          "Illegal syntax where color specification expected for " + name);
+      }
+      return parseHSV(name, s, 0);
+
+    }
+
+    if (Character.isAlphabetic(string.charAt(0))) {
+      Color test = ColorPaletteNameParser.parse(string);
+      if (test == null) {
+        throw new IOException("Unrecognized color value \"" + string + "\" at " + name);
+      }
+      int r = test.getRed();
+      int g = test.getGreen();
+      int b = test.getBlue();
+      float[] hsbvals = new float[3];
+      Color.RGBtoHSB(r, g, b, hsbvals);
+      double[] hsv = new double[3];
+      hsv[0] = hsbvals[0];
+      hsv[1] = hsbvals[1];
+      hsv[2] = hsbvals[2];
+      return hsv;
+    }
+
+    throw new IOException(
+      "Singel value not supported for non HSV color model at " + name);
+  }
+
 }

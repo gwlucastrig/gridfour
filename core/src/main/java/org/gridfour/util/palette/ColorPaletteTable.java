@@ -51,8 +51,16 @@ public class ColorPaletteTable {
 
   private final ColorPaletteRecord[] records;
   private final double[] keys;
+  private final boolean normalization;
+    private final double normalizedRangeMin;
+  private final double normalizedRangeMax;
+  private final boolean hinge;
+  private final double hingeValue;
+  private final int hingeIndex;
   private final double rangeMin;
   private final double rangeMax;
+  private final boolean allRecordsHaveSingleValue;
+  
   Color background;
   Color foreground;
   Color colorForNull;
@@ -72,6 +80,13 @@ public class ColorPaletteTable {
     Color foreground,
     Color colorForNull
   ) {
+    hinge = false;
+    hingeValue = 0;
+    hingeIndex = 0;
+    normalization = false;
+    normalizedRangeMin = 0;
+    normalizedRangeMax = 0;
+    
     if (recordsList == null || recordsList.isEmpty()) {
       throw new IllegalArgumentException("Null or empty records list");
     }
@@ -114,10 +129,123 @@ public class ColorPaletteTable {
     }
     records[n - 1].termination = true;
 
+    boolean nonZeroRange = false;
+    for(int i=0; i<n; i++){
+      if(records[i].range1>records[i].range0){
+        nonZeroRange = true;
+        break;
+      }
+    }
+    allRecordsHaveSingleValue = !nonZeroRange;
+    
+    
     rangeMin = records[0].range0;
     rangeMax = records[records.length - 1].range1;
   }
 
+   /**
+   * Constructs an instance based on the specified list of color palette records
+   * and optional background, foreground, and null-value colors.
+   *
+   * @param recordsList a valid, non-empty list of specifications
+   * @param background an optional background color; defaults white
+   * @param foreground an optional foreground color; defaults to black
+   * @param colorForNull an optional color value for null; defaults to null
+   * @param hingeFlag indicates whether a hinge value is supplied
+   * @param hingeValue indicates the hinge value (ignored if hinge flag is false)
+   * @param normalizedRangeMin indicates minimum range
+   * @param normalizedRangeMax indicates maximum range
+   */
+  public ColorPaletteTable(
+    List<ColorPaletteRecord> recordsList,
+    Color background,
+    Color foreground,
+    Color colorForNull,
+    boolean hingeFlag,
+    double hingeValue,
+    double normalizedRangeMin,
+    double normalizedRangeMax ) {
+    this.hinge = hingeFlag;
+    this.hingeValue = hingeValue;
+    this.normalization = true;
+    this.normalizedRangeMin = normalizedRangeMin;
+    this.normalizedRangeMax = normalizedRangeMax;
+
+    
+    if (recordsList == null || recordsList.isEmpty()) {
+      throw new IllegalArgumentException("Null or empty records list");
+    }
+    if (background == null) {
+      this.background = Color.white;
+    } else {
+      this.background = background;
+    }
+    if (foreground == null) {
+      this.foreground = Color.black;
+    } else {
+      this.foreground = foreground;
+    }
+    this.colorForNull = colorForNull;
+    if (colorForNull == null) {
+      argbForNull = 0;
+    } else {
+      argbForNull = colorForNull.getRGB();
+    }
+
+    int n = recordsList.size();
+    records = new ColorPaletteRecord[n];
+
+    for (int i = 0; i < n; i++) {
+      records[i] = recordsList.get(i);
+    }
+    // Records should already be sorted, but sort them just in case
+    Arrays.sort(records);
+    keys = new double[n];
+    for (int i = 0; i < n; i++) {
+      keys[i] = records[i].range0;
+    }
+
+    // Populate the termination flags in cases where there
+    // is a gap in ranges between records.
+    for (int i = 0; i < n - 1; i++) {
+      if (records[i].range1 < records[i + 1].range0) {
+        records[i].termination = true;
+      }
+    }
+    records[n - 1].termination = true;
+
+        boolean nonZeroRange = false;
+    for(int i=0; i<n; i++){
+      if(records[i].range1>records[i].range0){
+        nonZeroRange = true;
+        break;
+      }
+    }
+    allRecordsHaveSingleValue = !nonZeroRange;
+    
+    rangeMin = records[0].range0;
+    rangeMax = records[records.length - 1].range1;
+    
+    int tempHingeIndex = -1;
+    if(hinge){
+      for(int i=0; i<records.length; i++){
+        if(records[i].range0==0){
+          tempHingeIndex = i;
+          break;
+        }
+      }
+      if(tempHingeIndex==-1){
+        throw new IllegalArgumentException(
+          "Unable to match hinge value "
+          +hingeValue+" to palette range");
+          
+      }
+    }
+    hingeIndex = tempHingeIndex;
+  }
+  
+  
+  
   /**
    * Gets the application-defined background color.
    *
@@ -153,6 +281,9 @@ public class ColorPaletteTable {
    * @return a valid floating point value.
    */
   public double getRangeMin() {
+    if(normalization){
+      return normalizedRangeMin;
+    }
     return rangeMin;
   }
 
@@ -163,6 +294,9 @@ public class ColorPaletteTable {
    * @return a valid floating point value.
    */
   public double getRangeMax() {
+    if(normalization){
+      return this.normalizedRangeMax;
+    }
     return rangeMax;
   }
 
@@ -171,11 +305,11 @@ public class ColorPaletteTable {
    * If the color table does not define a color value for the specified
    * parameter, it will return the ARGB code for a null value.
    *
-   * @param z a valid floating point value
+   * @param zTarget a valid floating point value
    * @return if a color is defined for z, its associated ARGB value;
    * otherwise the null-value code.
    */
-  public int getArgb(double z) {
+  public int getArgb(double zTarget) {
     // It is expected that this method will be called for every pixel in
     // a data field.  Since the number of pixels can be quite large,
     // this method is heavily optimized for speed.  Note also, that we
@@ -184,6 +318,23 @@ public class ColorPaletteTable {
     //     1)  The majority palettes will have at least four or five entries
     //     2)  Most of the time, the z values will be in range, otherwise
     //         we wouldn't be likely to be using the palette in the first place.
+    double z = zTarget;
+    if(normalization){
+      if(hinge){
+         if(z<hingeValue){
+           double t = (z-normalizedRangeMin)/(hingeValue-normalizedRangeMin);
+           z = t*(records[hingeIndex-1].range1-records[0].range0)+records[0].range0;
+         }else{
+           double t = (z-hingeValue)/(normalizedRangeMax-hingeValue);
+           int i0 = hingeIndex;
+           int i1 = records.length-1;
+           z = t*(records[i1].range1-records[i0].range0)+records[i0].range0;
+         }
+      }else{
+        double t = (z-normalizedRangeMin)/(normalizedRangeMax-normalizedRangeMin);
+        z = t*(records[records.length-1].range1-records[0].range0)+records[0].range0;
+      }
+    }
     int index = Arrays.binarySearch(keys, z);
     if (index >= 0) {
       // an exact match for the lower range value of this color record
@@ -260,4 +411,24 @@ public class ColorPaletteTable {
     return record.range1 >= z;
   }
 
+  /**
+   * Indicates that all records in the palette provide a single
+   * value rather than a range of values. This configuration would
+   * occur in palettes used to color code category-based (e.g. "categorical")
+   * data sets rather than real-valued data sets.
+   * 
+   * @return true if the palette is designed for categorical data sets;
+   * otherwise, false.
+   */
+  public boolean isCategoricalPalette(){
+    return this.allRecordsHaveSingleValue;
+  }
+  
+  /**
+   * Gets an in-order list of the records in this palette.
+   * @return a valid list.
+   */
+  public List<ColorPaletteRecord>getRecords(){
+    return Arrays.asList(records);
+  }
 }

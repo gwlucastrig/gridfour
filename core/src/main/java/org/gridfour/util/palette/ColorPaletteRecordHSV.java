@@ -67,6 +67,8 @@ import java.awt.Color;
  */
 public class ColorPaletteRecordHSV extends ColorPaletteRecord {
 
+  final Color rgb0;
+
   final double h0;
   final double s0;
   final double v0;
@@ -91,6 +93,7 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
    */
   public ColorPaletteRecordHSV(double range0, double range1, double[] hsv0, double[] hsv1) {
     super(range0, range1);
+
     h0 = hsv0[0];
     s0 = hsv0[1];
     v0 = hsv0[2];
@@ -110,9 +113,15 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
     } else if (dH > 180) {
       dH -= 360;
     }
+    if (dH == 0) {
+      dH = 360;
+    }
     deltaH = dH;
 
     wrapAround = h0 + deltaH > 360.0 || h0 + deltaH < 0;
+
+    int rgb = Color.HSBtoRGB((float) h0, (float) s0, (float) v0) | 0xff000000;
+    rgb0 = new Color(rgb);
   }
 
   @Override
@@ -143,6 +152,11 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
   @Override
   public Color getColor(double v) {
     return new Color(getArgb(v));
+  }
+
+  @Override
+  public Color getBaseColor() {
+    return rgb0;
   }
 
 }
