@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.SimpleTimeZone;
 import java.util.UUID;
-import static org.gridfour.gvrs.RecordManager.RECORD_HEADER_SIZE;
 
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.GridfourCRC32C;
@@ -97,7 +96,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
   // of the content is also the size of the header.
   private long filePosContent;
   private int sizeOfHeaderInBytes;
-  private int nLevels;
 
   private final RecordManager recordMan;
   private final RasterTileCache tileCache;
@@ -192,6 +190,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
     recordMan = new RecordManager(spec, rasterCodec, braf, filePosContent);
     tileCache = new RasterTileCache(spec, recordMan);
+    setTileCacheSize(GvrsCacheSize.Medium);
 
     List<CodecHolder> csList = spec.getCompressionCodecs();
     if (!csList.isEmpty()) {
@@ -282,7 +281,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
     long filePosFreeSpaceIndexRecord = braf.leReadLong();
     long filePosMetadataIndexRecord = braf.leReadLong();
-    nLevels = braf.leReadShort(); // right now, always 1.
+    int nLevels = braf.leReadShort(); // right now, always 1.
+    if(nLevels!=1){
+      throw new IOException("Unsupported number of levels "+nLevels);
+    }
     braf.skipBytes(6);
     // for now, there is only one tile index record.  This may
     // change in the future if we support raster pyramids.
@@ -346,6 +348,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.seek(savePos);
 
     tileCache = new RasterTileCache(spec, recordMan);
+    setTileCacheSize(GvrsCacheSize.Medium);
 
     // See if the source file specified Java codecs.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
@@ -550,29 +553,75 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   /**
    * Sets the tile cache size to one of the standard sizes defined by the
-   * specified enumeration. In general, the Large size should be used when
-   * creating data products. Size should be based on the anticipated pattern
-   * of
-   * access for the file.
+   * specified enumeration. This method will attempt to set tile cache
+   * size in terms of the number of tiles that can fit within the memory
+   * limit specified by the GvrsCacheSize enumeration.  the following
+   * lists the target number of tiles for each specification. If the enumeration
+   * specifies enough memory for these target values, they will be used.
+   * Otherwise, they will be limited by memory.
+   * <ul>
+   * <li><strong>Small</strong> 9 tiles. </li>
+   * <li><strong>Medium</strong> Enough tiles to fill an entire row.</li>
+   * <li><strong>Large</strong> Enough tiles to fill two rows.</li>
+   * </ul>
+   * In general, the Large size should be used when creating new data products.
+   * Size should be based on the anticipated pattern of access for the file.
+   * <p>
+   * If the sizes specified using the enumeration are inadequate for the
+   * needs of an application, an application can set the specific number
+   * of tiles in the cache by using the alternate version of this method.
    *
    * @param cacheSize a valid instance
    * @throws IOException in the event of a non-recoverable I/P exception.
    */
   public void setTileCacheSize(GvrsCacheSize cacheSize) throws IOException {
+    if(cacheSize==null){
+      throw new IllegalArgumentException("Null cache size not allowed");
+    }
+    
+    int standardTileSize = spec.getStandardTileSizeInBytes();
+    if(standardTileSize == 0){
+      // no elements have been established.  The cache size is
+      // irrelevant. Simply exit.
+      return;
+    }
+    
+    // In the general case, this code will try to set up a buffer 
+    // buffer large enough to cover all tiles in a row of a column of the
+    // data set (which ever is largest).  This target value will be limited
+    // but the maximum memory allocated for the size specification.
+    int nC = spec.nColsOfTiles;
+    int nR = spec.nRowsOfTiles;
+    int nT = nC > nR ? nC : nR;
+    if (nT < 9) {
+      nT = 9;
+    }
+    int target;
     switch (cacheSize) {
       case Small:
-        setTileCacheSize(4);
+        // The target size is based on the idea that we want to have enough tiles in
+        // the buffer to support a cluster of queries taken near a single point.
+        // Nine supports all points in a single tile and all of its neighbors.
+        target = 9;
         break;
       case Medium:
-        setTileCacheSize(16);
+        target = nT;
         break;
       case Large:
-        int nC = spec.nColsOfTiles;
-        int nR = spec.nRowsOfTiles;
-        int nT = nC > nR ? nC : nR;
-        setTileCacheSize(nT + 4);
+        target = 2 * nT;
+        break;
+      default:
+        target = 9; // again. the small size;
     }
+    int maxAllowed = cacheSize.maxBytesInCache/standardTileSize;
+    if (maxAllowed < 2) {
+      target = 2;
+    } else if (target > maxAllowed) {
+      target = maxAllowed;
+    }
+    setTileCacheSize(target);
   }
+
 
   /**
    * Gets a safe copy of the gvrs raster specification associated with this
@@ -594,48 +643,46 @@ public class GvrsFile implements Closeable, AutoCloseable {
   TileAccessIndices getAccessIndices() {
     return new TileAccessIndices(spec);
   }
-
+ 
+  
   /**
-   * Map Cartesian coordinates to grid coordinates storing the row and column in
-   * an array in that order. If the x or y coordinate is outside the ranges
-   * defined for these parameters, the resulting rows and columns may be
-   * outside the range of the valid grid coordinates.
+   * Map grid coordinates to model coordinates storing the resulting x and y
+   * values in a GvrsModelPoint instance. If the row or column values are outside
+   * the ranges defined for those parameters, the resulting x and y values may
+   * be outside the bounds of the standard Cartesian coordinates.
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through a call to the
-   * GvrsFileSpecification.setCartesianCoordinates{} method when the
-   * associated file was created.
+   * established through a call to the setCartesianCoordinates{} method.
+   *
+   * @param row a row (may be a non-integral value)
+   * @param column a column (may be a non-integral value)
+   * @return a valid instance
+   */
+  public GvrsModelPoint mapGridToModelPoint(double row, double column) {
+    return spec.mapGridToModelPoint(row, column);
+  }
+
+  
+  /**
+   * Map model coordinates to grid coordinates storing the computed row and
+   * column in an instance of GvrsGridPoint. If the x or y coordinate is outside
+   * the ranges defined for these parameters, the resulting rows and columns
+   * may be outside the range of the valid grid coordinates.
+   * <p>
+   * The transformation performed by this method is based on the parameters
+   * established through a call to the setCartesianCoordinates() method.
    *
    * @param x a valid floating-point coordinate
    * @param y a valid floating-point coordinate
    * @return an array giving row and column in that order; the results may be
    * non-integral values.
    */
-  public double[] mapCartesianToGrid(double x, double y) {
-    return spec.mapCartesianToGrid(x, y);
+  public GvrsGridPoint mapModelToGridPoint(double x, double y) {
+   return spec.mapModelToGridPoint(x, y);
   }
-
-  /**
-   * Map grid coordinates to Cartesian coordinates storing the resulting
-   * x and y values in an array in that order. If the row or column values
-   * are outside the ranges defined for those parameters, the resulting
-   * x and y values may be outside the bounds of the standard
-   * Cartesian coordinates.
-   * <p>
-   * The transformation performed by this method is based on the parameters
-   * established through a call to the
-   * GvrsFileSpecification.setCartesianCoordinates{} method when the
-   * associated file was created.
-   *
-   * @param row a row (may be a non-integral value)
-   * @param column a column (may be a non-integral value)
-   * @return a valid array giving the Cartesian x and y coordinates in that
-   * order.
-   */
-  public double[] mapGridToCartesian(double row, double column) {
-    return spec.mapGridToCartesian(row, column);
-  }
-
+  
+  
+  
   /**
    * Map geographic coordinates to grid coordinates storing the row and column
    * in an array in that order. If the latitude or longitude is outside the
@@ -644,39 +691,39 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * outside the range of the valid grid coordinates
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through a call to the
-   * GvrsFileSpecification.setGeographicCoordinates{} method when the
-   * associated file was created.
+   * established through a call to the setGeographicCoordinates{} method.
+   * Longitudes may be adjusted according to the bounds established by the
+   * specification and in recognition of the cyclic nature of longitude
+   * coordinates (i.e. 450 degrees is equivalent to 90 degrees, etc.).
    *
    * @param latitude a valid floating-point coordinate
    * @param longitude a valid floating-point coordinate
-   * @return an array giving row and column in that order; the results may be
-   * non-integral values.
+   * @return a valid instance.
    */
-  public double[] mapGeographicToGrid(double latitude, double longitude) {
-    return spec.mapGeographicToGrid(latitude, longitude);
+  public GvrsGridPoint mapGeographicToGridPoint(double latitude, double longitude) {
+    return spec.mapGeographicToGridPoint(latitude, longitude);
   }
-
+  
+  
   /**
-   * Map grid coordinates to Geographic coordinates storing the resulting x
-   * and
-   * y values in an array in that order. If the row or column values are
-   * outside
-   * the ranges defined for those parameters, the resulting x and y values may
-   * be outside the bounds of the standard Geographic coordinates.
+   * Map grid coordinates to geographic coordinates storing the resulting
+   * latitude and longitude in an instance of GvrsGeoPoint.
+   * If the specified row or column values are outside
+   * the ranges defined for those parameters, the resulting latitude and
+   * longitude values may be outside the bounds of the standard Geographic
+   * coordinates.
    * <p>
    * The transformation performed by this method is based on the parameters
-   * established through a call to the
-   * GvrsFileSpecification.setCartesianCoordinates{} method when the
-   * associated file was created.
+   * established through a call to the setCartesianCoordinates{} method.
    *
    * @param row the row coordinate (may be non-integral)
    * @param column the column coordinate (may be non-integral)
-   * @return a valid array giving row and column in that order.
+   * @return a valid instance.
    */
-  public double[] mapGridToGeographic(double row, double column) {
-    return spec.mapGridToGeographic(row, column);
+  public GvrsGeoPoint mapGridToGeoPoint(double row, double column) {
+    return spec.mapGridToGeoPoint(row, column);
   }
+  
 
   /**
    * Reads the complete set of metadata records stored in the file.
@@ -894,4 +941,70 @@ public class GvrsFile implements Closeable, AutoCloseable {
   RecordManager getRecordManager() {
     return recordMan;
   }
+  
+  
+  
+  /**
+   * Map Cartesian coordinates to grid coordinates storing the row and column in
+   * an array in that order. 
+   * <p>
+   * This method is deprecated. Please use mapModelToGridPoint() instead.
+   *
+   * @param x a valid floating-point coordinate
+   * @param y a valid floating-point coordinate
+   * @return an array giving row and column in that order; the results may be
+   * non-integral values.
+   */
+  @Deprecated
+  public double[] mapCartesianToGrid(double x, double y) {
+    return spec.mapCartesianToGrid(x, y);
+  }
+
+  /**
+   * Map grid coordinates to Cartesian coordinates storing the resulting
+   * x and y values in an array in that order. 
+   * <p>
+   * This method is deprecated. Please use mapGridToModelPoint() instead.
+   * 
+   * @param row a row (may be a non-integral value)
+   * @param column a column (may be a non-integral value)
+   * @return a valid array giving the Cartesian x and y coordinates in that
+   * order.
+   */
+  @Deprecated
+  public double[] mapGridToCartesian(double row, double column) {
+    return spec.mapGridToCartesian(row, column);
+  }
+
+  /**
+   * Map geographic coordinates to grid coordinates storing the row and column
+   * in an array in that order.
+   * <p>
+   * This method is deprecated. Please use mapGeographicToGridPoint() instead.
+   *
+   * @param latitude a valid floating-point coordinate
+   * @param longitude a valid floating-point coordinate
+   * @return an array giving row and column in that order; the results may be
+   * non-integral values.
+   */
+  @Deprecated
+  public double[] mapGeographicToGrid(double latitude, double longitude) {
+    return spec.mapGeographicToGrid(latitude, longitude);
+  }
+
+  /**
+   * Map grid coordinates to Geographic coordinates storing the resulting
+   * latitude and longitude values in an array in that order.
+   * <p>
+   * This method is deprecated. Please use mapModelToGridPoint() instead.
+   *
+   * @param row the row coordinate (may be non-integral)
+   * @param column the column coordinate (may be non-integral)
+   * @return a valid array giving row and column in that order.
+   */
+  @Deprecated
+  public double[] mapGridToGeographic(double row, double column) {
+    return spec.mapGridToGeographic(row, column);
+  }
+
 }

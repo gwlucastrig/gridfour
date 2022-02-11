@@ -147,14 +147,14 @@ public class GvrsInterpolatorBSpline {
      * @throws java.io.IOException in the event of an IO error
      */
     public double z(double x, double y) throws IOException {
-        double[] g;
+        GvrsGridPoint g;
         if (geoCoordinates) {
-            g = gvrs.mapGeographicToGrid(y, x);
+            g = gvrs.mapGeographicToGridPoint(y, x);
         } else {
-            g = gvrs.mapCartesianToGrid(x, y);
+            g = gvrs.mapModelToGridPoint(x, y);
         }
-        double r = g[0];
-        double c = g[1];
+        double r = g.row;
+        double c = g.column;
 
         return zInterp(r, c, 0);
     }
@@ -174,23 +174,21 @@ public class GvrsInterpolatorBSpline {
      * @throws IOException in the event of an IO error
      */
     public InterpolationResult zNormal(double x, double y) throws IOException {
-
-        double[] g;
-
+        GvrsGridPoint g;
         double dx = du;
         double dy = dv;
         if (geoCoordinates) {
-            g = gvrs.mapGeographicToGrid(y, x);
+            g = gvrs.mapGeographicToGridPoint(y, x);
             double s = Math.cos(Math.toRadians(y));
             dx = s * du;
             if (dx < 1) {
                 dx = 1;
             }
         } else {
-            g = gvrs.mapCartesianToGrid(x, y);
+            g = gvrs.mapModelToGridPoint(x, y);
         }
-        double row = g[0];
-        double col = g[1];
+        double row = g.row;
+        double col = g.column;
 
         float z[] = loadSamples(row, col);
         if (z == null) {
@@ -238,14 +236,14 @@ public class GvrsInterpolatorBSpline {
      * @throws IOException in the event of an IO error
      */
     public double zTest(double x, double y, int index) throws IOException {
-        double[] g;
+        GvrsGridPoint g;
         if (geoCoordinates) {
-            g = gvrs.mapGeographicToGrid(y, x);
+            g = gvrs.mapGeographicToGridPoint(y, x);
         } else {
-            g = gvrs.mapCartesianToGrid(x, y);
+            g = gvrs.mapModelToGridPoint(x, y);
         }
-        double row = g[0];
-        double col = g[1];
+        double row = g.row;
+        double col = g.column;
         int row0 = (int) row;
         int col0 = (int) col;
         double ct = col - col0;  // cell t

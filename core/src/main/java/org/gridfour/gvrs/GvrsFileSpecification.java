@@ -455,7 +455,11 @@ public class GvrsFileSpecification {
    * it would assume that the raster columns went from 90 west to 90 east. But
    * if 90, -90 were specified, it would be assumed that the raster grid went
    * from 90 east, across the International Date Line, to 90 west.
-   *
+   * <p>
+   * This method also populates the internal AffineTransform that can be
+   * used for transforming coordinates between the geographic and grid 
+   * coordinate systems.
+   * 
    * @param latRow0 the latitude of the first row in the grid
    * @param lonCol0 the longitude of the first column of the raster (column
    * 0).
@@ -529,10 +533,14 @@ public class GvrsFileSpecification {
   }
 
   /**
-   * Set a Cartesian coordinate system to be used for interpreting the data.
+   * Sets the real-valued model to a Cartesian coordinate system.
    * Note that this setting is mutually exclusive with the geographic
    * coordinate system setting. The last setting applied replaces 
-   * any earlier settings
+   * any earlier settings.
+   * <p>
+   * This method populates the internal AffineTransform that can be
+   * used for transforming coordinates between the model and grid 
+   * coordinate systems.
    *
    * @param x0 the X coordinate of the lower-left corner of the raster and the
    * first column of the raster (column 0).
@@ -1045,101 +1053,7 @@ public class GvrsFileSpecification {
   public void setChecksumEnabled(boolean checksumEnabled) {
     this.isChecksumEnabled = checksumEnabled;
   }
-  
-  
-  /**
-   * Map Cartesian coordinates to grid coordinates storing the row and column
-   * in
-   * an array in that order. If the x or y coordinate is outside the ranges
-   * defined for these parameters, the resulting rows and columns may be
-   * outside
-   * the range of the valid grid coordinates.
-   * <p>
-   * The transformation performed by this method is based on the parameters
-   * established through a call to the setCartesianCoordinates{} method.
-   *
-   * @param x a valid floating-point coordinate
-   * @param y a valid floating-point coordinate
-   * @return an array giving row and column in that order; the results may be
-   * non-integral values.
-   */
-  public double[] mapCartesianToGrid(double x, double y) {
-    double[] grid = new double[2];
-    grid[1] = x*m2r00 + y*m2r01 + m2r02;
-    grid[0] = x*m2r10 + y*m2r11 + m2r12;
-    return grid;
-  }
-
-  /**
-   * Map grid coordinates to Cartesian coordinates storing the resulting x and
-   * y
-   * values in an array in that order. If the row or column values are outside
-   * the ranges defined for those parameters, the resulting x and y values may
-   * be outside the bounds of the standard Cartesian coordinates.
-   * <p>
-   * The transformation performed by this method is based on the parameters
-   * established through a call to the setCartesianCoordinates{} method.
-   *
-   * @param row a row (may be a non-integral value)
-   * @param column a column (may be a non-integral value)
-   * @return a valid array giving the Cartesian x and y coordinates in that
-   * order.
-   */
-  public double[] mapGridToCartesian(double row, double column) {
-    double[] c = new double[2];
-    c[0] = column*r2m00 + row*r2m01 + r2m02;
-    c[1] = column*r2m10 + row*r2m11 + r2m12;
-    return c;
-  }
-
-  /**
-   * Map geographic coordinates to grid coordinates storing the row and column
-   * in an array in that order. If the latitude or longitude is outside the
-   * ranges defined for these parameters, the resulting rows and columns may
-   * be
-   * outside the range of the valid grid coordinates
-   * <p>
-   * The transformation performed by this method is based on the parameters
-   * established through a call to the setGeographicCoordinates{} method.
-   * Longitudes may be adjusted according to the bounds established by the
-   * specification and in recognition of the cyclic nature of longitude
-   * coordinates (i.e. 450 degrees is equivalent to 90 degrees, etc.).
-   *
-   * @param latitude a valid floating-point coordinate
-   * @param longitude a valid floating-point coordinate
-   * @return an array giving row and column in that order; the results may be
-   * non-integral values.
-   */
-  public double[] mapGeographicToGrid(double latitude, double longitude) {
-    double[] grid = new double[2];
-    grid[0] = (nRowsInRaster - 1) * (latitude - y0) / (y1 - y0);  // row
-    double delta = Angle.to360(longitude - x0);
-    grid[1] = (nColsInRaster - 1) * delta / (x1 - x0);
-    return grid;
-  }
-
-  /**
-   * Map grid coordinates to Geographic coordinates storing the resulting x
-   * and
-   * y values in an array in that order. If the row or column values are
-   * outside
-   * the ranges defined for those parameters, the resulting x and y values may
-   * be outside the bounds of the standard Geographic coordinates.
-   * <p>
-   * The transformation performed by this method is based on the parameters
-   * established through a call to the setCartesianCoordinates{} method.
-   *
-   * @param row the row coordinate (may be non-integral)
-   * @param column the column coordinate (may be non-integral)
-   * @return a valid array giving latitude and longitude in that order.
-   */
-  public double[] mapGridToGeographic(double row, double column) {
-    double[] c = new double[2];
-    c[0] = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
-    c[1] = (x1 - x0) * column / (nColsInRaster - 1) + x0;
-    return c;
-  }
-
+ 
   /**
    * Indicates whether a geographic coordinate system has been set for mapping
    * input coordinates to raster coordinates and vice versa.
@@ -1734,6 +1648,174 @@ public class GvrsFileSpecification {
     return y1;
   }
   
+  
+   
+  /**
+   * Map grid coordinates to model coordinates storing the resulting x and y
+   * values in a GvrsModelPoint instance. If the row or column values are outside
+   * the ranges defined for those parameters, the resulting x and y values may
+   * be outside the bounds of the standard Cartesian coordinates.
+   * <p>
+   * The transformation performed by this method is based on the parameters
+   * established through a call to the setCartesianCoordinates{} method.
+   *
+   * @param row a row (may be a non-integral value)
+   * @param column a column (may be a non-integral value)
+   * @return a valid instance
+   */
+  public GvrsModelPoint mapGridToModelPoint(double row, double column) {
+    double x = column*r2m00 + row*r2m01 + r2m02;
+    double y = column*r2m10 + row*r2m11 + r2m12;
+    return new GvrsModelPoint(x,y);
+  }
+
+  
+  /**
+   * Map model coordinates to grid coordinates storing the computed row and
+   * column in an instance of GvrsGridPoint. If the x or y coordinate is outside
+   * the ranges defined for these parameters, the resulting rows and columns
+   * may be outside the range of the valid grid coordinates.
+   * <p>
+   * The transformation performed by this method is based on the parameters
+   * established through a call to the setCartesianCoordinates() method.
+   *
+   * @param x a valid floating-point coordinate
+   * @param y a valid floating-point coordinate
+   * @return an array giving row and column in that order; the results may be
+   * non-integral values.
+   */
+  public GvrsGridPoint mapModelToGridPoint(double x, double y) {
+    double col = x*m2r00 + y*m2r01 + m2r02; // left-and-right direction
+    double row = x*m2r10 + y*m2r11 + m2r12; // up-and-down direction
+    return new GvrsGridPoint(row, col);
+  }
+  
+  
+  
+  /**
+   * Map geographic coordinates to grid coordinates storing the row and column
+   * in an array in that order. If the latitude or longitude is outside the
+   * ranges defined for these parameters, the resulting rows and columns may
+   * be
+   * outside the range of the valid grid coordinates
+   * <p>
+   * The transformation performed by this method is based on the parameters
+   * established through a call to the setGeographicCoordinates{} method.
+   * Longitudes may be adjusted according to the bounds established by the
+   * specification and in recognition of the cyclic nature of longitude
+   * coordinates (i.e. 450 degrees is equivalent to 90 degrees, etc.).
+   *
+   * @param latitude a valid floating-point coordinate
+   * @param longitude a valid floating-point coordinate
+   * @return a valid instance.
+   */
+  public GvrsGridPoint mapGeographicToGridPoint(double latitude, double longitude) {
+    double row = (nRowsInRaster - 1) * (latitude - y0) / (y1 - y0);  // row
+    double delta = Angle.to360(longitude - x0);
+    double column = (nColsInRaster - 1) * delta / (x1 - x0);
+    GvrsGridPoint point = new GvrsGridPoint(row, column);
+    return point;
+  }
+  
+  
+  /**
+   * Map grid coordinates to geographic coordinates storing the resulting
+   * latitude and longitude in an instance of GvrsGeoPoint.
+   * If the specified row or column values are outside
+   * the ranges defined for those parameters, the resulting latitude and
+   * longitude values may be outside the bounds of the standard Geographic
+   * coordinates.
+   * <p>
+   * The transformation performed by this method is based on the parameters
+   * established through a call to the setCartesianCoordinates{} method.
+   *
+   * @param row the row coordinate (may be non-integral)
+   * @param column the column coordinate (may be non-integral)
+   * @return a valid instance.
+   */
+  public GvrsGeoPoint mapGridToGeoPoint(double row, double column) {
+    double lat = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
+    double lon = (x1 - x0) * column / (nColsInRaster - 1) + x0;
+    return new GvrsGeoPoint(lat, lon);
+  }
+
+  
+  
+  
+   /**
+   * Map Cartesian coordinates to grid coordinates storing the row and column
+   * in an array in that order. 
+   * <p>
+   * This method is deprecated. Please use mapModelToGridPoint() instead.
+   *
+   * @param x a valid floating-point coordinate
+   * @param y a valid floating-point coordinate
+   * @return an array giving row and column in that order; the results may be
+   * non-integral values.
+   */
+  @Deprecated
+  public double[] mapCartesianToGrid(double x, double y) {
+    double[] grid = new double[2];
+    grid[1] = x*m2r00 + y*m2r01 + m2r02;
+    grid[0] = x*m2r10 + y*m2r11 + m2r12;
+    return grid;
+  }
+
+  /**
+   * Map grid coordinates to Cartesian coordinates storing the resulting x and
+   * y values in an array in that order. 
+   * <p>
+   * This method is deprecated. Please use mapGridToModelPoint() instead.
+   * @param row a row (may be a non-integral value)
+   * @param column a column (may be a non-integral value)
+   * @return a valid array giving the Cartesian x and y coordinates in that
+   * order.
+   */
+  @Deprecated
+  public double[] mapGridToCartesian(double row, double column) {
+    double[] c = new double[2];
+    c[0] = column*r2m00 + row*r2m01 + r2m02;
+    c[1] = column*r2m10 + row*r2m11 + r2m12;
+    return c;
+  }
+
+  /**
+   * Map geographic coordinates to grid coordinates storing the row and column
+   * in an array in that order.  
+   * <p>
+   * This method is deprecated. Please use mapGeographicToGridPoint() instead.
+   *
+   * @param latitude a valid floating-point coordinate
+   * @param longitude a valid floating-point coordinate
+   * @return an array giving row and column in that order; the results may be
+   * non-integral values.
+   */
+  @Deprecated
+  public double[] mapGeographicToGrid(double latitude, double longitude) {
+    double[] grid = new double[2];
+    grid[0] = (nRowsInRaster - 1) * (latitude - y0) / (y1 - y0);  // row
+    double delta = Angle.to360(longitude - x0);
+    grid[1] = (nColsInRaster - 1) * delta / (x1 - x0);
+    return grid;
+  }
+
+  /**
+   * Map grid coordinates to Geographic coordinates storing the resulting
+   * row and column values in an array in that order.  
+   * <p>
+   * This method is deprecated. Please use mapGridToGeoPoint() instead.
+   *
+   * @param row the row coordinate (may be non-integral)
+   * @param column the column coordinate (may be non-integral)
+   * @return a valid array giving latitude and longitude in that order.
+   */
+  @Deprecated
+  public double[] mapGridToGeographic(double row, double column) {
+    double[] c = new double[2];
+    c[0] = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
+    c[1] = (x1 - x0) * column / (nColsInRaster - 1) + x0;
+    return c;
+  }
   
   
 }

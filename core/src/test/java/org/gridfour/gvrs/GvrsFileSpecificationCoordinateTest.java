@@ -70,7 +70,7 @@ public class GvrsFileSpecificationCoordinateTest {
     double mx1 = spec.getX1();
     double my1 = spec.getY1();
 
-    // Test the four corners.  This will verify that the mapGridToCartesian
+    // Test the four corners.  This will verify that the mapGridToModelPoint
     // method works correctly.
     //
     //     3 ---- 2
@@ -79,40 +79,38 @@ public class GvrsFileSpecificationCoordinateTest {
     //
     //  Remember that the grid coordinates are given in order row, column
     //  (not x, y).
-    //     g[0]   ROW
-    //     g[1]   COLUMN
-    double[] c = spec.mapGridToCartesian(0, 0);
-    assertEquals(0, c[0], 1.0e-9, "corner 0, x coordinate mismatch");
-    assertEquals(my0, c[1], 1.0e-9, "corner 0, y coordinate mismatch");
-    double[] g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(0, g[0], 1.0e-9, "corner 0, row coordinate mismatch");
-    assertEquals(0, g[1], 1.0e-9, "corner 0, col coordinate mismatch");
+    GvrsModelPoint mp = spec.mapGridToModelPoint(0, 0);
+    assertEquals(0, mp.getX(), 1.0e-9, "corner 0, x coordinate mismatch");
+    assertEquals(my0, mp.getY(), 1.0e-9, "corner 0, y coordinate mismatch");
+    GvrsGridPoint gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(0, gp.getRow(), 1.0e-9, "corner 0, row coordinate mismatch");
+    assertEquals(0, gp.getColumn(), 1.0e-9, "corner 0, col coordinate mismatch");
 
-    c = spec.mapGridToCartesian(0, 10); // row 0, col 10
-    assertEquals(mx1, c[0], 1.0e-9, "corner 1, x coordinate mismatch");
-    assertEquals(0, c[1], 1.0e-9, "corner 1, y coordinate mismatch");
-    g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(0, g[0], 1.0e-9, "corner 1, row coordinate mismatch");
-    assertEquals(10, g[1], 1.0e-9, "corner 1, col coordinate mismatch");
+    mp= spec.mapGridToModelPoint(0, 10); // row 0, col 10
+    assertEquals(mx1, mp.getX(), 1.0e-9, "corner 1, x coordinate mismatch");
+    assertEquals(0, mp.getY(), 1.0e-9, "corner 1, y coordinate mismatch");
+    gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(0, gp.getRow(), 1.0e-9, "corner 1, row coordinate mismatch");
+    assertEquals(10, gp.getColumn(), 1.0e-9, "corner 1, col coordinate mismatch");
 
-    c = spec.mapGridToCartesian(10, 10);
-    assertEquals(0, c[0], 1.0e-9, "corner 2, x coordinate mismatch");
-    assertEquals(my1, c[1], 1.0e-9, "corner 2, y coordinate mismatch");
-    g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(10, g[0], 1.0e-9, "corner 2, row coordinate mismatch");
-    assertEquals(10, g[1], 1.0e-9, "corner 2, col coordinate mismatch");
+    mp = spec.mapGridToModelPoint(10, 10);
+    assertEquals(0, mp.getX(), 1.0e-9, "corner 2, x coordinate mismatch");
+    assertEquals(my1, mp.getY(), 1.0e-9, "corner 2, y coordinate mismatch");
+    gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(10, gp.getRow(), 1.0e-9, "corner 2, row coordinate mismatch");
+    assertEquals(10, gp.getColumn(), 1.0e-9, "corner 2, col coordinate mismatch");
 
-    c = spec.mapGridToCartesian(10, 0); // row 10, col 0 
-    assertEquals(mx0, c[0], 1.0e-9, "corner 3, x coordinate mismatch");
-    assertEquals(0, c[1], 1.0e-9, "corner 3, y coordinate mismatch");
-    g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(10, g[0], 1.0e-9, "corner 3, row coordinate mismatch");
-    assertEquals(0, g[1], 1.0e-9, "corner 3, col coordinate mismatch");
+    mp = spec.mapGridToModelPoint(10, 0); // row 10, col 0 
+    assertEquals(mx0, mp.getX(), 1.0e-9, "corner 3, x coordinate mismatch");
+    assertEquals(0, mp.getY(), 1.0e-9, "corner 3, y coordinate mismatch");
+    gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(10, gp.getRow(), 1.0e-9, "corner 3, row coordinate mismatch");
+    assertEquals(0, gp.getColumn(), 1.0e-9, "corner 3, col coordinate mismatch");
 
     // Finally, test the center
-    c = spec.mapGridToCartesian(5, 5); // row 4.5, col 4.5 
-    assertEquals(0, c[0], 1.0e-9, "(0,0) x coordinate mismatch");
-    assertEquals(0, c[1], 1.0e-9, "(0,0) y coordinate mismatch");
+    mp = spec.mapGridToModelPoint(5, 5); // row 4.5, col 4.5 
+    assertEquals(0, mp.getX(), 1.0e-9, "(0,0) x coordinate mismatch");
+    assertEquals(0, mp.getY(), 1.0e-9, "(0,0) y coordinate mismatch");
   }
 
   @Test
@@ -126,44 +124,40 @@ public class GvrsFileSpecificationCoordinateTest {
     double mx1 = spec.getX1();
     double my1 = spec.getY1();
 
-    // Test the four corners.  This will verify that the mapGridToCartesian
+    // Test the four corners.  This will verify that the mapGridToModelPoint
     // method works correctly.
     //
     //     3 ---- 2
     //     |      |
     //     0 ---- 1
     //
-    //  Remember that the grid coordinates are given in order row, column
-    //  (not x, y).
-    //     g[0]   ROW
-    //     g[1]   COLUMN
-    double[] c = spec.mapGridToCartesian(0, 0);
-    assertEquals(mx0, c[0], 1.0e-9, "corner 0, x coordinate mismatch");
-    assertEquals(my0, c[1], 1.0e-9, "corner 0, y coordinate mismatch");
-    double[] g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(0, g[0], 1.0e-9, "corner 0, row coordinate mismatch");
-    assertEquals(0, g[1], 1.0e-9, "corner 0, col coordinate mismatch");
+    GvrsModelPoint mp = spec.mapGridToModelPoint(0, 0);
+    assertEquals(mx0, mp.getX(), 1.0e-9, "corner 0, x coordinate mismatch");
+    assertEquals(my0, mp.getY(), 1.0e-9, "corner 0, y coordinate mismatch");
+    GvrsGridPoint gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(0, gp.getRow(), 1.0e-9, "corner 0, row coordinate mismatch");
+    assertEquals(0, gp.getColumn(), 1.0e-9, "corner 0, col coordinate mismatch");
 
-    c = spec.mapGridToCartesian(0, 10); // row 0, col 10
-    assertEquals(mx1, c[0], 1.0e-9, "corner 1, x coordinate mismatch");
-    assertEquals(my0, c[1], 1.0e-9, "corner 1, y coordinate mismatch");
-    g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(0, g[0], 1.0e-9, "corner 1, row coordinate mismatch");
-    assertEquals(10, g[1], 1.0e-9, "corner 1, col coordinate mismatch");
+    mp = spec.mapGridToModelPoint(0, 10); // row 0, col 10
+    assertEquals(mx1, mp.getX(), 1.0e-9, "corner 1, x coordinate mismatch");
+    assertEquals(my0, mp.getY(), 1.0e-9, "corner 1, y coordinate mismatch");
+    gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(0, gp.getRow(), 1.0e-9, "corner 1, row coordinate mismatch");
+    assertEquals(10, gp.getColumn(), 1.0e-9, "corner 1, col coordinate mismatch");
 
-    c = spec.mapGridToCartesian(10, 10);
-    assertEquals(mx1, c[0], 1.0e-9, "corner 2, x coordinate mismatch");
-    assertEquals(my1, c[1], 1.0e-9, "corner 2, y coordinate mismatch");
-    g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(10, g[0], 1.0e-9, "corner 2, row coordinate mismatch");
-    assertEquals(10, g[1], 1.0e-9, "corner 2, col coordinate mismatch");
+    mp = spec.mapGridToModelPoint(10, 10);
+    assertEquals(mx1, mp.getX(), 1.0e-9, "corner 2, x coordinate mismatch");
+    assertEquals(my1, mp.getY(), 1.0e-9, "corner 2, y coordinate mismatch");
+    gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(10, gp.getRow(), 1.0e-9, "corner 2, row coordinate mismatch");
+    assertEquals(10, gp.getColumn(), 1.0e-9, "corner 2, col coordinate mismatch");
 
-    c = spec.mapGridToCartesian(10, 0); // row 10, col 0 
-    assertEquals(mx0, c[0], 1.0e-9, "corner 3, x coordinate mismatch");
-    assertEquals(my1, c[1], 1.0e-9, "corner 3, y coordinate mismatch");
-    g = spec.mapCartesianToGrid(c[0], c[1]);
-    assertEquals(10, g[0], 1.0e-9, "corner 3, row coordinate mismatch");
-    assertEquals(0, g[1], 1.0e-9, "corner 3, col coordinate mismatch");
+    mp = spec.mapGridToModelPoint(10, 0); // row 10, col 0 
+    assertEquals(mx0, mp.getX(), 1.0e-9, "corner 3, x coordinate mismatch");
+    assertEquals(my1, mp.getY(), 1.0e-9, "corner 3, y coordinate mismatch");
+    gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    assertEquals(10, gp.getRow(), 1.0e-9, "corner 3, row coordinate mismatch");
+    assertEquals(0, gp.getColumn(), 1.0e-9, "corner 3, col coordinate mismatch");
   }
 
   @Test

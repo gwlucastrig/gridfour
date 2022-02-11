@@ -89,6 +89,10 @@ public class PackageData {
     "      If it is not specified, the data type will be selected",
     "      based on the data-type specification of the original data",};
 
+  private final static short LIMIT_DEPTH = -11000;   // Challenger deep, 10,929 wikipedia
+  private final static short LIMIT_ELEVATION = 8848; // Everest, wikipedia
+  private final static short FILL_VALUE = -32768;
+  
   private static void printUsageAndExit() {
     for (String s : usage) {
       System.err.println(s);
@@ -226,15 +230,22 @@ public class PackageData {
     GvrsElementType gvrsDataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      elementSpec = new GvrsElementSpecificationIntCodedFloat("z", zScale, zOffset);
+      int encodedLimitDepth =  (int)((LIMIT_DEPTH-zOffset)*zScale);
+      int encodedLimitElev  =  (int)((LIMIT_ELEVATION-zOffset)*zScale);
+      
+      elementSpec = new GvrsElementSpecificationIntCodedFloat(
+        "z", zScale, zOffset, 
+        encodedLimitDepth, encodedLimitElev, Integer.MIN_VALUE, true);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.INT_CODED_FLOAT;
     } else if (sourceDataType.isIntegral()) {
-      elementSpec = new GvrsElementSpecificationShort("z");
+      elementSpec = new GvrsElementSpecificationShort("z", 
+        LIMIT_DEPTH, LIMIT_ELEVATION, FILL_VALUE);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.SHORT;
     } else {
-      elementSpec = new GvrsElementSpecificationFloat("z");
+      elementSpec = new GvrsElementSpecificationFloat("z",
+      LIMIT_DEPTH, LIMIT_ELEVATION, Float.NaN);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.FLOAT;
     }
