@@ -77,7 +77,7 @@ we hope to include implementations of contouring, statistical analysis,
 and physical modeling logic to our collection. We are also building tools to
 simplify access to data from the Shuttle Radar Topography Mission &#40; [SRTM](https://www2.jpl.nasa.gov/srtm/) &#41;
 and the U.S. Geological Survey's high-resolution 
-&#40; [3D Elevation Program](https://www.usgs.gov/3d-elevation-program) &#41;.
+[3D Elevation Program](https://www.usgs.gov/3d-elevation-program).
 
 In the meantime, you are welcome to visit our companion Tinfour Software Project at https://github.com/gwlucastrig/Tinfour
 
