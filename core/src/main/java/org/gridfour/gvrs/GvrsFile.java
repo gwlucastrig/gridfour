@@ -42,6 +42,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,6 +92,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final UUID uuid;
   private boolean isClosed;
   private boolean openedForWriting;
+  private boolean deleteOnClose;
   private long timeModified;
 
   // Content begins immediately after the header, so the position
@@ -100,7 +103,72 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final RecordManager recordMan;
   private final RasterTileCache tileCache;
   private final List<GvrsElement> elements = new ArrayList<>();
+  
+ 
 
+  private static File tempFile() throws IOException {
+    Path filePath = Files.createTempFile("gvrstemp", ".gvrs");
+    File file = filePath.toFile();
+    file.deleteOnExit();
+    return file;
+  }
+
+  private static GvrsFileSpecification tempSpec(int nRows, int nCols, GvrsElementType e){
+    GvrsFileSpecification spec = new GvrsFileSpecification(nRows, nCols);
+    GvrsElementSpecification eSpec = null;
+    switch(e){
+      case INTEGER:
+        eSpec = new GvrsElementSpecificationInt("z");
+        break;
+      case SHORT:
+         eSpec = new GvrsElementSpecificationShort("z");
+         break;
+      case FLOAT:
+         eSpec = new GvrsElementSpecificationFloat("z");
+         break;
+      case INT_CODED_FLOAT:
+         eSpec = new GvrsElementSpecificationIntCodedFloat("z", 1f, 0f);
+         break;
+      default:
+        throw new IllegalArgumentException("Unsupported element type "+e);
+    }
+    spec.addElementSpecification(eSpec);
+    return spec;
+  }
+ 
+  /**
+   * Constructs a raster store backed by a temporary file that will
+   * be deleted when the close() method is called or the program terminates
+   * successfully.  Note that the Java Virtual Machine will not be able
+   * to remove the file in the event of improper termination.
+   * @param specification a valid specification
+   * @throws IOException when an unhandled I/O exception occurs.
+   */
+  public GvrsFile(GvrsFileSpecification specification)
+    throws IOException {
+    this(tempFile(), specification);
+    deleteOnClose = true;
+  }
+
+  
+   /**
+   * Constructs a raster store backed by a temporary file that will
+   * be deleted when the close() method is called or the program terminates
+   * successfully.  Note that the Java Virtual Machine will not be able
+   * to remove the file in the event of improper termination.
+   * @param nRowsInRaster an integer value greater than zero
+   * @param nColumnsInRaster an integer value greater than zero
+   * @param elementType a valid instance
+   * @throws IOException when an unhandled I/O exception occurs.
+   */
+  public GvrsFile(int nRowsInRaster, int nColumnsInRaster, GvrsElementType elementType)
+    throws IOException {
+    this(tempFile(), tempSpec(nRowsInRaster, nColumnsInRaster, elementType));
+    deleteOnClose = true;
+  }
+
+  
+  
   /**
    * Creates a new raster file using the specified file and specifications. If
    * the file reference points to an existing file, the old file will be
@@ -415,6 +483,14 @@ public class GvrsFile implements Closeable, AutoCloseable {
   @Override
   public void close() throws IOException {
     if (!isClosed) {
+      if(openedForWriting && deleteOnClose){
+          openedForWriting = false;
+          isClosed = true;
+          braf.close();
+          file.delete();
+          return;
+      }
+        
       if (openedForWriting) {
         tileCache.flush();
         braf.seek(FILEPOS_MODIFICATION_TIME);
@@ -886,6 +962,20 @@ public class GvrsFile implements Closeable, AutoCloseable {
       if (e.name.equals(name)) {
         return e;
       }
+    }
+    return null;
+  }
+
+  
+  /**
+   * Gets the GVRS element by index (order created).
+   *
+   * @param index A value of zero or greater
+   * @return if defined, a valid instance; otherwise a null.
+   */
+  public GvrsElement getElement(int index) {
+    if(elements.size()>index){
+      return elements.get(index);
     }
     return null;
   }
