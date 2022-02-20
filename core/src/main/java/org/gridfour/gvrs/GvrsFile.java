@@ -1032,6 +1032,26 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return recordMan;
   }
   
+  /**
+   * Gets the time that the content of the GVRS file was last modified.
+   * Note that this value is based on the time of internal operations
+   * on a GVRS file and will not necessarily match the information
+   * obtained by operating on the underlying file using the Java API.
+   * @return a value in milliseconds from the epoch January 1, 1970.
+   */
+  public long getModificationTimeMillis(){
+    return timeModified;
+  }
+  
+  /**
+   * Gets the time that the GVRS file was created..
+   * @return a value in milliseconds from the epoch January 1, 1970.
+   */
+  public long getCreationTimeMillis(){
+    return timeModified;
+  }
+  
+  
   
   
   /**

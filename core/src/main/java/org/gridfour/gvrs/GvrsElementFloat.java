@@ -123,4 +123,43 @@ public class GvrsElementFloat extends GvrsElement {
       minValue, maxValue, fillValue);
   }
  
+  
+  /**
+   * Gets the value that is assigned to all raster cells
+   * that have not been otherwise populated. Some data sources may
+   * treat this value as a "no-data" value while others may treat it
+   * as a meaningful default value.   The fill value is specified
+   * when a GVRS file is first created and may not be modified afterwards.
+   * <p>
+   * The fill value is not required to be within the range specified
+   * by the minimum and maximum values.
+   * @return an arbitrary floating-point value, including not-a-number and
+   * positive or negative infinity.
+   */
+  public float getFillValue(){
+    return fillValue;
+  }
+  
+  /**
+   * Gets the maximum value specified for the range of this instance.
+   * The maximum value is specified when a GVRS file is first
+   * created and may not be modified afterwards.
+   * @return an arbitrary floating-point value, including positive infinity
+   * but not negative infinity or not-a-number.
+   */
+  public float getMaxValue(){
+    return maxValue;
+  }
+  
+  /**
+   * Gets the minimum value specified for the range of this instance.
+   * The minimum value is specified when a GVRS file is first created
+   * and may not be modified afterwards.
+   * @return an arbitrary floating-point value, including negitive infinity
+   * but not positive infinity or not-a-number
+   */
+  public float getMinValue(){
+    return minValue;
+  }
+  
 }
