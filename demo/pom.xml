@@ -10,7 +10,7 @@
   <parent>
     <groupId>org.gridfour</groupId>
     <artifactId>Gridfour</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
   </parent>
 
 	<artifactId>GridfourDemo</artifactId>
