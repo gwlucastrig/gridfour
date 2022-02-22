@@ -37,25 +37,26 @@
 package org.gridfour.gvrs;
 
 /**
- * Provides specifications for the GVRS predefined metadata.
- * The purpose of this enumeration is to support uniform and consistent
- * specifications across all applications that use the GVRS file format.
+ * Provides specifications for the GVRS predefined Metadata Naming
+ * Convention (MNC). The purpose of this enumeration is to support
+ * uniform and consistent specifications across all applications that
+ * use the GVRS file format.
  * <p>
  * This class is provided as a preliminary implementation to illustrate
  * a concept of how a metadata standard could be facilitated. However,
  * no such standard is established at this time. This class is provided
  * with the hope that it will foster discussion and the eventual
- * creation of a metadata standard for GVRS. Ideally, this enumeration
- * will specify a small set of standard metadata names and data types
- * that would be recognized by most or all applications.  Beyond that,
+ * creation of a comprehensive metadata standard for GVRS. Ideally,
+ * this enumeration will specify a small set of standard metadata names and
+ * data types that would be recognized by most or all applications.  Beyond that,
  * applications would remain free to specify custom metadata definitions
  * according to their own requirements.
  */
-public enum GvrsMetadataConstants {
+public enum GvrsMnc {
   /**
    * Defines a specification for the author of a data set.
    */
-  Author(GvrsMetadataType.STRING),
+  Author(GvrsMetadataType.STRING, "The person or organization that created a data product."),
   /**
    * Defines a specification for copyrights. In general practice, it is
    * possible for a data set to be published using multiple copyrights
@@ -68,9 +69,15 @@ public enum GvrsMetadataConstants {
    */
   Copyright(GvrsMetadataType.STRING),
   /**
-   * Defines a specification for indicating restrictions for use,
-   * limitations for applicability, etc. For example: "not intended
-   * for navigation".
+   * A statement giving conditions under which the producer released the
+   * associated product for use. May indicating restrictions on use,
+   * limitations of applicability, etc. For example: 
+   * "Not intended for navigation");
+   */
+  TermsOfUse(GvrsMetadataType.STRING),
+  /**
+   * A statement disclaiming liability or clarifying limitations of
+   * applicability.. 
    */
   Disclaimers(GvrsMetadataType.STRING),
   /**
@@ -103,12 +110,12 @@ public enum GvrsMetadataConstants {
   private final GvrsMetadataType dataType;
   private final String description;
 
-  GvrsMetadataConstants(GvrsMetadataType dataType) {
+  GvrsMnc(GvrsMetadataType dataType) {
     this.dataType = dataType;
     description = null;
   }
 
-  GvrsMetadataConstants(GvrsMetadataType dataType, String description) {
+  GvrsMnc(GvrsMetadataType dataType, String description) {
     this.dataType = dataType;
     this.description = description;
   }
@@ -122,6 +129,18 @@ public enum GvrsMetadataConstants {
     return dataType;
   }
 
+  /**
+   * Gets the description associated with this enumeration value, if any.
+   * Note that not all value have associated description strings.
+   * @return a valid String; potentially empty if not defined.
+   */
+  public String getDescription(){
+    if(description==null){
+      return "";
+    }
+    return description;
+  }
+  
   /**
    * Constructs a new instance of a GvrsMetadata with the name and
    * data type specified by the enumeration.
@@ -156,20 +175,6 @@ public enum GvrsMetadataConstants {
       m.setDescription(description);
     }
     return m;
-  }
-
-  /**
-   * Constructs a new instance of a GvrsMetadata object with the name,
-   * data type, specified by the enumeration and the record ID
-   * assigned to it by the calling application.
-   *
-   * @param recordID an integer value uniquely identifying the metadata
-   * object to be constructed.
-   * @param metadataType the type assigned to the metedata instance.
-   * @return a valid instance
-   */
-  public GvrsMetadata newInstance(int recordID, GvrsMetadataType metadataType) {
-    return new GvrsMetadata(name(), recordID, metadataType);
   }
 
 }

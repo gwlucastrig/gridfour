@@ -57,7 +57,7 @@ import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.gvrs.GvrsMetadata;
-import org.gridfour.gvrs.GvrsMetadataConstants;
+import org.gridfour.gvrs.GvrsMnc;
 import org.gridfour.io.FastByteArrayOutputStream;
 import org.gridfour.lsop.LsCodecUtility;
 import ucar.ma2.Array;
@@ -301,12 +301,10 @@ public class PackageData {
     double zSum = 0;
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
-      gvrs.writeMetadata(
-        GvrsMetadataConstants.Copyright, 
+      gvrs.writeMetadata(GvrsMnc.Copyright, 
         "This data is in the public domain and may be used free of charge");
 
-      gvrs.writeMetadata(
-        GvrsMetadataConstants.Disclaimers, 
+      gvrs.writeMetadata(GvrsMnc.TermsOfUse, 
         "This data should not be used for navigation");
 
       GvrsElement zElement = gvrs.getElement("z");
@@ -539,7 +537,7 @@ public class PackageData {
     b = fbaos.toByteArray();
     String wkt = new String(b, StandardCharsets.UTF_8);
 
-    GvrsMetadata metadataWKT = GvrsMetadataConstants.WKT.newInstance();
+    GvrsMetadata metadataWKT = GvrsMnc.WKT.newInstance();
     metadataWKT.setDescription("Well-Known Text, geographic metadata");
     metadataWKT.setString(wkt);
     gvrs.writeMetadata(metadataWKT);

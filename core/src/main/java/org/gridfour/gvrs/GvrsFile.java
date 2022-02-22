@@ -263,7 +263,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     List<CodecHolder> csList = spec.getCompressionCodecs();
     if (!csList.isEmpty()) {
       String scratch = CodecHolder.formatSpecificationString(csList);
-      GvrsMetadata codecMetadata = GvrsMetadataConstants.GvrsJavaCodecs.newInstance(0);
+      GvrsMetadata codecMetadata = GvrsMnc.GvrsJavaCodecs.newInstance(0);
       codecMetadata.setString(scratch);
       codecMetadata.setDescription("Class paths for Java compressors");
       writeMetadata(codecMetadata);
@@ -274,7 +274,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
         }
         sb.append(holder.getIdentification());
       }
-      GvrsMetadata compCodecMetadata = GvrsMetadataConstants.GvrsCompressionCodecs.newInstance(0);
+      GvrsMetadata compCodecMetadata = GvrsMnc.GvrsCompressionCodecs.newInstance(0);
       compCodecMetadata.setString(sb.toString());
       compCodecMetadata.setDescription("Compession codecs");
       writeMetadata(compCodecMetadata);
@@ -421,7 +421,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     // See if the source file specified Java codecs.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
     GvrsMetadata codecMetadata
-      = readMetadata(GvrsMetadataConstants.GvrsJavaCodecs.name(), 0);
+      = readMetadata(GvrsMnc.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
       String codecStr = codecMetadata.getString();
       codecSpecificationList
@@ -907,7 +907,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @throws IOException in the event of an unrecoverable I/O exception
    */
   public void writeMetadata(
-    GvrsMetadataConstants gmConstant, String content) throws IOException {
+    GvrsMnc gmConstant, String content) throws IOException {
     String name = gmConstant.name();
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException(
