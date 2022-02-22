@@ -666,7 +666,7 @@ class RecordManager {
     metadataRefMap.put(key, mRef);
 
     braf.seek(offset);
-    metadata.write(braf);
+    metadata.write(braf, recordID);
     fileSpaceFinishRecord(offset, nBytes);
   }
 

@@ -203,9 +203,22 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     }
   }
 
-  void write(BufferedRandomAccessFile braf) throws IOException {
+  /**
+   * Write the content of the metadata to the specified file.
+   * In some cases, where the source data does not include a specific
+   * record ID, the calling application may pass in an automatically
+   * assigned ID as an override value.
+   * @param braf a valid output
+   * @param autoID if specified, a valid Integer; otherwise, a null.
+   * @throws IOException in the event of an unhandled I/O error.
+   */
+  void write(BufferedRandomAccessFile braf, Integer autoID) throws IOException {
     braf.leWriteUTF(name);
-    braf.leWriteInt(recordID);
+    if (autoID == null) {
+      braf.leWriteInt(recordID);
+    } else {
+      braf.leWriteInt(autoID);
+    }
     braf.write(dataType.getCodeValue());
     braf.writeBoolean(content.length > 0);
     braf.writeBoolean(descriptionLength > 0);

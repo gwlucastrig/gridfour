@@ -891,9 +891,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
       throw new IllegalArgumentException(
         "Attempt to store metadata with null or empty name specification");
     }
-    GvrsMetadata metadata = new GvrsMetadata(name, 0, GvrsMetadataType.STRING);
+    GvrsMetadata metadata = new GvrsMetadata(name, GvrsMetadataType.STRING);
     metadata.setString(content);
-    writeMetadata(metadata);
+    recordMan.writeMetadata(metadata);
   }
 
   /**
