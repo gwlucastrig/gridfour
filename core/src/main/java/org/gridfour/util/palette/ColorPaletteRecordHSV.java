@@ -68,6 +68,7 @@ import java.awt.Color;
 public class ColorPaletteRecordHSV extends ColorPaletteRecord {
 
   final Color rgb0;
+  final Color rgb1;
 
   final double h0;
   final double s0;
@@ -122,6 +123,8 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
 
     int rgb = Color.HSBtoRGB((float) h0, (float) s0, (float) v0) | 0xff000000;
     rgb0 = new Color(rgb);
+    rgb = Color.HSBtoRGB((float) h1, (float) s1, (float) v1) | 0xff000000;
+    rgb1 = new Color(rgb);
   }
 
   @Override
@@ -157,6 +160,11 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
   @Override
   public Color getBaseColor() {
     return rgb0;
+  }
+
+  @Override
+  public Color getTopColor() {
+    return rgb1;
   }
 
 }

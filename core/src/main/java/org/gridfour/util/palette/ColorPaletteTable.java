@@ -335,6 +335,13 @@ public class ColorPaletteTable {
         z = t*(records[records.length-1].range1-records[0].range0)+records[0].range0;
       }
     }
+    
+    if(z<=this.rangeMin){
+      return records[0].getBaseColor().getRGB();
+    }else if(z>=this.rangeMax){
+      return records[records.length-1].getTopColor().getRGB();
+    }
+    
     int index = Arrays.binarySearch(keys, z);
     if (index >= 0) {
       // an exact match for the lower range value of this color record
@@ -423,6 +430,52 @@ public class ColorPaletteTable {
   public boolean isCategoricalPalette(){
     return this.allRecordsHaveSingleValue;
   }
+  
+  /**
+   * Indicates whether the palette is based on a normalization
+   * scheme in which the color levels run from either 0 to 1 or
+   * -1 to 1 (with a hinge value).
+   * @return true if the palette is normalized; otherwise, false.
+   */
+  public boolean isNormalized(){
+   return this.normalization;
+  }
+  
+  
+  /**
+   * Indicates whether the palette includes a "hinge".
+   * The hinge feature allows a palette to specify a split palette
+   * in which the lower and upper ranges of colors are treated
+   * as separate palettes. Typically, this feature is used for
+   * normalized palettes.
+   * @return true if the palette specifies a hinge; otherwise false.
+   */
+  public boolean isHinged(){
+    return hinge;
+  }
+  
+  /**
+   * For hinged palettes, this method returns the value at which the
+   * color scheme switches from the lower-range palette to the
+   * upper-range palette. The hinge value is only meaningful for
+   * hinged palettes.
+   * @return a finite floating-point value.
+   */
+  public double getHingeValue(){
+    return hingeValue;
+  }
+  
+  /**
+   * For hinged palettes, this method returns the color record index
+   * at which the color scheme switches from the lower-range palette
+   * to the upper range palette. This hinge index is only meaningful for
+   * a hinged palette.
+   * @return a positive integer
+   */
+  public int getHingeIndex(){
+    return hingeIndex;
+  }
+  
   
   /**
    * Gets an in-order list of the records in this palette.

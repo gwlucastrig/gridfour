@@ -48,6 +48,7 @@ import java.awt.Color;
 public class ColorPaletteRecordRGB extends ColorPaletteRecord {
 
   final Color rgb0;
+  final Color rgb1;
   final int r0;
   final int g0;
   final int b0;
@@ -71,6 +72,7 @@ public class ColorPaletteRecordRGB extends ColorPaletteRecord {
   public ColorPaletteRecordRGB(double range0, double range1, Color rgb0, Color rgb1) {
     super(range0, range1);
     this.rgb0 = rgb0;
+    this.rgb1 = rgb1;
     r0 = rgb0.getRed();
     g0 = rgb0.getGreen();
     b0 = rgb0.getBlue();
@@ -103,7 +105,11 @@ public class ColorPaletteRecordRGB extends ColorPaletteRecord {
 
   @Override
   public Color getBaseColor() {
-   return rgb0;
+    return rgb0;
   }
 
+  @Override
+  public Color getTopColor() {
+    return rgb1;
+  }
 }

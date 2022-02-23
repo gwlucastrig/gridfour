@@ -105,6 +105,16 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
    * @return a valid Color instance.
    */
   public abstract Color getBaseColor();
+  
+    /**
+   * Gets the color for the maximum value in the range specified
+   * by this record.  
+   * @return a valid Color instance.
+   */
+  public abstract Color getTopColor();
+  
+  
+  
   /**
    * Indicates whether the specified value z is within the
    * range of values covered by this instance.
