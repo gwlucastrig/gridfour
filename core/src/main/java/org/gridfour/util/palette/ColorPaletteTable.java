@@ -303,7 +303,9 @@ public class ColorPaletteTable {
   /**
    * Gets an ARGB value for the specified parameter, if available.
    * If the color table does not define a color value for the specified
-   * parameter, it will return the ARGB code for a null value.
+   * parameter, this method will return the ARGB code for a null value.
+   * If the value is outside the specified range of values for the
+   * palette, this method will return the ARGB code for a null value.
    *
    * @param zTarget a valid floating point value
    * @return if a color is defined for z, its associated ARGB value;
@@ -335,12 +337,7 @@ public class ColorPaletteTable {
         z = t*(records[records.length-1].range1-records[0].range0)+records[0].range0;
       }
     }
-    
-    if(z<=this.rangeMin){
-      return records[0].getBaseColor().getRGB();
-    }else if(z>=this.rangeMax){
-      return records[records.length-1].getTopColor().getRGB();
-    }
+   
     
     int index = Arrays.binarySearch(keys, z);
     if (index >= 0) {
@@ -403,7 +400,11 @@ public class ColorPaletteTable {
    * @return true if a color is associated with the value; otherwise, false.
    */
   public boolean isCovered(double z) {
-    // The logic for this method is identical to that of getArgb.
+    if (normalization) {
+      return normalizedRangeMin <= z && z <= normalizedRangeMax;
+    } 
+
+    // The search logic for this method is identical to that of getArgb.
     // Please see that method for more details.
     int index = Arrays.binarySearch(keys, z);
     if (index >= 0) {
