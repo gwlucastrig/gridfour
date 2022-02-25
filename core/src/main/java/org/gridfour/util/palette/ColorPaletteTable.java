@@ -300,6 +300,10 @@ public class ColorPaletteTable {
     return rangeMax;
   }
 
+  
+  
+  
+  
   /**
    * Gets an ARGB value for the specified parameter, if available.
    * If the color table does not define a color value for the specified
@@ -373,7 +377,31 @@ public class ColorPaletteTable {
 
     return argbForNull;
   }
-
+  
+    /**
+   * Gets an ARGB value for the specified parameter, if available.
+   * If the target value is outside the range supported by this
+   * palette, the return value will be the ARGB associated with
+   * either the minimum or maximum values supported by the palette.
+   * If the palette features gaps in its coverage, it is still possible
+   * that a target value map fall within one of the gaps.
+   * But no limit is imposed for the range of supported values.
+   *
+   * @param zTarget a valid floating point value
+   * @return if a color is defined for z, its associated ARGB value;
+   * otherwise the null-value code.
+   */
+  public int getArgbUnlimitedRange(double zTarget) {
+    if(zTarget<rangeMin){
+      return getArgb(rangeMin);
+    }else if(zTarget>rangeMax){
+      return getArgb(rangeMax);
+    }
+    return getArgb(zTarget);
+  }
+  
+  
+  
   /**
    * Gets the color associated with the parameter z; if no color is
    * defined for z, the null-data color will be returned.
