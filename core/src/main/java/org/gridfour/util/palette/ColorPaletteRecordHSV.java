@@ -128,6 +128,18 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
   }
 
   @Override
+  ColorPaletteRecord copyWithModifiedRange(double minRangeSpec, double maxRangeSpec) {
+    double[] hsv0 = new double[]{h0, s0, v0};
+    double[] hsv1 = new double[]{h1, s1, v1};
+    ColorPaletteRecord record =  new ColorPaletteRecordHSV(
+      minRangeSpec, maxRangeSpec, hsv0, hsv1);
+    record.setLabel(label);
+    return record;
+  }
+
+  
+  
+  @Override
   public int getArgb(double z) {
     double t = (z - range0) / (range1 - range0);
     if (t < 0) {

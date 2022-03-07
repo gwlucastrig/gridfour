@@ -39,6 +39,7 @@
 package org.gridfour.util.palette;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class ColorPaletteTable {
 
   private final ColorPaletteRecord[] records;
   private final double[] keys;
-  private final boolean normalization;
+  private final boolean normalized;
     private final double normalizedRangeMin;
   private final double normalizedRangeMax;
   private final boolean hinge;
@@ -83,7 +84,7 @@ public class ColorPaletteTable {
     hinge = false;
     hingeValue = 0;
     hingeIndex = 0;
-    normalization = false;
+    normalized = false;
     normalizedRangeMin = 0;
     normalizedRangeMax = 0;
     
@@ -151,6 +152,8 @@ public class ColorPaletteTable {
    * @param background an optional background color; defaults white
    * @param foreground an optional foreground color; defaults to black
    * @param colorForNull an optional color value for null; defaults to null
+   * @param normalized indicates whether the overall range of values for the
+   * internal palette records are normalized.
    * @param hingeFlag indicates whether a hinge value is supplied
    * @param hingeValue indicates the hinge value (ignored if hinge flag is false)
    * @param normalizedRangeMin indicates minimum range
@@ -163,15 +166,16 @@ public class ColorPaletteTable {
     Color colorForNull,
     boolean hingeFlag,
     double hingeValue,
+    boolean normalized,
     double normalizedRangeMin,
     double normalizedRangeMax ) {
+    
     this.hinge = hingeFlag;
     this.hingeValue = hingeValue;
-    this.normalization = true;
+    this.normalized = normalized;
     this.normalizedRangeMin = normalizedRangeMin;
     this.normalizedRangeMax = normalizedRangeMax;
 
-    
     if (recordsList == null || recordsList.isEmpty()) {
       throw new IllegalArgumentException("Null or empty records list");
     }
@@ -214,14 +218,18 @@ public class ColorPaletteTable {
     }
     records[n - 1].termination = true;
 
-        boolean nonZeroRange = false;
-    for(int i=0; i<n; i++){
-      if(records[i].range1>records[i].range0){
-        nonZeroRange = true;
-        break;
+    if (normalized) {
+      allRecordsHaveSingleValue = false;
+    } else {
+      boolean nonZeroRange = false;
+      for (int i = 0; i < n; i++) {
+        if (records[i].range1 > records[i].range0) {
+          nonZeroRange = true;
+          break;
+        }
       }
+      allRecordsHaveSingleValue = !nonZeroRange;
     }
-    allRecordsHaveSingleValue = !nonZeroRange;
     
     rangeMin = records[0].range0;
     rangeMax = records[records.length - 1].range1;
@@ -229,7 +237,7 @@ public class ColorPaletteTable {
     int tempHingeIndex = -1;
     if(hinge){
       for(int i=0; i<records.length; i++){
-        if(records[i].range0==0){
+        if(records[i].range0==hingeValue){
           tempHingeIndex = i;
           break;
         }
@@ -244,7 +252,76 @@ public class ColorPaletteTable {
     hingeIndex = tempHingeIndex;
   }
   
-  
+  /**
+   * Copy the table and modify the range of values to match the specified
+   * parameters. This method is intended to support cases where the range
+   * of values for a palette needs to be stretched or contracted to
+   * match a range of values for input data.
+   * <p>
+   * There are a few important restrictions on what palettes can be
+   * modified using this method:
+   * <ol>
+   * <li> If the palette includes a hinge, then the range of values
+   * must span the hinge value.</li>
+   * <li>At this time, this method cannot be used on categorical palettes.</li>
+   * <li>The minimum and maximum range specifications must be finite values
+   * and the minimum range must be less than the maximum.</li>
+   * </ol>
+   * @param minRangeSpec a finite value less than the maximum range specification.
+   * @param maxRangeSpec a finite value greater than the minimum range specification.
+   * @return a valid color palette table.
+   */
+  public ColorPaletteTable copyWithModifiedRange(double minRangeSpec, double maxRangeSpec) {
+    // check for range
+    if(!Double.isFinite(minRangeSpec) || !Double.isFinite(maxRangeSpec)){
+      throw new IllegalArgumentException(
+        "Non-finite range specifications are not supported");
+    }
+    if(minRangeSpec>=maxRangeSpec){
+      throw new IllegalArgumentException(
+        "Range specifications must be given in ascending order");
+    }
+    if (hinge && (hingeValue <= minRangeSpec || hingeValue >= maxRangeSpec)) {
+      throw new IllegalArgumentException(
+        "The source table includes a hinge value that is not within the specified range "
+        + hingeValue);
+    }
+
+    if (this.isCategoricalPalette()) {
+      throw new IllegalArgumentException(
+        "Range modification for a categorical palette is not currently supported");
+    }
+    
+    List<ColorPaletteRecord> list = new ArrayList<>();
+    if (this.isNormalized()) {
+      list.addAll(Arrays.asList(records));
+    }else{
+       // The current palette is not normalized.  So recompute
+       // the ranges for the records so that the resulting palette will be
+       // normalized.
+       for (ColorPaletteRecord r : records) {
+         double t0 = (r.range0-rangeMin)/(rangeMax-rangeMin);
+         double t1 = (r.range1-rangeMin)/(rangeMax-rangeMin);
+         double r0 = t0 * (maxRangeSpec-minRangeSpec) + minRangeSpec;
+         double r1 = t1 * (maxRangeSpec-minRangeSpec) + minRangeSpec;
+         ColorPaletteRecord rNorm = r.copyWithModifiedRange(r0, r1);
+         list.add(rNorm);
+      }
+    }
+    
+      return new ColorPaletteTable(
+        list,
+        background,
+        foreground,
+        colorForNull,
+        hinge,
+        hingeValue,
+        isNormalized(),
+        minRangeSpec,
+        maxRangeSpec
+      );
+
+  }
   
   /**
    * Gets the application-defined background color.
@@ -281,7 +358,7 @@ public class ColorPaletteTable {
    * @return a valid floating point value.
    */
   public double getRangeMin() {
-    if(normalization){
+    if(normalized){
       return normalizedRangeMin;
     }
     return rangeMin;
@@ -294,7 +371,7 @@ public class ColorPaletteTable {
    * @return a valid floating point value.
    */
   public double getRangeMax() {
-    if(normalization){
+    if(normalized){
       return this.normalizedRangeMax;
     }
     return rangeMax;
@@ -325,7 +402,7 @@ public class ColorPaletteTable {
     //     2)  Most of the time, the z values will be in range, otherwise
     //         we wouldn't be likely to be using the palette in the first place.
     double z = zTarget;
-    if(normalization){
+    if(normalized){
       if(hinge){
          if(z<hingeValue){
            double t = (z-normalizedRangeMin)/(hingeValue-normalizedRangeMin);
@@ -428,7 +505,7 @@ public class ColorPaletteTable {
    * @return true if a color is associated with the value; otherwise, false.
    */
   public boolean isCovered(double z) {
-    if (normalization) {
+    if (normalized) {
       return normalizedRangeMin <= z && z <= normalizedRangeMax;
     } 
 
@@ -467,7 +544,7 @@ public class ColorPaletteTable {
    * @return true if the palette is normalized; otherwise, false.
    */
   public boolean isNormalized(){
-   return this.normalization;
+   return this.normalized;
   }
   
   

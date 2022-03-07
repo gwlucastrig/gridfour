@@ -68,6 +68,9 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
       throw new IllegalArgumentException("Range of values given out-of-order");
     }
   }
+  
+  abstract ColorPaletteRecord copyWithModifiedRange(
+    double minRangeSpec, double maxRangeSpec);
 
   /**
    * Gets an ARGB value for the specified parameter, if available.

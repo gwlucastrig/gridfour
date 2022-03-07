@@ -52,6 +52,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,15 +67,13 @@ import java.util.regex.Pattern;
  * <p>
  * The logic for this class was developed using examples from the
  * Generic Mapping Tools (GMT) project at
- * https://github.com/GenericMappingTools/gmt
- * and from the cpycmap.m project at https://github.com/kakearney/cptcmap-pkg
+ * https://github.com/GenericMappingTools/gmt under the directory
+ * gmt-master/share/cpt.   Also, from the cpycmap.m project at
+ * https://github.com/kakearney/cptcmap-pkg,
+ * 
  * <p>
- * Not all of the GMT files are processed correctly at this time.
- * Some of the GMT files contain named colors such as "darkorange1"
- * and "mediumaquamarine" that are not supported by this package.
- * At this time, the ColorPaletteNameParser class only supports the
- * simple, primary colors from the Java Color class.
- *
+ * At this time, the ColorPaletteTable class does not support CYCLIC
+ * palettes.
  * <p>
  * A discussion of the CPT file format can be found at the
  * "CPT Designer" web page in an article by Tim Makins and MapAbility.com
@@ -87,6 +86,7 @@ public class CptReader {
     HSV
   }
 
+  
   private Color background = Color.white;
   private Color foreground = Color.black;
   private Color colorForNull;
@@ -98,7 +98,7 @@ public class CptReader {
   private double range0;
   private double range1;
 
-  private List<ColorPaletteRecord> records = new ArrayList<>();
+  private final List<ColorPaletteRecord> records = new ArrayList<>();
 
   ColorModel colorModel = ColorModel.RGB;
   int lineIndex;
@@ -108,6 +108,11 @@ public class CptReader {
 
   Pattern hardHingePattern
     = Pattern.compile("\\#.\\s*[Hh][Aa][Rr][Dd]_[Hh][Ii][Nn][Gg][Ee]");
+
+  Pattern softHingePattern
+    = Pattern.compile("\\#.\\s*[Ss][Oo][Ff][Tt]_[Hh][Ii][Nn][Gg][Ee]");
+  
+  ColorPaletteNameParser nameParser = new ColorPaletteNameParser();
 
   /**
    * Constructs a ColorPaletteTable instance using the specifications obtained
@@ -142,12 +147,19 @@ public class CptReader {
   }
 
   ColorPaletteTable read(BufferedReader reader) throws IOException {
-    // reset state variables
+    // In order to enable this class to be reused to read multiple
+    // files, reeset state variables.  
     lineIndex = 0;
     colorModel = ColorModel.RGB;
     background = Color.white;
     foreground = Color.black;
     colorForNull = null;
+    hingeSpecified = false;
+    hingeValue = 0;
+    rangeSpecified = false;
+    range0 = 0;
+    range1 = 0;
+    records.clear();
 
     // read each line of the file and parse as appropriate
     String line;
@@ -170,20 +182,74 @@ public class CptReader {
       throw new IOException("Empty specification");
     }
 
+    // Records are always sorted by range, but just in case
+    // we perform a sort.
+    Collections.sort(records);
+
+    boolean normalizationTestFlag = testForNormalization(records);
+
     if (rangeSpecified) {
-      return new ColorPaletteTable(
-        records, background, foreground, colorForNull,
-        hingeSpecified, hingeValue, range0, range1);
+      if (!normalizationTestFlag) {
+        throw new IOException(
+          "Range specification not value for non-nomalized color table");
+      }
+    } else {
+      ColorPaletteRecord record0 = records.get(0);
+      ColorPaletteRecord record1 = records.get(records.size() - 1);
+      range0 = record0.range0;
+      range1 = record1.range1;
     }
-    return new ColorPaletteTable(records, background, foreground, colorForNull);
+
+    return new ColorPaletteTable(
+      records, background, foreground, colorForNull,
+      hingeSpecified, hingeValue, normalizationTestFlag, range0, range1);
+  }
+
+  private boolean testForNormalization(List<ColorPaletteRecord> records) {
+    ColorPaletteRecord record0 = records.get(0);
+    ColorPaletteRecord record1 = records.get(records.size() - 1);
+    if (record0.range0 == -1 && record1.range1 == 1 && hingeSpecified) {
+      // this may be a hinged palette.  
+      // we need to verify uniform coverage of the range of values.
+      return testForContinuity(records);
+    }
+
+    if (record0.range0 == 0 && record1.range1 == 1.0) {
+      // the records meet the [0,1] range criteria.
+      // we need to verify uniform coverage of the range of values.
+      return testForContinuity(records);
+    }
+    return false;
+  }
+
+  private boolean testForContinuity(List<ColorPaletteRecord> records) {
+    ColorPaletteRecord record0 = records.get(0);
+    ColorPaletteRecord record1;
+    for (int i = 1; i < records.size(); i++) {
+      record1 = records.get(i);
+      if (record0.range1 != record1.range0) {
+        return false;
+      }
+      record0 = record1;
+    }
+    return true;
   }
 
   void processComment(String line) throws IOException {
     // Pretty much anything can go in a comment.
     // The only kind of line we're interested in is an assignment
     // However, there is one special syntax (of course there is)
-    // for HARD_HINGE
+    // for HARD_HINGE or SOFT_HINGE.  At this time, I have not been able
+    // to find documentation for what the difference is between these
+    // two specifications, so they are treated identically.
     Matcher matcher = hardHingePattern.matcher(line);
+    if (matcher.matches()) {
+      hingeSpecified = true;
+      hingeValue = 0;
+      return;
+    }
+
+    matcher = softHingePattern.matcher(line);
     if (matcher.matches()) {
       hingeSpecified = true;
       hingeValue = 0;
@@ -375,7 +441,7 @@ public class CptReader {
     int n = strings.length - index;
     if (n == 1) {
       // it may be a named color
-      Color color = ColorPaletteNameParser.parse(strings[index]);
+      Color color = nameParser.parse(strings[index]);
       if (color != null) {
         return color;
       }
@@ -478,7 +544,7 @@ public class CptReader {
     }
 
     if (Character.isAlphabetic(string.charAt(0))) {
-      Color test = ColorPaletteNameParser.parse(string);
+      Color test = nameParser.parse(string);
       if (test == null) {
         throw new IOException("Unrecognized color value \"" + string + "\" at " + name);
       }
@@ -493,7 +559,7 @@ public class CptReader {
         throw new IOException("Bad value where integer gray value expected at " + name);
       }
     }
-    throw new IOException("Gray tone not supported for non RGB color model at " + name);
+    throw new IOException("Gray tone not supported for non-RGB color model at " + name);
   }
 
   private double[] parseSingleHsvString(String name, String string) throws IOException {
@@ -513,7 +579,7 @@ public class CptReader {
     }
 
     if (Character.isAlphabetic(string.charAt(0))) {
-      Color test = ColorPaletteNameParser.parse(string);
+      Color test = nameParser.parse(string);
       if (test == null) {
         throw new IOException("Unrecognized color value \"" + string + "\" at " + name);
       }
@@ -530,7 +596,7 @@ public class CptReader {
     }
 
     throw new IOException(
-      "Singel value not supported for non HSV color model at " + name);
+      "Value not supported for HSV color model at " + name);
   }
 
 }

@@ -41,11 +41,14 @@
 package org.gridfour.util.palette;
 
 import java.awt.Color;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 
 /**
  * Provides a way of parsing color names and resolving them to a
- * color instance.  Valid color names are based on the specifications
+ * color instance. Valid color names are based on the specifications
  * in Java's Color class.
  * <p>
  * In general, the use of named colors in palette files is discouraged
@@ -54,10 +57,10 @@ import java.util.HashMap;
  */
 public class ColorPaletteNameParser {
 
- 
-  static final HashMap<String, Color> colorMap = new HashMap<>();
+  private final HashMap<String, Color> colorMap = new HashMap<>();
+  private boolean resourceLoaded = false;
 
-  static {
+  public ColorPaletteNameParser() {
     colorMap.put("white", Color.white);
     colorMap.put("black", Color.black);
     colorMap.put("gray", Color.gray);
@@ -78,15 +81,75 @@ public class ColorPaletteNameParser {
   /**
    * Compares the specified a name to recognized colors and, if available,
    * resolve it into a valid instance.
+   *
    * @param name a valid string
    * @return if successful, a valid string; otherwise, a null.
    */
-  public static Color parse(String name){
+  public Color parse(String name) {
     Color color = null;
-    if(name!=null){
+    if (name != null) {
       String key = name.trim().toLowerCase();
       color = colorMap.get(key);
+      if (color == null) {
+        if (!resourceLoaded) {
+          loadResource();
+          color = colorMap.get(key);
+        }
+      }
     }
     return color;
+  }
+
+  private void loadResource() {
+    resourceLoaded = true;
+    try (InputStream ins = getClass().getResourceAsStream("rgb.txt");
+      BufferedInputStream bins = new BufferedInputStream(ins)) {
+      int c;
+      int[] rgb = new int[3];
+      StringBuilder sb = new StringBuilder();
+      while (true) {
+        int v = 0;
+        for (int i = 0; i < 3; i++) {
+          // read stream skipping spaces until finding a digit
+          c = bins.read();
+          while (c == 32) {
+            c = bins.read();
+          }
+          if (c == -1) {
+            return; // End of File, we're done
+          }
+          
+          v = c - 48; // 48 is ASCII code for zero
+          c = bins.read();
+          while (48 <= c && c <= 57) {
+            v = v * 10 + c - 48;
+            c = bins.read();
+          }
+          rgb[i] = v;
+        }
+        // read stream skipping tabs until finding a letter
+        c = bins.read();
+        while (c == '\t') {
+          c = bins.read();
+        }
+        sb.append((char) c);
+        c = bins.read();
+        while (c != '\n') {
+          // The rgb.txt a Unix file and will not include carriage returns
+          sb.append((char) c);
+          c = bins.read();
+        }
+
+        String key = sb.toString().toLowerCase();
+        if (!colorMap.containsKey(key)) {
+          Color color = new Color(rgb[0], rgb[1], rgb[2]);
+          colorMap.put(key, color);
+        }
+        sb.setLength(0);
+      }
+    } catch (IOException ioex) {
+      // Not expected, internal error.  no action required.
+    }
+
   }
 }

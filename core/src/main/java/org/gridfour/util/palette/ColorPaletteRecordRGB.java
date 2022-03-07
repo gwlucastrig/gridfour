@@ -85,6 +85,14 @@ public class ColorPaletteRecordRGB extends ColorPaletteRecord {
   }
 
   @Override
+  ColorPaletteRecord copyWithModifiedRange(double minRangeSpec, double maxRangeSpec){
+       ColorPaletteRecord record = new ColorPaletteRecordRGB(
+         minRangeSpec, maxRangeSpec, rgb0, rgb1);
+       record.setLabel(label);
+       return  record;
+  }
+  
+  @Override
   public int getArgb(double z) {
     double t = (z - range0) / (range1 - range0);
     if (t < 0) {
