@@ -49,59 +49,18 @@ import java.util.HashMap;
 /**
  * Provides a way of parsing color names and resolving them to a
  * color instance. Valid color names are based on the specifications
- * in Java's Color class.
+ * in the classic rgb.txt color file.
  * <p>
  * In general, the use of named colors in palette files is discouraged
  * due to their inherent English-language bias. This class in intended to
  * support those cases where a source palette file uses named colors.
  */
-public class ColorPaletteNameParser {
+public class ColorNameParser {
 
   private final HashMap<String, Color> colorMap = new HashMap<>();
-  private boolean resourceLoaded = false;
 
-  public ColorPaletteNameParser() {
-    colorMap.put("white", Color.white);
-    colorMap.put("black", Color.black);
-    colorMap.put("gray", Color.gray);
-    colorMap.put("lightgray", Color.LIGHT_GRAY);
-    colorMap.put("light_gray", Color.LIGHT_GRAY);
-    colorMap.put("darkgray", Color.DARK_GRAY);
-    colorMap.put("dark_gray", Color.DARK_GRAY);
-    colorMap.put("red", Color.red);
-    colorMap.put("pink", Color.pink);
-    colorMap.put("orange", Color.orange);
-    colorMap.put("yellow", Color.yellow);
-    colorMap.put("green", Color.green);
-    colorMap.put("magenta", Color.magenta);
-    colorMap.put("cyan", Color.cyan);
-    colorMap.put("blue", Color.blue);
-  }
-
-  /**
-   * Compares the specified a name to recognized colors and, if available,
-   * resolve it into a valid instance.
-   *
-   * @param name a valid string
-   * @return if successful, a valid string; otherwise, a null.
-   */
-  public Color parse(String name) {
-    Color color = null;
-    if (name != null) {
-      String key = name.trim().toLowerCase();
-      color = colorMap.get(key);
-      if (color == null) {
-        if (!resourceLoaded) {
-          loadResource();
-          color = colorMap.get(key);
-        }
-      }
-    }
-    return color;
-  }
-
-  private void loadResource() {
-    resourceLoaded = true;
+  public ColorNameParser() {
+    // Load the color specifications from the bundled rgb.txt resource file
     try (InputStream ins = getClass().getResourceAsStream("rgb.txt");
       BufferedInputStream bins = new BufferedInputStream(ins)) {
       int c;
@@ -118,7 +77,7 @@ public class ColorPaletteNameParser {
           if (c == -1) {
             return; // End of File, we're done
           }
-          
+
           v = c - 48; // 48 is ASCII code for zero
           c = bins.read();
           while (48 <= c && c <= 57) {
@@ -150,6 +109,21 @@ public class ColorPaletteNameParser {
     } catch (IOException ioex) {
       // Not expected, internal error.  no action required.
     }
-
   }
+
+  /**
+   * Compares the specified a name to recognized colors and, if available,
+   * resolve it into a valid instance.
+   *
+   * @param name a valid string
+   * @return if successful, a valid string; otherwise, a null.
+   */
+  public Color parse(String name) {
+    if (name != null) {
+      String key = name.trim().toLowerCase();
+      return colorMap.get(key);
+    }
+    return null;
+  }
+
 }

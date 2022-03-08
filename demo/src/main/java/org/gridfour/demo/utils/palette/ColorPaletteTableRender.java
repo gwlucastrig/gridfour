@@ -66,7 +66,7 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import org.gridfour.util.palette.ColorPaletteRecord;
 import org.gridfour.util.palette.ColorPaletteTable;
-import org.gridfour.util.palette.CptReader;
+import org.gridfour.util.palette.ColorPaletteTableReader;
 
 /**
  * A simple demo to parse and plot the content of one or more
@@ -171,7 +171,7 @@ public class ColorPaletteTableRender {
       String name = f.getName();
       System.out.println(name);
       try {
-        CptReader cptReader = new CptReader();
+        ColorPaletteTableReader cptReader = new ColorPaletteTableReader();
         ColorPaletteTable cpt = cptReader.read(f);
         double zMin = cpt.getRangeMin();
         double zMax = cpt.getRangeMax();

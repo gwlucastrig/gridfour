@@ -79,7 +79,7 @@ import java.util.regex.Pattern;
  * "CPT Designer" web page in an article by Tim Makins and MapAbility.com
  * https://www.mapability.com/cptd/help/hs70.htm
  */
-public class CptReader {
+public class ColorPaletteTableReader {
 
   private enum ColorModel {
     RGB,
@@ -112,7 +112,7 @@ public class CptReader {
   Pattern softHingePattern
     = Pattern.compile("\\#.\\s*[Ss][Oo][Ff][Tt]_[Hh][Ii][Nn][Gg][Ee]");
   
-  ColorPaletteNameParser nameParser = new ColorPaletteNameParser();
+  ColorNameParser nameParser = new ColorNameParser();
 
   /**
    * Constructs a ColorPaletteTable instance using the specifications obtained
