@@ -23,19 +23,16 @@
  */
 package org.gridfour.util.palette;
 
-import java.awt.Color;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
- 
-public class ColorNameParserTest {
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-  public ColorNameParserTest() {
+public class ColorPaletteTableReaderTest {
+
+  public ColorPaletteTableReaderTest() {
   }
 
   @BeforeAll
@@ -47,35 +44,18 @@ public class ColorNameParserTest {
   }
 
   @Test
-  public void testAllNamedColors() {
-    ColorNameParser parser = new ColorNameParser();
-
-    try ( InputStream ins = ColorNameParser.class.getResourceAsStream("rgb.txt"); 
-      InputStreamReader inr = new InputStreamReader(ins, "US-ASCII");  
-      BufferedReader reader = new BufferedReader(inr);)
-    {
-      String line;
-         while((line = reader.readLine())!=null){
-        String rgbString = line.substring(0, 12).trim();
-        String name = line.substring(12, line.length()).trim();
-        String []a = rgbString.split(" ");
-        int []rgb = new int[3];
-        int k=0;
-        for(int i=0; i<a.length; i++){
-          if(a[i]!=null && !a[i].isEmpty()){
-             rgb[k++] = Integer.parseInt(a[i].trim());
-          }
-        }
-        Color c = parser.parse(name);
-        if(c==null){
-          fail("Unrecognized color "+name);
-        }
-        assertEquals(rgb[0], c.getRed(),   "Mismatch red value for "+name);
-        assertEquals(rgb[1], c.getGreen(), "Mismatch green value for "+name);
-        assertEquals(rgb[2], c.getBlue(),  "Mismatch blue value for "+name); 
-      }
+  public void testInputStream() {
+    ColorPaletteTableReader reader = new ColorPaletteTableReader();
+    try ( InputStream ins = getClass().getResourceAsStream("OceanBasemap.cpt")) {
+      ColorPaletteTable cpt = reader.read(ins);
+      double minValue = cpt.getRangeMin();
+      double maxValue = cpt.getRangeMax();
+      assertEquals(-11000.0, minValue, "Invalid minimum range value");
+      assertEquals(  8000.0, maxValue, "Invalid maximum range value");
+      int argb = cpt.getArgb(0);
+      assertEquals(argb, 0xffc0c0c0, "Bad mapping for zero");
     } catch (IOException ioex) {
-      fail("Internal error reading rgb.txt "+ioex.getMessage());
+      fail("Internal error reading rgb.txt " + ioex.getMessage());
     }
   }
 }
