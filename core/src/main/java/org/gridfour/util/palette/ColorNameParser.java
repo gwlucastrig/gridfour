@@ -42,9 +42,13 @@ package org.gridfour.util.palette;
 
 import java.awt.Color;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Provides a way of parsing color names and resolving them to a
@@ -124,6 +128,29 @@ public class ColorNameParser {
       return colorMap.get(key);
     }
     return null;
+  }
+  
+  /**
+   * Get a list of all color names supported by this class.
+   * The returned list is not given in any particular order.
+   *
+   * @return a valid list.
+   */
+  public List<String> getNames() {
+    List<String> list = new ArrayList<>();
+    try ( InputStream ins = ColorNameParser.class.getResourceAsStream("rgb.txt"); 
+      InputStreamReader inr = new InputStreamReader(ins, "US-ASCII"); 
+      BufferedReader reader = new BufferedReader(inr))
+    {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        String name = line.substring(12, line.length()).trim();
+        list.add(name);
+      }
+    } catch (IOException ioex) {
+      list.clear();
+    }
+    return list;
   }
 
 }

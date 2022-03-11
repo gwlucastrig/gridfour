@@ -173,7 +173,8 @@ class RecordManager {
       allocMostRecentPos = recordPos;
       braf.seek(allocMostRecentPos);
       allocMostRecentSize = braf.leReadInt();
-      int typeCode = braf.leReadInt();
+      //int typeCode = braf.leReadInt();
+      braf.skipBytes(4);
     }
 
     // The allocation size may be larger than was actually needed
@@ -641,10 +642,8 @@ class RecordManager {
       int maxRecordID = Integer.MIN_VALUE;
       Collection<GvrsMetadataReference> values = metadataRefMap.values();
       for (GvrsMetadataReference ref : values) {
-        if (ref.name.equals(metadata.name)) {
-          if (ref.recordID > maxRecordID) {
+        if (ref.name.equals(metadata.name) && ref.recordID > maxRecordID) {
             maxRecordID = ref.recordID;
-          }
         }
       }
       if (maxRecordID == Integer.MAX_VALUE) {
@@ -670,6 +669,18 @@ class RecordManager {
     fileSpaceFinishRecord(offset, nBytes);
   }
 
+  void deleteMetadata(String name, int recordID) throws IOException {
+      String key = GvrsMetadataReference.formatKey(name, recordID);
+      GvrsMetadataReference tracker = metadataRefMap.get(key);
+      if (tracker != null) {
+        // remove the old metadata
+        fileSpaceDealloc(tracker.offset);
+        metadataRefMap.remove(key);
+      }
+  }
+
+  
+  
   void analyzeAndReport(PrintStream ps) throws IOException {
 
     int nCompressedTiles = 0;

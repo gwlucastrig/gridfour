@@ -836,7 +836,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
    */
   public final GvrsMetadata readMetadata(String name, int recordID) throws IOException {
     if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Unable to retrieve metadata for null or empty User ID");
+      throw new IllegalArgumentException(
+        "Unable to retrieve metadata for null or empty name");
     }
     return recordMan.readMetadata(name, recordID);
   }
@@ -865,6 +866,24 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return result;
   }
 
+   /**
+   * Reads a set of metadata objects that match the name of the specified
+   * enumeration.If no such metadata objects exist,
+   * the resulting list will be empty. Because no record ID is specified,
+   * it is possible that the list may contain multiple entries.
+   *
+   * @param gmConstant a valid, non-null enumeration instance
+   * @return a valid, potentially empty list
+   * @throws IOException in the event of an unrecoverable I/O exception.
+   */
+  public List<GvrsMetadata> readMetadata(GvrsMnc gmConstant) throws IOException {
+        if (gmConstant == null) {
+      throw new IllegalArgumentException(
+        "Unable to retrieve metadata for a null enumeration specification");
+    }
+    return readMetadata(gmConstant.name());
+  }
+  
   /**
    * Store a GvrsMetadata instance providing metadata in the file.
    *
@@ -924,6 +943,17 @@ public class GvrsFile implements Closeable, AutoCloseable {
     writeMetadata(metadata);
   }
 
+  /**
+   * Delete a metadata element from the file.  If no metadata element
+   * can be matched to the specified name and record ID, no action is
+   * performed.
+   * @param name The name of the metadata to be deleted.
+   * @param recordID The record ID of the metadata to be deleted.
+   * @throws IOException in the event of an unrecoverable I/O exception.
+   */
+  public void deleteMetadata(String name, int recordID) throws IOException{
+    recordMan.deleteMetadata(name, recordID);
+  }
   
   boolean loadTile(int tileIndex, boolean writeAccess) throws IOException {
     if (this.isClosed) {

@@ -165,10 +165,10 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
       + 1 // description provided
       + 1; // reserved
     if (content.length > 0) {
-      sumStorage +=  (4 + content.length);
+      sumStorage += 4 + content.length;
     }
     if (descriptionLength > 0) {
-      sumStorage += (2 + descriptionLength);
+      sumStorage += 2 + descriptionLength;
     }
     return sumStorage;
   }

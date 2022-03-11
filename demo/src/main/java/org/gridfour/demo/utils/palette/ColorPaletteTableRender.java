@@ -153,19 +153,23 @@ public class ColorPaletteTableRender {
    * @param outputImageFile specification for an output file to write the image.
    */
   private void renderAndWriteImageFIle(File[] files, File outputImageFile) {
-    int hBar = 15;
-    int wBar = 185;
+    int hBar = 15;    // height of color bar, in pixels
+    int wBar = 185;   // width of color bar, in pixels
     int h = 10 + files.length * (hBar + 10) + 10;
     int w = wBar + 200;
     BufferedImage bImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
     int[] argb = new int[h * w];
-    Arrays.fill(argb, 0xffffffff);
+    Arrays.fill(argb, 0xffffffff);  // fill array with values for Color.white
 
-    boolean[] success = new boolean[files.length];
-    boolean[] normalized = new boolean[files.length];
-    boolean[] hinged = new boolean[files.length];
+    // arrays to collect flags extracted from the palette files during
+    // rendering, later used for labels
+    boolean[] success     = new boolean[files.length];
+    boolean[] normalized  = new boolean[files.length];
+    boolean[] hinged      = new boolean[files.length];
     boolean[] categorical = new boolean[files.length];
 
+    // transfer pixel values from palettes to an integer array argb[]
+    // that will be used to populate a BufferedImage
     for (int k = 0; k < files.length; k++) {
       File f = files[k];
       String name = f.getName();
@@ -181,6 +185,10 @@ public class ColorPaletteTableRender {
         int row0 = 10 + k * (hBar + 10);
         int row1 = row0 + hBar;
 
+        // a categorical palette is one in which each color specification
+        // is related to a single value (i.e. a single category).
+        // For example, discrete-valued (rather than continuous valued)
+        // data types.
         boolean categoricalPalette = cpt.isCategoricalPalette();
         categorical[k] = categoricalPalette;
         if (!categoricalPalette) {

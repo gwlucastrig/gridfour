@@ -489,10 +489,8 @@ public class ColorPaletteTable {
    */
   public Color getColor(double z) {
     int argb = getArgb(z);
-    if (argb == argbForNull) {
-      if (!isCovered(z)) {
-        return null;
-      }
+    if (argb == argbForNull && !isCovered(z)) {
+      return null;
     }
     return new Color(argb);
   }

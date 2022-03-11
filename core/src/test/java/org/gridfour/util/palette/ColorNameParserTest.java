@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2022 gwlucas.
+ * Copyright 2022 Gary W. Lucas
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,8 @@ public class ColorNameParserTest {
   @Test
   public void testAllNamedColors() {
     ColorNameParser parser = new ColorNameParser();
-
+    List<String>nameList = parser.getNames();
+    int index = 0;
     try ( InputStream ins = ColorNameParser.class.getResourceAsStream("rgb.txt"); 
       InputStreamReader inr = new InputStreamReader(ins, "US-ASCII");  
       BufferedReader reader = new BufferedReader(inr);)
@@ -72,7 +74,9 @@ public class ColorNameParserTest {
         }
         assertEquals(rgb[0], c.getRed(),   "Mismatch red value for "+name);
         assertEquals(rgb[1], c.getGreen(), "Mismatch green value for "+name);
-        assertEquals(rgb[2], c.getBlue(),  "Mismatch blue value for "+name); 
+        assertEquals(rgb[2], c.getBlue(),  "Mismatch blue value for "+name);
+        assertEquals(nameList.get(index), name, "Mismatch for color name"+name);
+        index++;
       }
     } catch (IOException ioex) {
       fail("Internal error reading rgb.txt "+ioex.getMessage());

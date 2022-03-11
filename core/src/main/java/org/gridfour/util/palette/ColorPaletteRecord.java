@@ -126,12 +126,7 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
    * @return true if the value is within range; otherwise, false.
    */
   public boolean isCovered(double z) {
-    if (range0 <= z) {
-      if (z < range1 || z == range1 && termination) {
-        return true;
-      }
-    }
-    return false;
+    return range0 <= z && (z < range1 || z == range1 && termination);
   }
 
   /**
