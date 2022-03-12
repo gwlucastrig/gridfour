@@ -83,7 +83,7 @@ public abstract class GvrsElementSpecification {
     }
     this.name = name.trim();
     this.dataType = elementType;
-    
+
     this.continuous = true; // the default
   }
 
@@ -206,7 +206,7 @@ public abstract class GvrsElementSpecification {
    * @param continuous true if the data can be treated as continuous;
    * otherwise, false.
    */
-  void setContinuous(boolean continuous){
+  public void setContinuous(boolean continuous){
     this.continuous= continuous;
   }
 
