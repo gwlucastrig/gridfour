@@ -83,6 +83,8 @@ public abstract class GvrsElementSpecification {
     }
     this.name = name.trim();
     this.dataType = elementType;
+    
+    this.continuous = true; // the default
   }
 
   /**
