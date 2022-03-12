@@ -34,10 +34,10 @@
  *
  * -----------------------------------------------------------------------
  */
-
 package org.gridfour.gvrs;
 
 import java.io.IOException;
+import org.gridfour.coordinates.GridPoint;
 
 /**
  * GVRS Element implementations provide the access point for reading
@@ -131,8 +131,8 @@ public abstract class GvrsElement {
     return description;
   }
 
-    /**
-   * Gets the arbitrary label string.  Intended to provide
+  /**
+   * Gets the arbitrary label string. Intended to provide
    * applications with that ability to label elements using the full
    * range of UTF-8 character sets. In particular, this method is useful
    * for applications requiring specifications in non-western
@@ -170,6 +170,17 @@ public abstract class GvrsElement {
   abstract public int readValueInt(int row, int column) throws IOException;
 
   /**
+   * Reads an integer value from the GVRS raster file. If no data exists
+   * for the coordinates (row and column) specified by the GridPoint instance,
+   * the fill value will be returned.
+   *
+   * @param gridPoint a valid instance
+   * @return an integer value stored at the specified row and column
+   * @throws IOException in the event of a non-recoverable I/O exception.
+   */
+  abstract public int readValueInt(GridPoint gridPoint) throws IOException;
+
+  /**
    * Write an integer value in the GVRS raster file. Because write operations
    * are buffered, this data may be retained in memory for some time before
    * actually being written to the file. However, any data lingering
@@ -188,6 +199,23 @@ public abstract class GvrsElement {
   abstract public void writeValueInt(int row, int column, int value) throws IOException;
 
   /**
+   * Write an integer value in the GVRS raster file. Because write operations
+   * are buffered, this data may be retained in memory for some time before
+   * actually being written to the file. However, any data lingering
+   * in memory will be recorded when the flush() or close() methods are called.
+   * <p>
+   * The value GvrsFileConstants.NULL_DATA_CODE is reserved for the
+   * representation of null data.
+   *
+   * @param gridPoint a valid instance giving coordinates within the dimensions
+   * of the grid.
+   * @param value an integer value.
+   * @throws IOException in the event of an unrecoverable I/O exception.
+   */
+  abstract public void writeValueInt(GridPoint gridPoint, int value) throws IOException;
+
+
+  /**
    * Reads a floating-point value from the GVRS raster file. If no data exists
    * for the specified row and column, the fill value will be returned.
    *
@@ -200,6 +228,18 @@ public abstract class GvrsElement {
    * @throws IOException in the event of a non-recoverable I/O exception.
    */
   abstract public float readValue(int row, int column) throws IOException;
+
+  /**
+   * Reads a floating-point value from the GVRS raster file. If no data exists
+   * for the coordinates (row and column) specified by the GridPoint instance,
+   * the fill value will be returned.
+   *
+   * @param gridPoint a valid instance
+   * @return an floating-point value or the fill value if there is no data
+   * stored at the specified row and column
+   * @throws IOException in the event of a non-recoverable I/O exception.
+   */
+  abstract public float readValue(GridPoint gridPoint) throws IOException;
 
   /**
    * Write a floating-point value to the GVRS raster file. Because write
@@ -218,7 +258,23 @@ public abstract class GvrsElement {
    */
   abstract public void writeValue(int row, int col, float value) throws IOException;
 
-    /**
+  /**
+   * Write a floating-point value to the GVRS raster file. Because write
+   * operations are buffered, this data may be retained in memory for some
+   * time before actually being written to the file. However, any data lingering
+   * in memory will be recorded when the flush() or close() methods are called.
+   * <p>
+   * The value Float.NaN is reserved for the representation of null data.
+   *
+   * @param gridPoint a valid instance giving coordinates within
+   * the limits of the grid.
+   * @param value an floating-point value.
+   * @throws IOException in the event of an unrecoverable I/O exception.
+   */
+  abstract public void writeValue(GridPoint gridPoint, float value) throws IOException;
+
+
+  /**
    * Reads a block (sub-grid) of integer values from the GVRS file based
    * on the grid row, column, and block-size specifications. If successful,
    * the return value from this method is an array giving a sub-grid of values
@@ -484,28 +540,30 @@ public abstract class GvrsElement {
    * This method is intended to allow data providers to indicate to users
    * how the information stored in this file can be used. Continuous data
    * is suitable for interpolation, slope and tangent analysis, and similar
-   * applications. Discontinuous data cannot be interpolated and does not support
+   * applications. Discontinuous data cannot be interpolated and does not
+   * support
    * calculus-based computations.
+   *
    * @return true if the data can be treated as continuous; otherwise false.
    */
-  public boolean isContinuous(){
+  public boolean isContinuous() {
     return continuous;
   }
 
   /**
    * Sets a value indicating whether the data element can be treated
    * as a continuous function over a surface.
+   *
    * @param continuous true if the data can be treated as continuous;
    * otherwise, false.
    */
-  void setContinuous(boolean continuous){
-    this.continuous= continuous;
-  }
-  
-  @Override
-  public String toString(){
-    return name+" "+dataType.name();
+  void setContinuous(boolean continuous) {
+    this.continuous = continuous;
   }
 
+  @Override
+  public String toString() {
+    return name + " " + dataType.name();
+  }
 
 }

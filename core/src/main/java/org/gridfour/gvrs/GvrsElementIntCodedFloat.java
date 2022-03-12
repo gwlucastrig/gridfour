@@ -34,10 +34,10 @@
  *
  * -----------------------------------------------------------------------
  */
-
 package org.gridfour.gvrs;
 
 import java.io.IOException;
+import org.gridfour.coordinates.GridPoint;
 
 /**
  * Provides a concrete definition of a GvrsElementSpecification that specifies
@@ -159,11 +159,34 @@ public class GvrsElementIntCodedFloat extends GvrsElement {
     tileElement.setValue(accessIndices.indexInTile, value);
   }
 
+  @Override
+  public float readValue(GridPoint gridPoint) throws IOException {
+    return readValue(gridPoint.getRowInt(), gridPoint.getColumnInt());
+  }
+
+  @Override
+  public int readValueInt(GridPoint gridPoint) throws IOException {
+    return readValueInt(gridPoint.getRowInt(), gridPoint.getColumnInt());
+  }
+
+
+  @Override
+  public void writeValue(GridPoint gridPoint, float value) throws IOException {
+    writeValue(gridPoint.getRowInt(), gridPoint.getColumnInt(), value);
+  }
+
+  @Override
+  public void writeValueInt(GridPoint gridPoint, int value) throws IOException {
+    writeValue(
+      gridPoint.getRowInt(), gridPoint.getColumnInt(), value);
+  }
+
+ 
   public boolean isValueSupported(float value) {
     if (minValue <= value && value <= maxValue || value == fillValue) {
       return true;
     } else if (Float.isNaN(value)) {
-            if(Float.isNaN(fillValue)){
+      if (Float.isNaN(fillValue)) {
         return true;
       }
       return true;
@@ -184,7 +207,7 @@ public class GvrsElementIntCodedFloat extends GvrsElement {
     if (minValue <= value && value <= maxValue || value == fillValue) {
       return (int) Math.floor((value - offset) * scale + 0.5);
     } else if (Float.isNaN(value)) {
-      if(Float.isNaN(fillValue)){
+      if (Float.isNaN(fillValue)) {
         return fillValueI;
       }
       throw new IllegalArgumentException("Value of NaN is not supported by this instance");
@@ -220,89 +243,95 @@ public class GvrsElementIntCodedFloat extends GvrsElement {
       "GVRS Element: integer-coded float, range [%f,%f], fill %f, scale %f, offset %f",
       minValue, maxValue, fillValue, scale, offset);
   }
-  
 
   /**
    * Gets the value that is assigned to all raster cells
    * that have not been otherwise populated. Some data sources may
    * treat this value as a "no-data" value while others may treat it
-   * as a meaningful default value.   The fill value is specified
+   * as a meaningful default value. The fill value is specified
    * when a GVRS file is first created and may not be modified afterwards.
    * <p>
    * The fill value is not required to be within the range specified
    * by the minimum and maximum values.
+   *
    * @return an arbitrary integer.
    */
-  public int getFillValueInt(){
+  public int getFillValueInt() {
     return fillValueI;
   }
-  
+
   /**
    * Gets the maximum value specified for the range of this instance.
    * The maximum value is specified when a GVRS file is first
    * created and may not be modified afterwards.
+   *
    * @return an arbitrary integer
    */
-  public int getMaxValueInt(){
+  public int getMaxValueInt() {
     return maxValueI;
   }
-  
+
   /**
    * Gets the minimum value specified for the range of this instance.
    * The minimum value is specified when a GVRS file is first created
    * and may not be modified afterwards.
+   *
    * @return an arbitrary integer
    */
-  public int getMinValueInt(){
+  public int getMinValueInt() {
     return minValueI;
   }
-  
-  
-   /**
-   * Gets the minimum floating-point value specified for the range of this instance.
+
+  /**
+   * Gets the minimum floating-point value specified for the range of this
+   * instance.
    * The minimum value is specified when a GVRS file is first created
    * and may not be modified afterwards.
    * <p>
-   * The value returned from this method is computed from the 
+   * The value returned from this method is computed from the
    * minimum integer value, scale, and offset specified for this instance.
    * Due to the limits of numerical precision, it may not be a perfect
    * match for an integral value even in cases where that is expected.
+   *
    * @return a computed floating-point value
    */
-  public float getMinValue(){
+  public float getMinValue() {
     return minValue;
   }
-  
-   /**
-   * Gets the maximum floating-point value specified for the range of this instance.
+
+  /**
+   * Gets the maximum floating-point value specified for the range of this
+   * instance.
    * The maximum value is specified when a GVRS file is first created
    * and may not be modified afterwards.
    * <p>
-   * The value returned from this method is computed from the 
+   * The value returned from this method is computed from the
    * minimum integer value, scale, and offset specified for this instance.
    * Due to the limits of numerical precision, it may not be a perfect
    * match for an integral value even in cases where that is expected.
+   *
    * @return a computed floating-point value
    */
-  public float getMaxValue(){
+  public float getMaxValue() {
     return maxValue;
   }
-  
+
   /**
    * Gets the value that is assigned to all raster cells
    * that have not been otherwise populated. Some data sources may
    * treat this value as a "no-data" value while others may treat it
-   * as a meaningful default value.   The fill value is specified
+   * as a meaningful default value. The fill value is specified
    * when a GVRS file is first created and may not be modified afterwards.
    * <p>
    * The fill value is not required to be within the range specified
    * by the minimum and maximum values.
    * <p>
    * A fill value is allowed to be Float.NAN.
+   *
    * @return an arbitrary floating-point value.
    */
-  public float getFillValue(){
+  public float getFillValue() {
     return fillValue;
   }
-  
+
 }

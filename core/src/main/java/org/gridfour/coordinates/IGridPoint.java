@@ -47,14 +47,14 @@ public interface IGridPoint {
    *
    * @return an integer index
    */
-  int getIntegerColumn();
+  int getColumnInt();
 
   /**
    * Gets the row index associated with the grid point
    *
    * @return an integer index
    */
-  int getIntegerRow();
+  int getRowInt();
 
   /**
    * Get the row value associated with the grid point

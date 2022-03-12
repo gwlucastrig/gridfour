@@ -84,7 +84,7 @@ public class GridPoint implements IGridPoint {
    * @return an integer index
    */
   @Override
-  public int getIntegerRow() {
+  public int getRowInt() {
     return iRow;
   }
 
@@ -94,7 +94,7 @@ public class GridPoint implements IGridPoint {
    * @return an integer index
    */
   @Override
-  public int getIntegerColumn() {
+  public int getColumnInt() {
     return iColumn;
   }
 }
