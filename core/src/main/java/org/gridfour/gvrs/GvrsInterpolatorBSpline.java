@@ -44,6 +44,7 @@
  */
 package org.gridfour.gvrs;
 
+import org.gridfour.coordinates.GridPoint;
 import java.io.IOException;
 import org.gridfour.interpolation.InterpolationResult;
 import org.gridfour.interpolation.InterpolationTarget;
@@ -147,14 +148,14 @@ public class GvrsInterpolatorBSpline {
      * @throws java.io.IOException in the event of an IO error
      */
     public double z(double x, double y) throws IOException {
-        GvrsGridPoint g;
+        GridPoint g;
         if (geoCoordinates) {
             g = gvrs.mapGeographicToGridPoint(y, x);
         } else {
             g = gvrs.mapModelToGridPoint(x, y);
         }
-        double r = g.row;
-        double c = g.column;
+        double r = g.getRow();
+        double c = g.getColumn();
 
         return zInterp(r, c, 0);
     }
@@ -174,7 +175,7 @@ public class GvrsInterpolatorBSpline {
      * @throws IOException in the event of an IO error
      */
     public InterpolationResult zNormal(double x, double y) throws IOException {
-        GvrsGridPoint g;
+        GridPoint g;
         double dx = du;
         double dy = dv;
         if (geoCoordinates) {
@@ -187,8 +188,8 @@ public class GvrsInterpolatorBSpline {
         } else {
             g = gvrs.mapModelToGridPoint(x, y);
         }
-        double row = g.row;
-        double col = g.column;
+        double row = g.getRow();
+        double col = g.getColumn();
 
         float z[] = loadSamples(row, col);
         if (z == null) {
@@ -236,14 +237,14 @@ public class GvrsInterpolatorBSpline {
      * @throws IOException in the event of an IO error
      */
     public double zTest(double x, double y, int index) throws IOException {
-        GvrsGridPoint g;
+        GridPoint g;
         if (geoCoordinates) {
             g = gvrs.mapGeographicToGridPoint(y, x);
         } else {
             g = gvrs.mapModelToGridPoint(x, y);
         }
-        double row = g.row;
-        double col = g.column;
+        double row = g.getRow();
+        double col = g.getColumn();
         int row0 = (int) row;
         int col0 = (int) col;
         double ct = col - col0;  // cell t

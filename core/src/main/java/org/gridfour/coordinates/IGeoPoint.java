@@ -33,7 +33,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.gvrs;
+package org.gridfour.coordinates;
 
 /**
  * Defines methods for specifying a point in geographic coordinates.
@@ -44,7 +44,7 @@ package org.gridfour.gvrs;
  * It is assumed that all coordinates are given in a consistent datum and
  * that the management of datums is left to the application.
  */
-public interface IGvrsGeoPoint {
+public interface IGeoPoint {
 
   /**
    * Gets the latitude stored in the GeoPoint.

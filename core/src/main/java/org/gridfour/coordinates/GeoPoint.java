@@ -27,27 +27,51 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.gvrs;
+package org.gridfour.coordinates;
+
+import org.gridfour.coordinates.IGeoPoint;
 
 /**
- * Defines methods for specifying a point in a real-valued
- * Cartesian coordinate system.
+ * Defines methods and elements for specifying a point in geographic
+ * coordinates.
+ * <p>
+ * <b>About Datums</b>
+ * <p>
+ * At this time, this interface makes no provision for specifying datum.
+ * It is assumed that all coordinates are given in a consistent datum and
+ * that the management of datums is left to the application.
  */
-public interface IGvrsModelPoint {
+public class GeoPoint implements IGeoPoint {
 
   /**
-   * Gets the real-valued X coordinate for this mode point
-   *
-   * @return a real-valued coordinate
+   * A latitude value, in degrees.
    */
-  double getX();
+  final double latitude;
 
   /**
-   * Gets the real-valued Y coordinate for this point in the
-   * model coordinate system.
-   *
-   * @return a real-valued coordinate
+   * A longitude value, in degrees.
    */
-  double getY();
- 
+  final double longitude;
+  
+  /**
+   * Standard constructor.
+   * @param latitude a coordinate in degrees
+   * @param longitude a coordinate in degrees
+   */
+  public GeoPoint(double latitude, double longitude){
+    this.latitude = latitude;
+    this.longitude = longitude;
+  }
+
+  @Override
+  public double getLatitude() {
+    return latitude;
+  }
+
+  @Override
+  public double getLongitude() {
+    return longitude;
+  }
+
+
 }

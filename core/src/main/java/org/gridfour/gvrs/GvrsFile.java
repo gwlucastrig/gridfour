@@ -38,6 +38,9 @@
  */
 package org.gridfour.gvrs;
 
+import org.gridfour.coordinates.GeoPoint;
+import org.gridfour.coordinates.GridPoint;
+import org.gridfour.coordinates.ModelPoint;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -322,10 +325,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
     int version = braf.readUnsignedByte();
     int subversion = braf.readUnsignedByte();
     braf.skipBytes(2); // unused, reserved bytes
-    if (version != GvrsFileSpecification.VERSION
-      || subversion != GvrsFileSpecification.SUB_VERSION) {
+    if(!GvrsFileSpecification.isVersionSupported(version, subversion)){
       throw new IOException("Incompatible version " + version + "." + subversion
-        + ".  Expected "
+        + ".  Latest version is "
         + GvrsFileSpecification.VERSION
         + "."
         + GvrsFileSpecification.SUB_VERSION);
@@ -360,7 +362,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
     // skip the currently reserved block of 16 bytes
     braf.skipBytes(16);
-    spec = new GvrsFileSpecification(braf);
+    spec = new GvrsFileSpecification(braf, version, subversion);
 
     if (spec.isChecksumEnabled) {
       braf.seek(sizeOfHeaderInBytes - 4);
@@ -734,7 +736,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @param column a column (may be a non-integral value)
    * @return a valid instance
    */
-  public GvrsModelPoint mapGridToModelPoint(double row, double column) {
+  public ModelPoint mapGridToModelPoint(double row, double column) {
     return spec.mapGridToModelPoint(row, column);
   }
 
@@ -753,7 +755,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @return an array giving row and column in that order; the results may be
    * non-integral values.
    */
-  public GvrsGridPoint mapModelToGridPoint(double x, double y) {
+  public GridPoint mapModelToGridPoint(double x, double y) {
    return spec.mapModelToGridPoint(x, y);
   }
   
@@ -776,7 +778,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @param longitude a valid floating-point coordinate
    * @return a valid instance.
    */
-  public GvrsGridPoint mapGeographicToGridPoint(double latitude, double longitude) {
+  public GridPoint mapGeographicToGridPoint(double latitude, double longitude) {
     return spec.mapGeographicToGridPoint(latitude, longitude);
   }
   
@@ -796,7 +798,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @param column the column coordinate (may be non-integral)
    * @return a valid instance.
    */
-  public GvrsGeoPoint mapGridToGeoPoint(double row, double column) {
+  public GeoPoint mapGridToGeoPoint(double row, double column) {
     return spec.mapGridToGeoPoint(row, column);
   }
   

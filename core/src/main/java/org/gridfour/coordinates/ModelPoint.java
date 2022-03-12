@@ -27,40 +27,46 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.gvrs;
+package org.gridfour.coordinates;
 
 /**
- * Defines methods for specifying a point in the
- * grid coordinate system.
+ * Provides methods and elements for specifying a point in a real-valued
+ * Cartesian coordinate system.
  */
-public interface IGridPoint {
+public class ModelPoint implements IModelPoint {
+
+  final double x;
+  final double y;
 
   /**
-   * Get the column value associated with the grid point
-   *
-   * @return a potentially non-integral column value
+   * Standard constructor
+   * @param x a finite, real-valued coordinate
+   * @param y a finite, real=valued coordinate
    */
-  double getColumn();
+  public ModelPoint(double x, double y){
+    this.x = x;
+    this.y = y;
+  }
+  /**
+   * Get the real-valued X coordinate for this mode point
+   *
+   * @return a real-valued coordinate
+   */
+  @Override
+  public double getX() {
+    return x;
+  }
 
   /**
-   * Gets the column index associated with the grid point
+   * Get the real-valued Y coordinate for this point in the
+   * model coordinate system.
    *
-   * @return an integer index
+   * @return a real-valued coordinate
    */
-  int getIntegerColumn();
+  @Override
+  public double getY() {
+    return y;
+  }
 
-  /**
-   * Gets the row index associated with the grid point
-   *
-   * @return an integer index
-   */
-  int getIntegerRow();
 
-  /**
-   * Get the row value associated with the grid point
-   *
-   * @return a potentially non-integral row value
-   */
-  double getRow();
- 
 }

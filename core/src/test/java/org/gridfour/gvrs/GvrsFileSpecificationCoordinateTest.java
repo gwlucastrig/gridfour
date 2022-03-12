@@ -23,6 +23,8 @@
  */
 package org.gridfour.gvrs;
 
+import org.gridfour.coordinates.GridPoint;
+import org.gridfour.coordinates.ModelPoint;
 import java.awt.geom.AffineTransform;
 import java.io.File;
 import java.io.IOException;
@@ -79,10 +81,10 @@ public class GvrsFileSpecificationCoordinateTest {
     //
     //  Remember that the grid coordinates are given in order row, column
     //  (not x, y).
-    GvrsModelPoint mp = spec.mapGridToModelPoint(0, 0);
+    ModelPoint mp = spec.mapGridToModelPoint(0, 0);
     assertEquals(0, mp.getX(), 1.0e-9, "corner 0, x coordinate mismatch");
     assertEquals(my0, mp.getY(), 1.0e-9, "corner 0, y coordinate mismatch");
-    GvrsGridPoint gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    GridPoint gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
     assertEquals(0, gp.getRow(), 1.0e-9, "corner 0, row coordinate mismatch");
     assertEquals(0, gp.getColumn(), 1.0e-9, "corner 0, col coordinate mismatch");
 
@@ -131,10 +133,10 @@ public class GvrsFileSpecificationCoordinateTest {
     //     |      |
     //     0 ---- 1
     //
-    GvrsModelPoint mp = spec.mapGridToModelPoint(0, 0);
+    ModelPoint mp = spec.mapGridToModelPoint(0, 0);
     assertEquals(mx0, mp.getX(), 1.0e-9, "corner 0, x coordinate mismatch");
     assertEquals(my0, mp.getY(), 1.0e-9, "corner 0, y coordinate mismatch");
-    GvrsGridPoint gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
+    GridPoint gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
     assertEquals(0, gp.getRow(), 1.0e-9, "corner 0, row coordinate mismatch");
     assertEquals(0, gp.getColumn(), 1.0e-9, "corner 0, col coordinate mismatch");
 

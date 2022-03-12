@@ -38,6 +38,9 @@
  */
 package org.gridfour.gvrs;
 
+import org.gridfour.coordinates.GeoPoint;
+import org.gridfour.coordinates.GridPoint;
+import org.gridfour.coordinates.ModelPoint;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import org.gridfour.compress.CodecDeflate;
@@ -68,8 +71,17 @@ public class GvrsFileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 0;
- 
+  static final byte SUB_VERSION = 1;
+
+  /**
+   * Major version for this instance (set by constructor or when read from a file)
+   */
+  final int version;
+
+  /**
+   * Minor version for this instance (set by constructor or when read from file).
+   */
+  final int subversion;
 
   /**
    * Time of construction for the specification
@@ -154,19 +166,19 @@ public class GvrsFileSpecification {
   // the size of the file to 32 GB.  At this time, we have not implemented
   // the extended file size option.
   boolean isExtendedFileSizeEnabled = false;
-  
+
   boolean isChecksumEnabled = false;
 
   /**
    * Indicates whether tile-data is to be compressed when the tile is saved.
    */
   private boolean dataCompressionEnabled;
- 
+
   /**
    * An arbitrary, application-assigned identification string.
    */
   String productLabel;
- 
+
 
   GvrsGeometryType geometryType  = GvrsGeometryType.Unspecified;
 
@@ -269,11 +281,13 @@ public class GvrsFileSpecification {
     int nRowsInTile,
     int nColumnsInTile) {
 
+    version = VERSION;
+    subversion = SUB_VERSION;
 
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
     this.nColsInRaster = nColumnsInRaster;
-    
+
      if (nRowsInTile == 0 && nColumnsInTile == 0) {
       // GVRS interprets zero values for rows-in-tile and columns-in-tile
       // as indicating that this class should compute values based
@@ -336,10 +350,10 @@ public class GvrsFileSpecification {
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
 
     nCellsInTile = nRowsInTile * nColsInTile;
-    
+
     initDefaultCodecList();
   }
-  
+
    /**
    * Construct a specification for creating a GVRS raster with the indicated
    * dimensions.  The internal tile sizes are automatically computed.
@@ -357,6 +371,9 @@ public class GvrsFileSpecification {
    * @param s a valid instance of GvrsFileSpecification.
    */
   public GvrsFileSpecification(GvrsFileSpecification s) {
+    version = VERSION;
+    subversion = SUB_VERSION;
+
     timeCreated = s.timeCreated;
     nRowsInRaster = s.nRowsInRaster;
     nColsInRaster = s.nColsInRaster;
@@ -382,7 +399,7 @@ public class GvrsFileSpecification {
     y1 = s.y1;
     cellSizeX = s.cellSizeX;
     cellSizeY = s.cellSizeY;
-    
+
     m2r00 = s.m2r00;
     m2r01 = s.m2r01;
     m2r02 = s.m2r02;
@@ -457,9 +474,9 @@ public class GvrsFileSpecification {
    * from 90 east, across the International Date Line, to 90 west.
    * <p>
    * This method also populates the internal AffineTransform that can be
-   * used for transforming coordinates between the geographic and grid 
+   * used for transforming coordinates between the geographic and grid
    * coordinate systems.
-   * 
+   *
    * @param latRow0 the latitude of the first row in the grid
    * @param lonCol0 the longitude of the first column of the raster (column
    * 0).
@@ -490,7 +507,7 @@ public class GvrsFileSpecification {
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     checkGeographicCoverage();
- 
+
     m2r00 = 1 / cellSizeX;
     m2r01 = 0;
     m2r02 = -x0 * m2r00;
@@ -535,11 +552,11 @@ public class GvrsFileSpecification {
   /**
    * Sets the real-valued model to a Cartesian coordinate system.
    * Note that this setting is mutually exclusive with the geographic
-   * coordinate system setting. The last setting applied replaces 
+   * coordinate system setting. The last setting applied replaces
    * any earlier settings.
    * <p>
    * This method populates the internal AffineTransform that can be
-   * used for transforming coordinates between the model and grid 
+   * used for transforming coordinates between the model and grid
    * coordinate systems.
    *
    * @param x0 the X coordinate of the lower-left corner of the raster and the
@@ -573,12 +590,12 @@ public class GvrsFileSpecification {
     this.y1 = y1;
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
-    
+
     // It would be easy enough to compute the r2m matric directly, but
     // testing showed that when we used the Java createInverse() method
     // and multiplied the two matrices togther, the values from createInverse
     // actually produced a result closer to the identify matrix.
-   
+
     m2r00 = 1 / cellSizeX;
     m2r01 = 0;
     m2r02 = -x0 * m2r00;
@@ -615,7 +632,7 @@ public class GvrsFileSpecification {
     this.productLabel = label;
   }
 
-  
+
   /**
    * Gets the product-label string associated with this specification and the
    * GvrsFile that is created from it. The label is supplied by the
@@ -630,12 +647,17 @@ public class GvrsFileSpecification {
   /**
    * Construct a specification based on content read from the specified file
    *
+   * @param version the major-version value obtained from the source file
+   * @param subversion the minor-version value obtained from the source file
    * @param braf a valid instance, positioned to start of the specification
    * data.
    * @throws IOException in the event of an unrecoverable I/O error
    */
   @SuppressWarnings("PMD.UnusedLocalVariables")
-  GvrsFileSpecification(BufferedRandomAccessFile braf) throws IOException {
+  GvrsFileSpecification(BufferedRandomAccessFile braf, int version, int subversion) throws IOException {
+    this.version = version;
+    this.subversion = subversion;
+
     initDefaultCodecList();
 
     timeCreated = System.currentTimeMillis();
@@ -645,7 +667,7 @@ public class GvrsFileSpecification {
     nRowsInTile = braf.leReadInt();
     nColsInTile = braf.leReadInt();
     nCellsInTile = nRowsInTile * nColsInTile;
-    
+
     // Skip the space reserved for future variations of the tile index
     braf.skipBytes(5*4);
 
@@ -656,7 +678,7 @@ public class GvrsFileSpecification {
     isChecksumEnabled = braf.readBoolean();
     int geometryCode = braf.readUnsignedByte();
     geometryType = GvrsGeometryType.valueOf(geometryCode);
- 
+
     int coordinateSystem = braf.readUnsignedByte();
     if (coordinateSystem == 1) {
       isCartesianCoordinateSystemSet = true;
@@ -670,7 +692,7 @@ public class GvrsFileSpecification {
     y1 = braf.leReadDouble();
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
-    
+
     m2r00 = braf.leReadDouble();
     m2r01 = braf.leReadDouble();
     m2r02 = braf.leReadDouble();
@@ -684,16 +706,16 @@ public class GvrsFileSpecification {
     r2m10 = braf.leReadDouble();
     r2m11 = braf.leReadDouble();
     r2m12 = braf.leReadDouble();
-       
+
     modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
     rasterToModel = new AffineTransform(r2m00, r2m10, r2m01, r2m11, r2m02, r2m12);
-    
+
     if (isGeographicCoordinateSystemSet) {
       checkGeographicCoverage();
     }
-    
-    
-    
+
+
+
 
     // The source file may supply keys for compression encoder types.
     // Some keys are part of the GVRS specification, but others may
@@ -718,7 +740,15 @@ public class GvrsFileSpecification {
       boolean hasDescription = braf.readBoolean();
       boolean hasUnitOfMeasure = braf.readBoolean();
       boolean hasLabel = braf.readBoolean();
-      
+      boolean isContinuous;
+      if(version==1 && subversion==0){
+         // the legacy version does not have flags
+         isContinuous = true;
+      }else{
+         isContinuous = braf.readBoolean();
+         braf.skipBytes(7); // reserved for future use
+      }
+
       if (dataTypeCode < 0 || dataTypeCode > 3) {
         throw new IOException(
           "Unsupported value for data-type code: " + dataTypeCode);
@@ -755,7 +785,7 @@ public class GvrsFileSpecification {
           float offset = braf.leReadFloat();
           int iMinValue = braf.leReadInt();  // NO PMD diagnostic
           int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
-          int iFillValue = braf.leReadInt(); // NO PMD diagnostic    
+          int iFillValue = braf.leReadInt(); // NO PMD diagnostic
           GvrsElementSpecificationIntCodedFloat icfSpec
             = new GvrsElementSpecificationIntCodedFloat(
               name, scale, offset,
@@ -783,16 +813,16 @@ public class GvrsFileSpecification {
       if(hasUnitOfMeasure){
         spec.setUnitOfMeasure(braf.leReadUTF());
       }
-      
+
       if(hasLabel){
         spec.setLabel(braf.leReadUTF());
       }
     }
- 
+
     productLabel = braf.leReadUTF();
   }
 
-  
+
   /**
    * Writes the part of the GvrsFile header that includes the parameters
    * from this specification.
@@ -828,7 +858,7 @@ public class GvrsFileSpecification {
     braf.leWriteDouble(y0);
     braf.leWriteDouble(x1);
     braf.leWriteDouble(y1);
-    
+
     // write the AffineTransform parameters.  We store the parameters
     // for both the real-value-to-grid (m2r) and the grid-to-real (r2m)
     // matrices even though one could easily be computed from the other.
@@ -867,6 +897,9 @@ public class GvrsFileSpecification {
       braf.writeBoolean(e.description!=null); // has description
       braf.writeBoolean(e.unitOfMeasure!=null); // has unit of measure
       braf.writeBoolean(e.label!=null); // has a label
+      braf.writeBoolean(e.continuous);
+      byte []zeroes = new byte[7];
+      braf.writeFully(zeroes);
       braf.leWriteUTF(e.name);
       switch (dataType) {
         case SHORT:
@@ -910,7 +943,7 @@ public class GvrsFileSpecification {
         braf.leWriteUTF(e.label);
       }
     }
-    
+
     if(productLabel==null){
       braf.leWriteShort(0);
     }else{
@@ -1037,7 +1070,7 @@ public class GvrsFileSpecification {
     this.isExtendedFileSizeEnabled = extendedFileSizeEnabled;
   }
 
-  /** 
+  /**
    * Indicates that the computation of checksums is enabled
    * @return true if checksums are enabled; otherwise, false.
    */
@@ -1053,7 +1086,7 @@ public class GvrsFileSpecification {
   public void setChecksumEnabled(boolean checksumEnabled) {
     this.isChecksumEnabled = checksumEnabled;
   }
- 
+
   /**
    * Indicates whether a geographic coordinate system has been set for mapping
    * input coordinates to raster coordinates and vice versa.
@@ -1421,7 +1454,7 @@ public class GvrsFileSpecification {
     ps.format("Data compression:       %s%n",
       isDataCompressionEnabled() ? "enabled" : "disabled");
     ps.println("");
-    
+
     ps.println("Elements");
     int namLen = 4; // for "name"
     int labLen = 5; // for "label"
@@ -1440,12 +1473,12 @@ public class GvrsFileSpecification {
         labLen = label.length();
       }
      }
-      
+
     String elmfmt = String.format(
       "   %%-%d.%ds   %%-%d.%ds   %%-%d.%ds   %%s%%n",
       namLen, namLen, labLen, labLen, typLen,typLen);
     ps.format(elmfmt, "Name", "Label", "Type", "Description");
-      
+
     for(GvrsElementSpecification eSpec: this.elementSpecifications){
       String dType = eSpec.dataType.name();
       String name = eSpec.getName();
@@ -1489,8 +1522,8 @@ public class GvrsFileSpecification {
     }
     elementSpecifications.add(specification);
   }
-   
-  
+
+
   /**
    * Gets an affine transform for mapping real-valued "model" coordinates
    * to the raster grid. The model coordinates may be based on either the
@@ -1501,9 +1534,9 @@ public class GvrsFileSpecification {
   public AffineTransform getTransformModelToRaster(){
     return modelToRaster;
   }
-  
+
     /**
-   * Gets an affine transform for mapping grid (raster) coordinates to 
+   * Gets an affine transform for mapping grid (raster) coordinates to
    * real-valued "model" coordinates. The model coordinates may be based
    * on either the Cartesian or Geographic specifications, or
    * specified arbitrarily by  the application.
@@ -1512,8 +1545,8 @@ public class GvrsFileSpecification {
   public AffineTransform getTransformRasterToModel(){
     return modelToRaster;
   }
-  
-  
+
+
   private void applyTransforms(){
     double [] m =new double[6];
     modelToRaster.getMatrix(m);
@@ -1542,7 +1575,7 @@ public class GvrsFileSpecification {
     c[6] = 0;
     c[7] = nRowsInRaster-1;
     rasterToModel.transform(c, 0, c, 8, 4);
-    
+
     x0 = c[8];
     y0 = c[9];
     x1 = x0;
@@ -1571,19 +1604,19 @@ public class GvrsFileSpecification {
       throw new IllegalArgumentException(
         "Null specification for model-to-raster transform");
     }
-    
+
     modelToRaster = a;
     try{
       rasterToModel = a.createInverse();
     } catch (NoninvertibleTransformException ex) {
       throw new IllegalArgumentException("Specified transform is not invertible");
     }
-    
+
     applyTransforms();
-     
+
   }
-  
-  
+
+
   /**
    * Set the transform for mapping model coordinates to the raster grid.
    * @param a  a valid, well-conditioned transformation matrix.
@@ -1593,18 +1626,18 @@ public class GvrsFileSpecification {
       throw new IllegalArgumentException(
         "Null specification for raster-to-model transform");
     }
-    
+
     rasterToModel = a;
     try{
       modelToRaster = a.createInverse();
     } catch (NoninvertibleTransformException ex) {
       throw new IllegalArgumentException("Specified transform is not invertible");
     }
-    
+
      applyTransforms();
   }
-  
-  
+
+
   /**
    * Gets the minimum X coordinate in the model-coordinate-system
    * (a Cartesian coordinate system, or longitude for a geographic coordinate
@@ -1614,8 +1647,8 @@ public class GvrsFileSpecification {
   public double getX0(){
     return x0;
   }
-  
-  
+
+
   /**
    * Gets the minimum Y coordinate in the model-coordinate-system
    * (a Cartesian coordinate system, or latitude for a geographic coordinate
@@ -1625,8 +1658,8 @@ public class GvrsFileSpecification {
   public double getY0(){
     return y0;
   }
-  
-   
+
+
   /**
    * Gets the maximum X coordinate in the model-coordinate-system
    * (a Cartesian coordinate system, or longitude for a geographic coordinate
@@ -1636,8 +1669,8 @@ public class GvrsFileSpecification {
   public double getX1(){
     return x1;
   }
-  
-  
+
+
   /**
    * Gets the maximum Y coordinate in the model-coordinate-system
    * (a Cartesian coordinate system, or latitude for a geographic coordinate
@@ -1647,9 +1680,9 @@ public class GvrsFileSpecification {
   public double getY1(){
     return y1;
   }
-  
-  
-   
+
+
+
   /**
    * Map grid coordinates to model coordinates storing the resulting x and y
    * values in a GvrsModelPoint instance. If the row or column values are outside
@@ -1663,13 +1696,13 @@ public class GvrsFileSpecification {
    * @param column a column (may be a non-integral value)
    * @return a valid instance
    */
-  public GvrsModelPoint mapGridToModelPoint(double row, double column) {
+  public ModelPoint mapGridToModelPoint(double row, double column) {
     double x = column*r2m00 + row*r2m01 + r2m02;
     double y = column*r2m10 + row*r2m11 + r2m12;
-    return new GvrsModelPoint(x,y);
+    return new ModelPoint(x,y);
   }
 
-  
+
   /**
    * Map model coordinates to grid coordinates storing the computed row and
    * column in an instance of GvrsGridPoint. If the x or y coordinate is outside
@@ -1684,14 +1717,14 @@ public class GvrsFileSpecification {
    * @return an array giving row and column in that order; the results may be
    * non-integral values.
    */
-  public GvrsGridPoint mapModelToGridPoint(double x, double y) {
+  public GridPoint mapModelToGridPoint(double x, double y) {
     double col = x*m2r00 + y*m2r01 + m2r02; // left-and-right direction
     double row = x*m2r10 + y*m2r11 + m2r12; // up-and-down direction
-    return new GvrsGridPoint(row, col);
+    return new GridPoint(row, col);
   }
-  
-  
-  
+
+
+
   /**
    * Map geographic coordinates to grid coordinates storing the row and column
    * in an array in that order. If the latitude or longitude is outside the
@@ -1709,15 +1742,15 @@ public class GvrsFileSpecification {
    * @param longitude a valid floating-point coordinate
    * @return a valid instance.
    */
-  public GvrsGridPoint mapGeographicToGridPoint(double latitude, double longitude) {
+  public GridPoint mapGeographicToGridPoint(double latitude, double longitude) {
     double row = (nRowsInRaster - 1) * (latitude - y0) / (y1 - y0);  // row
     double delta = Angle.to360(longitude - x0);
     double column = (nColsInRaster - 1) * delta / (x1 - x0);
-    GvrsGridPoint point = new GvrsGridPoint(row, column);
+    GridPoint point = new GridPoint(row, column);
     return point;
   }
-  
-  
+
+
   /**
    * Map grid coordinates to geographic coordinates storing the resulting
    * latitude and longitude in an instance of GvrsGeoPoint.
@@ -1733,18 +1766,18 @@ public class GvrsFileSpecification {
    * @param column the column coordinate (may be non-integral)
    * @return a valid instance.
    */
-  public GvrsGeoPoint mapGridToGeoPoint(double row, double column) {
+  public GeoPoint mapGridToGeoPoint(double row, double column) {
     double lat = (y1 - y0) * row / (nRowsInRaster - 1) + y0;
     double lon = (x1 - x0) * column / (nColsInRaster - 1) + x0;
-    return new GvrsGeoPoint(lat, lon);
+    return new GeoPoint(lat, lon);
   }
 
-  
-  
-  
+
+
+
    /**
    * Map Cartesian coordinates to grid coordinates storing the row and column
-   * in an array in that order. 
+   * in an array in that order.
    * <p>
    * This method is deprecated. Please use mapModelToGridPoint() instead.
    *
@@ -1763,7 +1796,7 @@ public class GvrsFileSpecification {
 
   /**
    * Map grid coordinates to Cartesian coordinates storing the resulting x and
-   * y values in an array in that order. 
+   * y values in an array in that order.
    * <p>
    * This method is deprecated. Please use mapGridToModelPoint() instead.
    * @param row a row (may be a non-integral value)
@@ -1781,7 +1814,7 @@ public class GvrsFileSpecification {
 
   /**
    * Map geographic coordinates to grid coordinates storing the row and column
-   * in an array in that order.  
+   * in an array in that order.
    * <p>
    * This method is deprecated. Please use mapGeographicToGridPoint() instead.
    *
@@ -1801,7 +1834,7 @@ public class GvrsFileSpecification {
 
   /**
    * Map grid coordinates to Geographic coordinates storing the resulting
-   * row and column values in an array in that order.  
+   * row and column values in an array in that order.
    * <p>
    * This method is deprecated. Please use mapGridToGeoPoint() instead.
    *
@@ -1816,6 +1849,15 @@ public class GvrsFileSpecification {
     c[1] = (x1 - x0) * column / (nColsInRaster - 1) + x0;
     return c;
   }
-  
-  
+
+  /**
+   * Determines whether a specified version is supported by the GVRS library
+   * @param version the major-version specification
+   * @param subversion the minor-version specification
+   * @return true if the version is supported; otherwise false.
+   */
+  static boolean isVersionSupported(int version, int subversion){
+    return version==1 && (subversion==0 || subversion==1);
+  }
+
 }

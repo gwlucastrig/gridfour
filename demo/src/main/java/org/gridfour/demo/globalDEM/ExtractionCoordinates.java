@@ -38,8 +38,8 @@ package org.gridfour.demo.globalDEM;
 import java.io.IOException;
 import java.io.PrintStream;
 import org.gridfour.gvrs.GvrsFileSpecification;
-import org.gridfour.gvrs.GvrsGeoPoint;
-import org.gridfour.gvrs.GvrsGridPoint;
+import org.gridfour.coordinates.GeoPoint;
+import org.gridfour.coordinates.GridPoint;
 import org.gridfour.util.Angle;
 import ucar.ma2.Array;
 import ucar.nc2.Variable;
@@ -203,7 +203,7 @@ class ExtractionCoordinates {
    */
   void checkSpecificationTransform(PrintStream ps, GvrsFileSpecification spec) {
     for (int i = 0; i < cLat.length; i++) {
-     GvrsGridPoint g = spec.mapGeographicToGridPoint(cLat[i], lonColMin);
+     GridPoint g = spec.mapGeographicToGridPoint(cLat[i], lonColMin);
       double absDelta = Math.abs(g.getRow() - i);
       if (absDelta > Math.abs(latSpacingDeg) / 1.0e+4) {
         ps.format("Error in latitude to grid conversion, lat %f, row %d%n", cLat[i], i);
@@ -211,7 +211,7 @@ class ExtractionCoordinates {
       }
     }
     for (int i = 0; i < cLat.length; i++) {
-      GvrsGeoPoint  g = spec.mapGridToGeoPoint(i, 0);
+      GeoPoint  g = spec.mapGridToGeoPoint(i, 0);
       double absDelta = Math.abs(cLat[i] - g.getLatitude());
       if (absDelta > Math.abs(latSpacingDeg) / 1.0e+4) {
         ps.format("Error grid to latitude conversion, lat %f, row %d%, computed %f%n", 
@@ -226,7 +226,7 @@ class ExtractionCoordinates {
 
     for (int i = 0; i < nColumns; i++) {
       int testIndex = i;
-      GvrsGridPoint grid = spec.mapGeographicToGridPoint(latRowMin, cLon[i]);
+      GridPoint grid = spec.mapGeographicToGridPoint(latRowMin, cLon[i]);
       if (i == nColumns - 1 && spec.doGeographicCoordinatesBracketLongitude()) {
         // the last column is also the first column.
         testIndex = 0;
@@ -243,7 +243,7 @@ class ExtractionCoordinates {
         // the last column is also the first column.
         testLon = cLon[0];
       }
-      GvrsGeoPoint g = spec.mapGridToGeoPoint(0, i);
+      GeoPoint g = spec.mapGridToGeoPoint(0, i);
       double absDelta = Math.abs(Angle.to180(g.getLongitude() - testLon));
       if (absDelta > Math.abs(lonSpacingDeg) / 1.0e+4) {
         ps.format("Error grid to longitude conversion, lat %f, column %d%n", cLat[i], i);

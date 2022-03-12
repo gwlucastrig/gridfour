@@ -27,72 +27,40 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.gvrs;
+package org.gridfour.coordinates;
 
 /**
- * Provides elements and methods specifying a point in the
+ * Defines methods for specifying a point in the
  * grid coordinate system.
  */
-public class GvrsGridPoint implements IGridPoint {
-
-  final double row;
-  final double column;
-  final int iRow;
-  final int iColumn;
-
-  /**
-   * Standard constructor.
-   * <p>
-   * The grid coordinates are a real-valued and potentially fractional
-   * row and column value.
-   *
-   * @param row a finite, real-valued coordinate in the grid system
-   * @param column a finite, real-valued coordinate in the grid system
-   */
-  public GvrsGridPoint (double row, double column) {
-    this.row = row;
-    this.column = column;
-    this.iRow = (int) (row + 0.5);
-    this.iColumn = (int) (column + 0.5);
-  }
-
-  /**
-   * Get the row value associated with the grid point
-   *
-   * @return a potentially non-integral row value
-   */
-  @Override
-  public double getRow() {
-    return row;
-  }
+public interface IGridPoint {
 
   /**
    * Get the column value associated with the grid point
    *
    * @return a potentially non-integral column value
    */
-  @Override
-  public double getColumn() {
-    return column;
-  }
-
-  /**
-   * Gets the row index associated with the grid point
-   *
-   * @return an integer index
-   */
-  @Override
-  public int getIntegerRow() {
-    return iRow;
-  }
+  double getColumn();
 
   /**
    * Gets the column index associated with the grid point
    *
    * @return an integer index
    */
-  @Override
-  public int getIntegerColumn() {
-    return iColumn;
-  }
+  int getIntegerColumn();
+
+  /**
+   * Gets the row index associated with the grid point
+   *
+   * @return an integer index
+   */
+  int getIntegerRow();
+
+  /**
+   * Get the row value associated with the grid point
+   *
+   * @return a potentially non-integral row value
+   */
+  double getRow();
+ 
 }

@@ -27,46 +27,27 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.gvrs;
+package org.gridfour.coordinates;
 
 /**
- * Provides methods and elements for specifying a point in a real-valued
+ * Defines methods for specifying a point in a real-valued
  * Cartesian coordinate system.
  */
-public class GvrsModelPoint implements IGvrsModelPoint {
-
-  final double x;
-  final double y;
+public interface IModelPoint {
 
   /**
-   * Standard constructor
-   * @param x a finite, real-valued coordinate
-   * @param y a finite, real=valued coordinate
-   */
-  public GvrsModelPoint(double x, double y){
-    this.x = x;
-    this.y = y;
-  }
-  /**
-   * Get the real-valued X coordinate for this mode point
+   * Gets the real-valued X coordinate for this mode point
    *
    * @return a real-valued coordinate
    */
-  @Override
-  public double getX() {
-    return x;
-  }
+  double getX();
 
   /**
-   * Get the real-valued Y coordinate for this point in the
+   * Gets the real-valued Y coordinate for this point in the
    * model coordinate system.
    *
    * @return a real-valued coordinate
    */
-  @Override
-  public double getY() {
-    return y;
-  }
-
-
+  double getY();
+ 
 }

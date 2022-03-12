@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2021  G. Lucas     Created  
+ * 10/2021  G. Lucas     Created
  *
  * Notes:
  *
@@ -67,6 +67,7 @@ public abstract class GvrsElementSpecification {
   String description;
   String unitOfMeasure;
   String label;
+  boolean continuous;
 
   /**
    * Standard constructor used to populate base elements.
@@ -93,8 +94,8 @@ public abstract class GvrsElementSpecification {
   public String getName(){
     return name;
   }
-  
-  
+
+
   /**
    * Sets an arbitrary description string. Intended to allow applications to
    * provide documentation for elements.
@@ -147,7 +148,7 @@ public abstract class GvrsElementSpecification {
     return unitOfMeasure;
   }
 
-  
+
   /**
    * Sets an arbitrary unit of label string. Intended to provide
    * applications with that ability to label elements using the full
@@ -180,11 +181,39 @@ public abstract class GvrsElementSpecification {
     return label;
   }
 
-  
+
+  /**
+   * Indicates whether the data element can be treated as a continuous
+   * function over a surface or behaves in a non-continuous (discrete-valued)
+   * manner.
+   * <p>
+   * This method is intended to allow data providers to indicate to users
+   * how the information stored in this file can be used. Continuous data
+   * is suitable for interpolation, slope and tangent analysis, and similar
+   * applications. Discontinuous data cannot be interpolated and does not support
+   * calculus-based computations.
+   * @return true if the data can be treated as continuous; otherwise false.
+   */
+  public boolean isContinuous(){
+    return continuous;
+  }
+
+  /**
+   * Sets a value indicating whether the data element can be treated
+   * as a continuous function over a surface.
+   * @param continuous true if the data can be treated as continuous;
+   * otherwise, false.
+   */
+  void setContinuous(boolean continuous){
+    this.continuous= continuous;
+  }
+
+
   protected void copyApplicationData(GvrsElementSpecification spec) {
     description = spec.description;
     unitOfMeasure = spec.unitOfMeasure;
     label = spec.label;
+    continuous = spec.continuous;
   }
 
   /**
