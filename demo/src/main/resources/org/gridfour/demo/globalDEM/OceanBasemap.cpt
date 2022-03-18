@@ -1,0 +1,24 @@
+
+#  The palette used for bathymetry is based on Esri Inc.'s 
+#  "Ocean Basemap color style" which was obtained from the following address  
+#  https:// www.esri.com/arcgis-blog/products/mapping/mapping/esri-ocean-basemap-color-style-available-for-download/
+#  We are grateful to Esri for generously posting these colors in
+#  a non-copyrighted document.
+#  Colors are specified for indicated depths (column 0) starting
+#  at a depth of 11000 meters.
+#
+# COLOR_MODEL = RGB
+
+
+ -11000  56  91 140   -9500  43 102 166
+  -9500  43 102 166   -8500  66 124 179
+  -8500  66 124 179   -7000  82 143 204
+  -7000  82 143 204   -6000  98 159 217
+  -6000  98 159 217   -4500 134 179 235
+  -4500 134 179 235   -3000 149 188 230
+  -3000 149 188 230   -1000 170 207 242
+  -1000 170 207 242    -400 181 215 247
+   -400 181 215 247    -150 191 224 255
+   -150 191 224 255     -35 209 233 255
+    -35 209 233 255       0 255 255 255
+      0 192 192 192    8000 255 255 255

@@ -41,7 +41,7 @@ is the Gridfour Virtual Raster Store (GVRS), a grid-based data
 compression and file management system. The GVRS module
 helps Java applications manage raster (grid) data in situations where the size of the data exceeds what
 could reasonably be kept in memory. It also provides a file-based utility for
-the persistent storage of data between application sessions anf for long-term archiving. And, finally, it includes custom
+the persistent storage of data between application sessions and for long-term archiving. And, finally, it includes custom
 data compression that significantly reduces the storage size required for
 raster data. 
 
