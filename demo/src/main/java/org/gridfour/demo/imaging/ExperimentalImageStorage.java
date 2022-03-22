@@ -33,6 +33,7 @@ import java.util.SimpleTimeZone;
 import javax.imageio.ImageIO;
 import org.apache.commons.imaging.ImageReadException;
 import org.apache.commons.imaging.Imaging;
+import org.gridfour.compress.ICompressionEncoder;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
 import org.gridfour.gvrs.GvrsElementSpecification;
@@ -40,6 +41,7 @@ import org.gridfour.gvrs.GvrsElementSpecificationInt;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.lsop.LsCodecUtility;
+import org.gridfour.lsop.LsEncoder12;
 
 /**
  * Provides and experimental application intended to explore options for
@@ -64,11 +66,14 @@ public class ExperimentalImageStorage {
    */
   public static void main(String[] args) throws IOException, ImageReadException {
     File input = new File(args[0]);
+    boolean expediteCompressor = args.length > 1;
     Date date = new Date();
     SimpleDateFormat sdFormat
       = new SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault());
     sdFormat.setTimeZone(new SimpleTimeZone(0, "UTC"));
-    System.out.format("Processing image from %s%n", input.getName());
+    System.out.format("Processing image from:  %s%n", input.getName());
+    System.out.format("Compression expediter:  %s%n",
+      expediteCompressor ? "enabled" : "disabled");
     System.out.format("Date/time of test: %s (UTC)%n", sdFormat.format(date));
     System.out.println("");
 
@@ -193,6 +198,8 @@ public class ExperimentalImageStorage {
       GvrsElement rElem = gvrs.getElement("r");
       GvrsElement gElem = gvrs.getElement("g");
       GvrsElement bElem = gvrs.getElement("b");
+      setCompressorExpedited(gvrs, expediteCompressor);
+
       for (int iRow = 0; iRow < nRows; iRow++) {
         for (int iCol = 0; iCol < nCols; iCol++) {
           int rgb = argb[iRow * nCols + iCol];
@@ -230,6 +237,8 @@ public class ExperimentalImageStorage {
       GvrsElement YElem = gvrs.getElement("Y");
       GvrsElement CoElem = gvrs.getElement("Co");
       GvrsElement CgElem = gvrs.getElement("Cg");
+      setCompressorExpedited(gvrs, expediteCompressor);
+
       for (int iRow = 0; iRow < nRows; iRow++) {
         for (int iCol = 0; iCol < nCols; iCol++) {
           int rgb = argb[iRow * nCols + iCol];
@@ -312,4 +321,19 @@ public class ExperimentalImageStorage {
     System.out.println("");
   }
 
+  private static void setCompressorExpedited(GvrsFile gvrs, boolean expedited) {
+    // In testing on photographic images, we discovered that the LSOP compressor
+    // almost never used the Deflate compression results but instead
+    // preferred the Huffman encoding.  So if expediting is specified,
+    // this method will obtain the instance of the LSOP encoder from
+    // the GvrsFile and set it to not use Deflate.  This action will save
+    // time since the Deflate results will not have to be computed.
+    // However, in cases where Deflate would have been the better choice,
+    // this setting will degrade compression results.
+    ICompressionEncoder lsopEncoder = gvrs.getCompressionEncoder(
+      LsCodecUtility.LSOP_CODEC_ID);
+    if (expedited && lsopEncoder instanceof LsEncoder12) {
+      ((LsEncoder12) lsopEncoder).setDeflateEnabled(false);
+    }
+  }
 }
