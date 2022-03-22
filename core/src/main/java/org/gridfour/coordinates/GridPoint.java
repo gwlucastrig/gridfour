@@ -21,15 +21,13 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 02/2022  G. Lucas     Created  
+ * 02/2022  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.coordinates;
-
-import org.gridfour.coordinates.IGridPoint;
 
 /**
  * Provides elements and methods specifying a point in the

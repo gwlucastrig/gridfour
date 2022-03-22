@@ -190,4 +190,39 @@ class CodecMaster {
         return implementsFloats;
     }
 
+   
+  /**
+   * Gets an instance of the compression encoder that matches the
+   * specified CODEC name, if any.
+   * @param name a valid, non-empty string.
+   * @return if matched, a valid instance; otherwise, a null
+   */
+  ICompressionEncoder getCompressionEncoder(String name) {
+    if (name != null && !name.isEmpty()) {
+      for (CodecHolder codec : codecList) {
+        if (name.equals(codec.getIdentification())) {
+          return codec.getEncoderInstance();
+        }
+      }
+    }
+    return null;
+  }
+ 
+    /**
+   * Gets an instance of the compression encoder that matches the
+   * specified CODEC name, if any.
+   * @param name a valid, non-empty string.
+   * @return if matched, a valid instance; otherwise, a null
+   */
+  ICompressionDecoder getCompressionDecoder(String name) {
+    if (name != null && !name.isEmpty()) {
+      for (CodecHolder codec : codecList) {
+        if (name.equals(codec.getIdentification())) {
+          return codec.getDecoderInstance();
+        }
+      }
+    }
+    return null;
+  }
+  
 }

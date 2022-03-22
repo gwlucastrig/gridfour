@@ -817,6 +817,8 @@ public class GvrsFileSpecification {
       if(hasLabel){
         spec.setLabel(braf.leReadUTF());
       }
+
+      spec.setContinuous(isContinuous);
     }
 
     productLabel = braf.leReadUTF();

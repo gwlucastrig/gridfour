@@ -33,6 +33,19 @@
  * 07/2020  G. Lucas     Created
  *
  * Notes:
+ *  Test on this class show that for digital elevation models and
+ * photographic imagery, the Huffman encoder is preferred over the
+ * Deflate encoder a majority of the time.  I speculate that the
+ * predictor does so well that the residuals are essentially noise.
+ * Now, the values of the residuals do not follow any predictable pattern
+ * in terms of the sequence in which they are stored, so the advantages
+ * that are usually associated with Deflate are unavailable.
+ * But if the magnitude of the residuals does have an do have an
+ * identifiable frequency distribution (with smaller residuals being more
+ * common), the Huffman would be effective. In the absense of patterns,
+ * Deflate essentially devolves into a Huffman encoder. But our Huffman
+ * is an unusually efficient one in terms of reducing the overhead for the
+ * symbol table, so in such cases it is preferred over Deflate.
  *
  * -----------------------------------------------------------------------
  */
@@ -62,10 +75,27 @@ public class LsEncoder12 implements ICompressionEncoder {
   private final LsOptimalPredictor12 optimalPredictor
     = new LsOptimalPredictor12();
 
+  private boolean deflateEnabled = true;
+
+  /**
+   * Enables or disables the use of Deflate in the compression sequence.
+   * When Deflate is enabled, this class will attempt to compress data
+   * using both both Huffman and Deflate compression. For data with good
+   * predictability, the Huffman encoding will often achieve better compression
+   * results than the Deflate method. For such data types, disabling
+   * Deflate may expedite processing with only a negligible increase
+   * in output size.
+   *
+   * @param enabled true if Deflate is enabled; otherwise, false.
+   */
+  public void setDeflateEnabled(boolean enabled) {
+    this.deflateEnabled = enabled;
+  }
+
   @Override
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
-    LsOptimalPredictorResult result
-      = optimalPredictor.encode(nRows, nCols, values);
+    LsOptimalPredictorResult result = optimalPredictor.encode(
+      nRows, nCols, values);
     if (result == null) {
       return null;
     }
@@ -81,47 +111,67 @@ public class LsEncoder12 implements ICompressionEncoder {
       result.coefficients,
       result.nInitializerCodes,
       result.nInteriorCodes,
-      1);
-
-
-    Deflater deflater = new Deflater(6);
-    deflater.setInput(result.initializerCodes, 0, result.nInitializerCodes);
-    deflater.finish();
-    byte[] initPack = new byte[result.nInitializerCodes + 128];
-    int initN = deflater.deflate(initPack, 0, initPack.length, Deflater.FULL_FLUSH);
-    if (initN <= 0) {
-      // deflate failed
-      return null;
-    }
-
-    deflater = new Deflater(6);
-    deflater.setInput(result.interiorCodes, 0, result.nInteriorCodes);
-    deflater.finish();
-    byte[] insidePack = new byte[result.nInteriorCodes + 128];
-    int insideN = deflater.deflate(insidePack, 0, insidePack.length, Deflater.FULL_FLUSH);
-    if (insideN <= 0) {
-      // deflate failed
-      return null;
-    }
-
-    byte[] packing = new byte[header.length + initN + insideN];
-
-    System.arraycopy(header, 0, packing, 0, header.length);
-    System.arraycopy(initPack, 0, packing, header.length, initN);
-    System.arraycopy(insidePack, 0, packing, header.length + initN, insideN);
+      LsHeader.COMPRESSION_TYPE_HUFFMAN);
 
     HuffmanEncoder huffman = new HuffmanEncoder();
     BitOutputStore store = new BitOutputStore();
     huffman.encode(store, result.nInitializerCodes, result.initializerCodes);
     huffman.encode(store, result.nInteriorCodes, result.interiorCodes);
     int huffLength = store.getEncodedTextLengthInBytes();
-    if (huffLength < initN + insideN) {
-      packing = new byte[header.length + huffLength];
-      byte[] huff = store.getEncodedText();
-      header[header.length - 1] = 0; // the last byte gives the generic packing
-      System.arraycopy(header, 0, packing, 0, header.length);
-      System.arraycopy(huff, 0, packing, header.length, huff.length);
+
+    byte[] packing = new byte[header.length + huffLength];
+    byte[] huff = store.getEncodedText();
+    System.arraycopy(header, 0, packing, 0, header.length);
+    System.arraycopy(huff, 0, packing, header.length, huff.length);
+
+    if (!deflateEnabled) {
+      return packing;
     }
+
+    // Recall that the LSOP encoding requires two separate sequences
+    //   1. the initialization sequence for the outside rows and columns
+    //      of the grid
+    //   2. the predictor sequence for the inside of the grid, the
+    //      part which can be populated using the predictor.
+    // Experimentation showed that the Deflate output was smaller if
+    // the two sequences were compressed separately. I hypothesize that
+    // the reason for this is that the staistical properties of the two
+    // sequences are different enough that combining them in a single
+    // output adds overhead to the Deflate output and reduces compressibility.
+    //
+    // Even though we will store the encoding for the initialization
+    // before the encoding for the interior, we process the interior first.
+    // This approach gives us a chance for an early exit if the interior
+    // is larger than the Huffman coding.  If it is, there is no point
+    // in processing the initialization because Deflate is not going to be used.
+    Deflater deflater = new Deflater(6);
+    deflater.setInput(result.interiorCodes, 0, result.nInteriorCodes);
+    deflater.finish();
+    byte[] insidePack = new byte[result.nInteriorCodes + 128];
+    int insideN = deflater.deflate(insidePack, 0, insidePack.length, Deflater.FULL_FLUSH);
+    if (insideN <= 0 || insideN >= huffLength) {
+      // either the deflate failed (insideN<=0) or the Deflate results for
+      // the inside region of the grid is larger than Huffman.
+      // In either case, we're done.
+      return packing;
+    }
+
+    deflater = new Deflater(6);
+    deflater.setInput(result.initializerCodes, 0, result.nInitializerCodes);
+    deflater.finish();
+    byte[] initPack = new byte[result.nInitializerCodes + 128];
+    int initN = deflater.deflate(initPack, 0, initPack.length, Deflater.FULL_FLUSH);
+    if (initN <= 0 || initN + insideN >= huffLength) {
+      // either the deflate failed (insideN<=0) or the Deflate results for
+      // the overall grid is larger than Huffman.
+      return packing;
+    }
+
+    packing = new byte[header.length + initN + insideN];
+    header[header.length - 1] = LsHeader.COMPRESSION_TYPE_DEFLATE;
+    System.arraycopy(header, 0, packing, 0, header.length);
+    System.arraycopy(initPack, 0, packing, header.length, initN);
+    System.arraycopy(insidePack, 0, packing, header.length + initN, insideN);
 
     return packing;
   }

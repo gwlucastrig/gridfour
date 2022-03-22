@@ -21,15 +21,13 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 02/2022  G. Lucas     Created  
+ * 02/2022  G. Lucas     Created
  *
  * Notes:
  *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.coordinates;
-
-import org.gridfour.coordinates.IGeoPoint;
 
 /**
  * Defines methods and elements for specifying a point in geographic
@@ -52,7 +50,7 @@ public class GeoPoint implements IGeoPoint {
    * A longitude value, in degrees.
    */
   final double longitude;
-  
+
   /**
    * Standard constructor.
    * @param latitude a coordinate in degrees

@@ -55,6 +55,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.SimpleTimeZone;
 import java.util.UUID;
+import org.gridfour.compress.ICompressionDecoder;
+import org.gridfour.compress.ICompressionEncoder;
 
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.GridfourCRC32C;
@@ -90,7 +92,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   private final File file;
   private final GvrsFileSpecification spec;
-  private final CodecMaster rasterCodec;
+  private final CodecMaster codecMaster;
   private final BufferedRandomAccessFile braf;
   private final UUID uuid;
   private boolean isClosed;
@@ -204,7 +206,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     this.openedForWriting = true;
     this.file = file;
     this.spec = new GvrsFileSpecification(specification);
-    this.rasterCodec = new CodecMaster(specification.codecList);
+    this.codecMaster = new CodecMaster(specification.codecList);
     braf = new BufferedRandomAccessFile(file, "rw");
 
     timeModified = System.currentTimeMillis();
@@ -259,7 +261,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.leWriteLong(filePosContent);
     braf.flush();
 
-    recordMan = new RecordManager(spec, rasterCodec, braf, filePosContent);
+    recordMan = new RecordManager(spec, codecMaster, braf, filePosContent);
     tileCache = new RasterTileCache(spec, recordMan);
     setTileCacheSize(GvrsCacheSize.Medium);
 
@@ -382,8 +384,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
       openedForWriting = true;
     }
 
-    rasterCodec = new CodecMaster(spec.codecList);
-    recordMan = new RecordManager(spec, rasterCodec, braf, filePosContent);
+    codecMaster = new CodecMaster(spec.codecList);
+    recordMan = new RecordManager(spec, codecMaster, braf, filePosContent);
     long savePos = braf.getFilePosition();
     if (filePosFreeSpaceIndexRecord > 0) {
       recordMan.readFreespaceIndexRecord(filePosFreeSpaceIndexRecord);
@@ -430,7 +432,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
         = CodecSpecification.specificationStringParse(codecStr);
     }
     spec.integrateCodecSpecificationsFromFile(codecSpecificationList);
-    rasterCodec.setCodecs(spec.codecList);
+    codecMaster.setCodecs(spec.codecList);
 
     for (GvrsElementSpecification eSpec : spec.elementSpecifications) {
       GvrsElement e = eSpec.makeElement(this);
@@ -1149,4 +1151,46 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return spec.mapGridToGeographic(row, column);
   }
 
+  /**
+   * Gets an instance of the compression encoder that matches the
+   * specified CODEC name, if any. In practice, a GvrsFile object will
+   * create only one instance of a particular compression encoder.
+   * Thus multiple calls to this method will return the same instance
+   * of a compression encoder.
+   * <p>
+   * The purpose of this method is to provide encoder instances
+   * to application code to support operations such as statistics
+   * and analysis reporting, and post-compression logging.
+   * It may be particularly useful to developers implementing their
+   * own compression classes.
+   *
+   * @param name a valid, non-empty string.
+   * @return if matched, a valid instance; otherwise, a null
+   */
+  public ICompressionEncoder getCompressionEncoder(String name) {
+    return codecMaster.getCompressionEncoder(name);
+  }
+
+  /**
+   * Gets an instance of the compression decoder that matches the
+   * specified CODEC name, if any. In practice, a GvrsFile object will
+   * create only one instance of a particular compression decoder.
+   * Thus multiple calls to this method will return the same instance
+   * of a compression decoder.
+   * <p>
+   * The purpose of this method is to provide decoder instances
+   * to application code to support operations such as statistics
+   * and analysis reporting, and post-compression logging.
+   * It may be particularly useful to developers implementing their
+   * own compression classes.
+   *
+   * @param name a valid, non-empty string.
+   * @return if matched, a valid instance; otherwise, a null
+   */
+  public ICompressionDecoder getCompressionDecoder(String name) {
+    return codecMaster.getCompressionDecoder(name);
+  }
+
+
+  
 }

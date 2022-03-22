@@ -44,6 +44,8 @@ package org.gridfour.lsop;
  */
 public class LsHeader {
 
+  public final static int COMPRESSION_TYPE_HUFFMAN = 0;
+  public final static int COMPRESSION_TYPE_DEFLATE = 1;
   protected final int codecIndex;
   protected final int nCoefficients;
   protected final int seed;
@@ -101,8 +103,8 @@ public class LsHeader {
    * to at least nCoefficients
    * @param nInitializationCodes the number of M32 codes in the initializer
    * @param nInteriorCodes the number of M32 codes in the interior
-   * @param genericCompression which generic compression method was used
-   * to compress the M32 code sequence
+   * @param compressionTypeCode indicates which standard compression method
+   * (Huffman or Deflate) was used to compress the M32 code sequence
    * @return an array in the exact size of the packing.
    */
   public static byte[] packHeader(
@@ -112,7 +114,7 @@ public class LsHeader {
     float[] u,
     int nInitializationCodes,
     int nInteriorCodes,
-    int genericCompression) {
+    int compressionTypeCode) {
     // the header is 15+N*4 bytes:
     //   for 8 predictor coefficients:  47 bytes
     //   for 12 predictor coefficients: 63 bytes
@@ -133,9 +135,11 @@ public class LsHeader {
     }
     offset = packInteger(packing, offset, nInitializationCodes);
     offset = packInteger(packing, offset, nInteriorCodes);
-    packing[offset++] = 1;
+    packing[offset++] = (byte)compressionTypeCode;
     return packing;
   }
+  
+ 
 
   private int unpackInteger(byte[] packing, int offset) {
     return (packing[offset] & 0xff)
