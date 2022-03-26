@@ -5,7 +5,7 @@ Tools for raster data including scientific and geophysical applications.
 
 We have two main documentation pages:
 
-1. [The Gridfour Notes](https://gwlucastrig.github.io/GridfourDocs/notes/index.html) give information on
+1. [The Gridfour Application Notes](https://gwlucastrig.github.io/GridfourDocs/notes/index.html) give information on
    the underlying concepts and algorithms used by this project. The Notes page isn't just about Gridfour.
    It covers ideas and topics related to raster data processing in general.
 
