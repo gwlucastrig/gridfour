@@ -35,7 +35,7 @@
  * -----------------------------------------------------------------------
  */
 package org.gridfour.demo.globalDEM;
- 
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,10 +47,10 @@ import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
- 
+
 import org.gridfour.gvrs.GvrsElementSpecification;
 import org.gridfour.gvrs.GvrsElementSpecificationFloat;
- 
+
 import org.gridfour.gvrs.GvrsElementSpecificationIntCodedFloat;
 import org.gridfour.gvrs.GvrsElementSpecificationShort;
 import org.gridfour.gvrs.GvrsElementType;
@@ -72,18 +72,21 @@ import ucar.nc2.Variable;
  * distributed in the NetCDF file format.
  */
 public class PackageData {
- 
+
   private static String[] usage = {
     "PackageData  -- create a Gvrs file from from ETOPO1 or GEBCO_2019 Global DEM files",
     "Arguments:",
     "   -in     <input_file_path>",
     "   -out    <output_file_path>",
-    "   -zScale <value>  apply a scale factor for data compression",
-    "   -tileSize <###x###> n_rows and n_columns of tile (i.e. 90x120)",
-    "   -compress (-nocompress)  Apply compression to file (default: false)",
-    "   -checksums (-nochecksums) Compute checksums (default: false)",
-    "   -verify (-noconfirm)     Verify that output is correct (default: false)",
-    "   -lsop (-nolsop)            Enable LS encoder when compressing data (default:false)",
+    "",
+    "   -zScale <value>                Apply a scale factor for floating-point data",
+    "   -tileSize <###x###>            Specify n_rows and n_columns of tile (i.e. 90x120)",
+    "   -compress (-nocompress)        Apply compression to file (default: false)",
+    "   -checksums (-nochecksums)      Compute checksums (default: false)",
+    "   -verify (-noconfirm)           Verify that output is correct (default: false)",
+    "   -lsop (-nolsop)                Enable LS encoder when compressing data (default:false)",
+    "   -multithread (-nomultithread)  Enable multple threads to expedite data compression (default: true)",
+    "",
     "Note: the zScale option instructs the packager to use the",
     "      integer-scaled-float data type when storing values.",
     "      If it is not specified, the data type will be selected",
@@ -92,7 +95,7 @@ public class PackageData {
   private final static short LIMIT_DEPTH = -11000;   // Challenger deep, 10,929 wikipedia
   private final static short LIMIT_ELEVATION = 8848; // Everest, wikipedia
   private final static short FILL_VALUE = -32768;
-  
+
   private static void printUsageAndExit() {
     for (String s : usage) {
       System.err.println(s);
@@ -158,6 +161,8 @@ public class PackageData {
     ps.format("Output file: %s%n", outputFile.getPath());
     boolean[] matched = new boolean[args.length];
     boolean useLsop = options.scanBooleanOption(args, "-lsop", matched, false);
+    boolean enableMultiTheading =
+      options.scanBooleanOption(args, "-multithread", matched, true);
 
     // Open the NetCDF file -----------------------------------
     ps.println("Opening NetCDF input file");
@@ -174,15 +179,15 @@ public class PackageData {
     lon = ncfile.findVariable("lon");
     z = ncfile.findVariable("elevation");
     int[] tileSize;
-    
+
     // Use the input file name to format a product label
     File inputFile = new File(inputPath);
     String productLabel = inputFile.getName();
     if(productLabel.toLowerCase().endsWith(".nc")){
       productLabel = productLabel.substring(0, productLabel.length()-3);
     }
-   
-    
+
+
     if (lat == null) {
       // ETOPO1 specification
       tileSize = options.getTileSize(90, 120);
@@ -232,14 +237,14 @@ public class PackageData {
       // the options define our data type
       int encodedLimitDepth =  (int)((LIMIT_DEPTH-zOffset)*zScale);
       int encodedLimitElev  =  (int)((LIMIT_ELEVATION-zOffset)*zScale);
-      
+
       elementSpec = new GvrsElementSpecificationIntCodedFloat(
-        "z", zScale, zOffset, 
+        "z", zScale, zOffset,
         encodedLimitDepth, encodedLimitElev, Integer.MIN_VALUE, true);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.INT_CODED_FLOAT;
     } else if (sourceDataType.isIntegral()) {
-      elementSpec = new GvrsElementSpecificationShort("z", 
+      elementSpec = new GvrsElementSpecificationShort("z",
         LIMIT_DEPTH, LIMIT_ELEVATION, FILL_VALUE);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.SHORT;
@@ -252,8 +257,11 @@ public class PackageData {
     elementSpec.setDescription("Elevation (positive values) or depth (negative), in meters");
     elementSpec.setUnitOfMeasure("m");
     elementSpec.setLabel("die H\u00f6henlage"); // Example with special character
+    elementSpec.setContinuous(true);
+    
     ps.println("Source date type " + sourceDataType + ", stored as " + gvrsDataType);
     ps.println("");
+    ps.println("Multi-threading enabled: "+enableMultiTheading);
 
     // Determine whether data compression is used -------------------
     boolean compressionEnabled = options.isCompressionEnabled();
@@ -262,9 +270,9 @@ public class PackageData {
     spec.setChecksumEnabled(checksumsEnalbed);
     boolean bigAddressSpaceEnabled = options.isBigAddressSpaceEnabled();
     spec.setExtendedFileSizeEnabled(bigAddressSpaceEnabled);
-    
+
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
- 
+
     spec.setGeographicCoordinates(
       geoCoords[0],
       geoCoords[1],
@@ -301,10 +309,12 @@ public class PackageData {
     double zSum = 0;
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
-      gvrs.writeMetadata(GvrsMnc.Copyright, 
+      gvrs.setMultiThreadingEnabled(enableMultiTheading);
+
+      gvrs.writeMetadata(GvrsMnc.Copyright,
         "This data is in the public domain and may be used free of charge");
 
-      gvrs.writeMetadata(GvrsMnc.TermsOfUse, 
+      gvrs.writeMetadata(GvrsMnc.TermsOfUse,
         "This data should not be used for navigation");
 
       GvrsElement zElement = gvrs.getElement("z");

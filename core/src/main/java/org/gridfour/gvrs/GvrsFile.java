@@ -81,7 +81,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   // Gives the offset to the field in the header that is used to
   // store the file position for the storage of content.
   // The value in stored at this file position is also the size
-  // of the file header, in bytes. 
+  // of the file header, in bytes.
   private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
 
   // Gives the offset to the field in the header that is used to
@@ -108,8 +108,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final RecordManager recordMan;
   private final RasterTileCache tileCache;
   private final List<GvrsElement> elements = new ArrayList<>();
-  
- 
+
+
 
   private static File tempFile() throws IOException {
     Path filePath = Files.createTempFile("gvrstemp", ".gvrs");
@@ -140,7 +140,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     spec.addElementSpecification(eSpec);
     return spec;
   }
- 
+
   /**
    * Constructs a raster store backed by a temporary file that will
    * be deleted when the close() method is called or the program terminates
@@ -155,7 +155,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     deleteOnClose = true;
   }
 
-  
+
    /**
    * Constructs a raster store backed by a temporary file that will
    * be deleted when the close() method is called or the program terminates
@@ -172,8 +172,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
     deleteOnClose = true;
   }
 
-  
-  
+
+
   /**
    * Creates a new raster file using the specified file and specifications. If
    * the file reference points to an existing file, the old file will be
@@ -487,6 +487,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   @Override
   public void close() throws IOException {
     if (!isClosed) {
+      codecMaster.shutdown();
+
       if(openedForWriting && deleteOnClose){
           openedForWriting = false;
           isClosed = true;
@@ -494,7 +496,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
           file.delete();
           return;
       }
-        
+
       if (openedForWriting) {
         tileCache.flush();
         braf.seek(FILEPOS_MODIFICATION_TIME);
@@ -658,15 +660,15 @@ public class GvrsFile implements Closeable, AutoCloseable {
     if(cacheSize==null){
       throw new IllegalArgumentException("Null cache size not allowed");
     }
-    
+
     int standardTileSize = spec.getStandardTileSizeInBytes();
     if(standardTileSize == 0){
       // no elements have been established.  The cache size is
       // irrelevant. Simply exit.
       return;
     }
-    
-    // In the general case, this code will try to set up a buffer 
+
+    // In the general case, this code will try to set up a buffer
     // buffer large enough to cover all tiles in a row of a column of the
     // data set (which ever is largest).  This target value will be limited
     // but the maximum memory allocated for the size specification.
@@ -723,8 +725,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   TileAccessIndices getAccessIndices() {
     return new TileAccessIndices(spec);
   }
- 
-  
+
+
   /**
    * Map grid coordinates to model coordinates storing the resulting x and y
    * values in a GvrsModelPoint instance. If the row or column values are outside
@@ -742,7 +744,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return spec.mapGridToModelPoint(row, column);
   }
 
-  
+
   /**
    * Map model coordinates to grid coordinates storing the computed row and
    * column in an instance of GvrsGridPoint. If the x or y coordinate is outside
@@ -760,9 +762,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public GridPoint mapModelToGridPoint(double x, double y) {
    return spec.mapModelToGridPoint(x, y);
   }
-  
-  
-  
+
+
+
   /**
    * Map geographic coordinates to grid coordinates storing the row and column
    * in an array in that order. If the latitude or longitude is outside the
@@ -783,8 +785,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public GridPoint mapGeographicToGridPoint(double latitude, double longitude) {
     return spec.mapGeographicToGridPoint(latitude, longitude);
   }
-  
-  
+
+
   /**
    * Map grid coordinates to geographic coordinates storing the resulting
    * latitude and longitude in an instance of GvrsGeoPoint.
@@ -803,7 +805,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public GeoPoint mapGridToGeoPoint(double row, double column) {
     return spec.mapGridToGeoPoint(row, column);
   }
-  
+
 
   /**
    * Reads the complete set of metadata records stored in the file.
@@ -887,7 +889,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     }
     return readMetadata(gmConstant.name());
   }
-  
+
   /**
    * Store a GvrsMetadata instance providing metadata in the file.
    *
@@ -958,7 +960,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public void deleteMetadata(String name, int recordID) throws IOException{
     recordMan.deleteMetadata(name, recordID);
   }
-  
+
   boolean loadTile(int tileIndex, boolean writeAccess) throws IOException {
     if (this.isClosed) {
       throw new IOException("Raster file is closed " + file.getPath());
@@ -1000,7 +1002,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     return null;
   }
 
-  
+
   /**
    * Gets the GVRS element by index (order created).
    *
@@ -1065,7 +1067,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   RecordManager getRecordManager() {
     return recordMan;
   }
-  
+
   /**
    * Gets the time that the content of the GVRS file was last modified.
    * Note that this value is based on the time of internal operations
@@ -1076,7 +1078,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public long getModificationTimeMillis(){
     return timeModified;
   }
-  
+
   /**
    * Gets the time that the GVRS file was created..
    * @return a value in milliseconds from the epoch January 1, 1970.
@@ -1084,13 +1086,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
   public long getCreationTimeMillis(){
     return timeModified;
   }
-  
-  
-  
-  
+
+
+
+
   /**
    * Map Cartesian coordinates to grid coordinates storing the row and column in
-   * an array in that order. 
+   * an array in that order.
    * <p>
    * This method is deprecated. Please use mapModelToGridPoint() instead.
    *
@@ -1106,10 +1108,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   /**
    * Map grid coordinates to Cartesian coordinates storing the resulting
-   * x and y values in an array in that order. 
+   * x and y values in an array in that order.
    * <p>
    * This method is deprecated. Please use mapGridToModelPoint() instead.
-   * 
+   *
    * @param row a row (may be a non-integral value)
    * @param column a column (may be a non-integral value)
    * @return a valid array giving the Cartesian x and y coordinates in that
@@ -1192,5 +1194,25 @@ public class GvrsFile implements Closeable, AutoCloseable {
   }
 
 
-  
+  /**
+   * Sets multi-threading enabled. At this time, multi-threaded processing
+   * is only supported in the compressing of data. If an application
+   * is not compressing data, this setting will be ignored.
+   * <p>
+   * Future development for the GVRS API may expand the use of multi-threaded
+   * processing.
+   * <p>
+   * Multi-threading can expedite processing, but is sometimes inconvenient
+   * when developing, profiling, or debugging an application.  Multi-threaded
+   * applications may also consume more resources than single threaded
+   * processes. Therefore, the default setting for this class is to
+   * treat multi-threading as disabled.
+   *
+   * @param multiThreadingEnabled true if multiple threads are enabled;
+   * otherwise, false (default false).
+   */
+  public void setMultiThreadingEnabled(boolean multiThreadingEnabled) {
+    codecMaster.setMultiThreadingEnabled(multiThreadingEnabled);
+  }
+
 }

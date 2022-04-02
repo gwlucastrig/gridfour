@@ -44,16 +44,65 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import org.gridfour.util.concurrent.TaskGroupExecutor;
 
 /**
  * Performs coding and decoding of gvrs data
  */
 class CodecMaster {
 
+  private class CompressorResults {
+
+    byte[] results = null;
+
+    void registerResults(byte[] results) {
+      if (results == null) {
+        // The compressor was unsuccessful
+        return;
+      }
+      
+      synchronized (this) {
+        if (this.results == null) {
+          this.results = results;
+        } else if (results.length < this.results.length) {
+          this.results = results;
+        }
+      }
+    }
+  }
+    
+    private class CompressorRunnable implements Runnable {
+      final CompressorResults compressorResults;
+      final ICompressionEncoder compressor;
+      final int codecIndex;
+      final int nRows;
+      final int nCols;
+      final int []values;
+      CompressorRunnable(
+        CompressorResults compressorResults, ICompressionEncoder compressor, int codecIndex, int nRows, int nCols, int[]values){
+         this.compressorResults = compressorResults;
+        this.compressor = compressor;
+        this.codecIndex = codecIndex;
+        this.nRows = nRows;
+        this.nCols = nCols;
+        this.values = values;
+      }
+      
+      @Override
+      public void run(){
+        byte []results = compressor.encode(codecIndex, nRows, nCols, values);
+        compressorResults.registerResults(results);
+      }
+    }
+  
     int seed;
 
     List<CodecHolder> codecList = new ArrayList<>();
     private boolean implementsFloats;
+    
+    private TaskGroupExecutor tgExecutor;
+    private boolean multiThreadingEnabled;
+    
 
     CodecMaster(List<CodecHolder> rasterCodecList) {
         codecList = new ArrayList<>();
@@ -65,6 +114,10 @@ class CodecMaster {
                 break;
             }
         }
+    }
+    
+    void setMultiThreadingEnabled(boolean multiThreadingEnabled){
+      this.multiThreadingEnabled = multiThreadingEnabled;
     }
 
     void setCodecs(List<CodecHolder> csList) throws IOException {
@@ -81,6 +134,14 @@ class CodecMaster {
     }
 
     byte[] encode(int nRows, int nCols, int[] values) {
+        if(multiThreadingEnabled){
+           return encodeMultiThread(nRows, nCols, values);
+        }else{
+          return encodeSingleThread(nRows, nCols, values);
+        }
+    }
+    
+    byte[] encodeSingleThread(int nRows, int nCols, int[] values) {
         byte[] result = null;
         int resultLength = Integer.MAX_VALUE;
         int k = 0;
@@ -96,6 +157,27 @@ class CodecMaster {
             k++;
         }
         return result;
+    }
+
+    
+    byte[] encodeMultiThread(int nRows, int nCols, int[] values) {
+      if(tgExecutor == null){
+        tgExecutor   = new TaskGroupExecutor(4);
+      }
+        CompressorResults compressorResults = new CompressorResults();
+        tgExecutor.groupClear();
+        int k = 0;
+        for (CodecHolder codec : codecList) {
+            if (codec.implementsIntegerEncoding()) {
+                ICompressionEncoder compressor = codec.getEncoderInstance();
+                CompressorRunnable r = new CompressorRunnable(
+                  compressorResults, compressor, k, nRows, nCols,values );
+                tgExecutor.groupExecute(r);
+            }
+            k++;
+        }
+        tgExecutor.groupWaitUntilDone();
+        return compressorResults.results;
     }
 
     int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
@@ -225,4 +307,11 @@ class CodecMaster {
     return null;
   }
   
+  
+  void shutdown(){
+    if(tgExecutor != null){
+      tgExecutor.shutdown();
+      tgExecutor = null;
+    }
+  }
 }
