@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 11/2021  G. Lucas     Created  
+ * 11/2021  G. Lucas     Created
  *
  * Notes:
  *
@@ -65,7 +65,7 @@ import org.gridfour.io.BufferedRandomAccessFile;
  * The limit to metadata name lengths is 32 characters.
  */
 public class GvrsMetadata implements Comparable<GvrsMetadata>{
-  
+
   public static final int GVRS_METADATA_MAX_ID_LENGTH = 32;
   final String name;
   final int recordID;
@@ -94,7 +94,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     uniqueRecordID = true;
   }
 
-  
+
   /**
    * Constructs a GVRS metadata instance with the specified data type,
    * but no restriction for record ID. This constructor may be used when
@@ -115,8 +115,8 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     uniqueRecordID = false;
   }
 
-  
-  
+
+
   /**
    * Sets an optional description string.
    *
@@ -140,8 +140,8 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   public GvrsMetadataType getDataType(){
     return dataType;
   }
-  
-  
+
+
   /**
    * Gets the description string stored with the metadata.
    *
@@ -241,8 +241,8 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     return new GvrsMetadataReference(
       metadataName, metadataRecordID, metadataType, offset);
   }
-  
-  
+
+
   public void setInteger(int value) {
     setIntegers(new int[]{value});
   }
@@ -360,7 +360,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     return values;
   }
 
-  
+
   public void setString(String string){
     checkTypeCompatibility(GvrsMetadataType.STRING);
     if(string==null || string.isEmpty()){
@@ -371,7 +371,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     bb.putInt(b.length);
     bb.put(b);
   }
-  
+
   public String getString(){
      checkTypeCompatibility(GvrsMetadataType.STRING);
      if(content.length==0){
@@ -383,8 +383,8 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
      bb.get(b);
      return new String(b, StandardCharsets.UTF_8);
   }
-  
-  
+
+
   public void setUnsignedShort(int value) {
     setShorts(new short[]{(short)value});
   }
@@ -429,8 +429,8 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     }
   }
 
-  
-  
+
+
   public int[] getUnsignedShorts() {
     checkTypeCompatibility(GvrsMetadataType.SHORT);
     int n = content.length / GvrsMetadataType.SHORT.bytesPerValue;
@@ -445,9 +445,9 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     return values;
   }
 
-  
-  
-  
+
+
+
   /**
    * Gets the application-defined "name" for the record.
    *
@@ -492,17 +492,17 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     if(contentType==dataType){
       return;
     }
-    
-    if (contentType == GvrsMetadataType.STRING 
+
+    if (contentType == GvrsMetadataType.STRING
       && dataType == GvrsMetadataType.ASCII)
     {
       // ASCII and STRING are compatible
       return;
-    }else if(contentType==GvrsMetadataType.ASCII 
+    }else if(contentType==GvrsMetadataType.ASCII
       && dataType==GvrsMetadataType.ASCII){
       return;
     }
-    
+
     if(contentType==GvrsMetadataType.SHORT && dataType==GvrsMetadataType.UNSIGNED_SHORT){
       return;
     }
@@ -512,13 +512,13 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
       // to the calling application.
       return;
     }
-    
-   
+
+
       throw new IllegalArgumentException(
         "Specified data type " + contentType.name()
         + " is not compatible with this instance's specified data-type "
         + dataType.name());
-    
+
   }
 
    GvrsMetadata(BufferedRandomAccessFile braf) throws IOException {
@@ -542,7 +542,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
       braf.seek(offset1);
       description = braf.leReadUTF();
     }
-
+    uniqueRecordID = true;
   }
 
   @Override
