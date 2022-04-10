@@ -60,7 +60,7 @@ class CodecMaster {
         // The compressor was unsuccessful
         return;
       }
-      
+
       synchronized (this) {
         if (this.results == null) {
           this.results = results;
@@ -70,7 +70,7 @@ class CodecMaster {
       }
     }
   }
-    
+
     private class CompressorRunnable implements Runnable {
       final CompressorResults compressorResults;
       final ICompressionEncoder compressor;
@@ -87,22 +87,22 @@ class CodecMaster {
         this.nCols = nCols;
         this.values = values;
       }
-      
+
       @Override
       public void run(){
         byte []results = compressor.encode(codecIndex, nRows, nCols, values);
         compressorResults.registerResults(results);
       }
     }
-  
+
     int seed;
 
     List<CodecHolder> codecList = new ArrayList<>();
     private boolean implementsFloats;
-    
+
     private TaskGroupExecutor tgExecutor;
     private boolean multiThreadingEnabled;
-    
+
 
     CodecMaster(List<CodecHolder> rasterCodecList) {
         codecList = new ArrayList<>();
@@ -115,7 +115,7 @@ class CodecMaster {
             }
         }
     }
-    
+
     void setMultiThreadingEnabled(boolean multiThreadingEnabled){
       this.multiThreadingEnabled = multiThreadingEnabled;
     }
@@ -140,7 +140,7 @@ class CodecMaster {
           return encodeSingleThread(nRows, nCols, values);
         }
     }
-    
+
     byte[] encodeSingleThread(int nRows, int nCols, int[] values) {
         byte[] result = null;
         int resultLength = Integer.MAX_VALUE;
@@ -159,10 +159,10 @@ class CodecMaster {
         return result;
     }
 
-    
+
     byte[] encodeMultiThread(int nRows, int nCols, int[] values) {
       if(tgExecutor == null){
-        tgExecutor   = new TaskGroupExecutor(4);
+        tgExecutor   = new TaskGroupExecutor(3);
       }
         CompressorResults compressorResults = new CompressorResults();
         tgExecutor.groupClear();
@@ -272,7 +272,7 @@ class CodecMaster {
         return implementsFloats;
     }
 
-   
+
   /**
    * Gets an instance of the compression encoder that matches the
    * specified CODEC name, if any.
@@ -289,7 +289,7 @@ class CodecMaster {
     }
     return null;
   }
- 
+
     /**
    * Gets an instance of the compression encoder that matches the
    * specified CODEC name, if any.
@@ -306,8 +306,8 @@ class CodecMaster {
     }
     return null;
   }
-  
-  
+
+
   void shutdown(){
     if(tgExecutor != null){
       tgExecutor.shutdown();

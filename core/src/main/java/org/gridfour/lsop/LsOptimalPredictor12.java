@@ -270,7 +270,7 @@ public class LsOptimalPredictor12 {
     int nInteriorCodes = interiorCodec.getEncodedLength();
     byte[] interiorEncoding = interiorCodec.getEncoding();
 
-    return new LsOptimalPredictorResult(seed, u,
+    return new LsOptimalPredictorResult(seed, 12, u,
       nInitializationCodes, initializationEncoding,
       nInteriorCodes, interiorEncoding);
   }

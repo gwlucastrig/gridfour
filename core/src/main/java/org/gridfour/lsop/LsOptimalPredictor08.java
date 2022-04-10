@@ -154,7 +154,7 @@ public class LsOptimalPredictor08 {
         int nInteriorCodes = interiorCodec.getEncodedLength();
         byte[] interiorEncoding = interiorCodec.getEncoding();
 
-        return new LsOptimalPredictorResult(seed, u,
+        return new LsOptimalPredictorResult(seed, 8, u,
             nInitializationCodes, initializationEncoding,
             nInteriorCodes, interiorEncoding);
     }

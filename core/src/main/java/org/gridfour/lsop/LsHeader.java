@@ -138,8 +138,22 @@ public class LsHeader {
     packing[offset++] = (byte)compressionTypeCode;
     return packing;
   }
-  
- 
+
+
+  public static byte[] packHeader(
+    int codecIndex,
+     LsOptimalPredictorResult result,
+     int compressionTypeCode){
+
+    return LsHeader.packHeader(codecIndex,
+      result.nCoefficients,
+      result.seed,
+      result.coefficients,
+      result.nInitializerCodes,
+      result.nInteriorCodes,
+      compressionTypeCode);
+  }
+
 
   private int unpackInteger(byte[] packing, int offset) {
     return (packing[offset] & 0xff)

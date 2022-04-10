@@ -534,7 +534,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
         element.tileIndex = -1;
         element.tileElement = null;
       }
-      braf.flush();
       braf.close();
     }
   }

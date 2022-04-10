@@ -161,7 +161,7 @@ public class PackageData {
     ps.format("Output file: %s%n", outputFile.getPath());
     boolean[] matched = new boolean[args.length];
     boolean useLsop = options.scanBooleanOption(args, "-lsop", matched, false);
-    boolean enableMultiTheading =
+    boolean enableMultiThreading =
       options.scanBooleanOption(args, "-multithread", matched, true);
 
     // Open the NetCDF file -----------------------------------
@@ -258,10 +258,14 @@ public class PackageData {
     elementSpec.setUnitOfMeasure("m");
     elementSpec.setLabel("die H\u00f6henlage"); // Example with special character
     elementSpec.setContinuous(true);
-    
+
     ps.println("Source date type " + sourceDataType + ", stored as " + gvrsDataType);
     ps.println("");
-    ps.println("Multi-threading enabled: "+enableMultiTheading);
+    ps.println("Multi-threading enabled: "+enableMultiThreading);
+    if(enableMultiThreading){
+      ps.println("Available processors:    "
+        +Runtime.getRuntime().availableProcessors());
+    }
 
     // Determine whether data compression is used -------------------
     boolean compressionEnabled = options.isCompressionEnabled();
@@ -309,7 +313,7 @@ public class PackageData {
     double zSum = 0;
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
-      gvrs.setMultiThreadingEnabled(enableMultiTheading);
+      gvrs.setMultiThreadingEnabled(enableMultiThreading);
 
       gvrs.writeMetadata(GvrsMnc.Copyright,
         "This data is in the public domain and may be used free of charge");
