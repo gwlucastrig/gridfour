@@ -450,8 +450,8 @@ public class GvrsFileSpecification {
   /**
    * Set a geographic coordinate system to be used for interpreting the data.
    * Note that this setting is mutually exclusive with the Cartesian
-   * coordinate
-   * system setting. The last setting applied replaces any earlier settings.
+   * coordinate system setting. The last setting applied replaces any
+   * earlier settings.
    * <p>
    * Various data sources take different approaches in terms of how they order
    * their raster data in relationship to latitude. Some start with the
@@ -510,6 +510,7 @@ public class GvrsFileSpecification {
     cellSizeX = (x1 - x0) / (nColsInRaster - 1);
     cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
     checkGeographicCoverage();
+    checkLatitudeRange();
 
     m2r00 = 1 / cellSizeX;
     m2r01 = 0;
@@ -532,7 +533,105 @@ public class GvrsFileSpecification {
     r2m11 = m[3];
     r2m02 = m[4];
     r2m12 = m[5];
+  }
 
+
+  /**
+   * Set a geographic coordinate system to be used for interpreting the data.
+   * Note that this setting is mutually exclusive with the Cartesian
+   * coordinate system setting. The last setting applied replaces any
+   * earlier settings.
+   * <p>
+   * Various data sources take different approaches in terms of how they order
+   * their raster data in relationship to latitude. Some start with the
+   * northernmost latitude and work their way south, some start with the
+   * southernmost latitude and work their way north. Thus the arguments for
+   * this
+   * method are based on the ordering of the raster. The first pair of
+   * arguments
+   * give the coordinates for the first row and column in the grid. The second
+   * pair of arguments give the coordinates for the last.
+   * <p>
+   * Unfortunately, the possibility of longitude wrapping around the
+   * International Date line limits the flexibility for longitude
+   * specifications. This implementation assumes that the raster is organized
+   * so
+   * that the longitudes progress from west to east (longitude increases with
+   * increasing grid index). Thus, if a longitude of -90 to 90 were specified,
+   * it would assume that the raster columns went from 90 west to 90 east. But
+   * if 90, -90 were specified, it would be assumed that the raster grid went
+   * from 90 east, across the International Date Line, to 90 west.
+   * <p>
+   * This method also populates the internal AffineTransform that can be
+   * used for transforming coordinates between the geographic and grid
+   * coordinate systems.
+   *
+   * @param latRow0 the latitude of the center point in the cell
+   * in the first row and first column in the raster
+   * @param lonCol0 the longitude of the center point in the cell
+   * in the first row and first column in the raster
+   * @param latCellSpace the angular distance between rows in the raster
+   * (e.g. the delta latitude) measured from cell center to cell center
+   * @param lonCellSpace the angular distance between columns in the raster
+   * (e.g. the delta longitude) measured from cell center to cell center
+   */
+  public void setGeographicSystem(
+    double latRow0, double lonCol0, double latCellSpace, double lonCellSpace) {
+    this.isGeographicCoordinateSystemSet = true;
+    this.isCartesianCoordinateSystemSet = false;
+    if (!isFinite(latRow0)
+      || !isFinite(lonCol0)
+      || !isFinite(latCellSpace)
+      || !isFinite(lonCellSpace)) {
+      throw new IllegalArgumentException("Invalid floating-point value");
+    }
+
+    double gxDelta = lonCellSpace*(nColsInRaster-1);
+    if (gxDelta == 0) {
+      gxDelta = 360;
+    }
+    double gx0 = Angle.to180(lonCol0);
+    double gx1 = gx0 + gxDelta;
+
+    x0 = gx0;
+    y0 = latRow0;
+    x1 = gx1;
+    y1 = y0 + latCellSpace*(nRowsInRaster-1);
+    cellSizeX = lonCellSpace;
+    cellSizeY = latCellSpace;
+
+    checkGeographicCoverage();
+    checkLatitudeRange();
+
+    m2r00 = 1 / cellSizeX;
+    m2r01 = 0;
+    m2r02 = -x0 * m2r00;
+    m2r10 = 0;
+    m2r11 = 1 / cellSizeY;
+    m2r12 = -y0 * m2r11;
+    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
+    try {
+      rasterToModel = modelToRaster.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException(ex.getMessage(), ex);
+    }
+
+    double[] m = new double[6];
+    rasterToModel.getMatrix(m);
+    r2m00 = m[0];
+    r2m10 = m[1];
+    r2m01 = m[2];
+    r2m11 = m[3];
+    r2m02 = m[4];
+    r2m12 = m[5];
+  }
+
+
+
+  private void checkLatitudeRange(){
+    if(Math.abs(y0)>90 || Math.abs(y1)>90){
+       throw new IllegalArgumentException("Latitudes must not exceed +/- 90 degrees");
+    }
   }
 
   /**
@@ -644,7 +743,7 @@ public class GvrsFileSpecification {
    * <p>
    * The key assumption of this method is that the points (x0, y0) and
    * (x1, y1) represent the real-valued coordinate at the <i>center</i> of
-   * their associated raster cells.  
+   * their associated raster cells.
    *
    * @param x0 the X coordinate of the center point in the cell
    * in the first row and first column of the raster.
