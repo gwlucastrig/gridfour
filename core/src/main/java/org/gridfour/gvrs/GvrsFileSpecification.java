@@ -477,11 +477,14 @@ public class GvrsFileSpecification {
    * used for transforming coordinates between the geographic and grid
    * coordinate systems.
    *
-   * @param latRow0 the latitude of the first row in the grid
-   * @param lonCol0 the longitude of the first column of the raster (column
-   * 0).
-   * @param latRowLast the latitude of the last row of the raster.
-   * @param lonColLast the longitude of the the last column of the raster.
+   * @param latRow0 the latitude of the center point in the cell
+   * in the first row and first column in the raster
+   * @param lonCol0 the longitude of the center point in the cell
+   * in the first row and first column in the raster
+   * @param latRowLast the latitude of the center point in the cell
+   * in the last row and last column in the raster
+   * @param lonColLast the longitude of the center point in the cell
+   * in the last row and last column in the raster
    */
   public void setGeographicCoordinates(
     double latRow0, double lonCol0, double latRowLast, double lonColLast) {
@@ -558,15 +561,24 @@ public class GvrsFileSpecification {
    * This method populates the internal AffineTransform that can be
    * used for transforming coordinates between the model and grid
    * coordinate systems.
+   * <p>
+   * The key assumption of this method is that the points (x0, y0) and
+   * (x1, y1) represent the real-valued coordinate at the <i>center</i> of
+   * their associated raster cells.  Although (x0, y0) represents the
+   * first row and column in the raster and (x1, y1) represents the last,
+   * there is no requirement that x0 &lt; x1 or y0 &lt; y1. However,
+   * the coordinates for x0,x1 and y0,y1 must not be equal. That restriction
+   * means that this specification cannot be used for a raster containing
+   * only one row or column of cells.
    *
-   * @param x0 the X coordinate of the lower-left corner of the raster and the
-   * first column of the raster (column 0).
-   * @param y0 the Y coordinate of the lower-left corner of the raster and the
-   * first row of the raster (row 0).
-   * @param x1 the X coordinate of the upper-right corner of the raster and
-   * the last column of the raster.
-   * @param y1 the Y coordinate of the upper-right corner of the raster and
-   * the last row of the raster.
+   * @param x0 the X coordinate of the center point in the cell
+   * in the first row and first column of the raster.
+   * @param y0 the Y coordinate of the center point in the cell
+   * in the first row and first column of the raster.
+   * @param x1 the X coordinate of the center point in the cell
+   * in the last row and last column of the raster.
+   * @param y1 the Y coordinate of the center point in the cell
+   * in the last row and last column of the raster.
    */
   public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
     isGeographicCoordinateSystemSet = false;
@@ -617,8 +629,83 @@ public class GvrsFileSpecification {
     r2m11 = m[3];
     r2m02 = m[4];
     r2m12 = m[5];
-
   }
+
+
+  /**
+   * Sets the real-valued model to a Cartesian coordinate system.
+   * Note that this setting is mutually exclusive with the geographic
+   * coordinate system setting. The last setting applied replaces
+   * any earlier settings.
+   * <p>
+   * This method populates the internal AffineTransform that can be
+   * used for transforming coordinates between the model and grid
+   * coordinate systems.
+   * <p>
+   * The key assumption of this method is that the points (x0, y0) and
+   * (x1, y1) represent the real-valued coordinate at the <i>center</i> of
+   * their associated raster cells.  
+   *
+   * @param x0 the X coordinate of the center point in the cell
+   * in the first row and first column of the raster.
+   * @param y0 the Y coordinate of the center point in the cell
+   * in the first row and first column of the raster.
+   * @param xCellSpace the distance across each raster cell in the direction
+   * of the X coordinate axis
+   * @param yCellSpace the distance across each raster cell in the direction
+   * of the Y coordinate axis
+   */
+  public void setCartesianSystem(double x0, double y0, double xCellSpace, double yCellSpace) {
+    isGeographicCoordinateSystemSet = false;
+    isCartesianCoordinateSystemSet = true;
+    geoWrapsLongitude = false;
+    if (!isFinite(x0) || !isFinite(y0) || !isFinite(xCellSpace) || !isFinite(yCellSpace)) {
+      throw new IllegalArgumentException("Invalid floating-point value");
+    }
+    if (xCellSpace<=0) {
+      throw new IllegalArgumentException(
+        "X cell spacing must be greater than zero");
+    }
+    if (yCellSpace<=0) {
+      throw new IllegalArgumentException(
+        "Y cell spacing must be greater than zero");
+    }
+
+    this.x0 = x0;
+    this.y0 = y0;
+    this.x1 = x0 + xCellSpace * (nColsInRaster - 1);
+    this.y1 = y0 + yCellSpace * (nRowsInRaster - 1);
+    cellSizeX = xCellSpace;
+    cellSizeY = yCellSpace;
+
+    // It would be easy enough to compute the r2m matric directly, but
+    // testing showed that when we used the Java createInverse() method
+    // and multiplied the two matrices togther, the values from createInverse
+    // actually produced a result closer to the identify matrix.
+
+    m2r00 = 1 / cellSizeX;
+    m2r01 = 0;
+    m2r02 = -x0 * m2r00;
+    m2r10 = 0;
+    m2r11 = 1 / cellSizeY;
+    m2r12 = -y0 * m2r11;
+    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
+    try {
+      rasterToModel = modelToRaster.createInverse();
+    } catch (NoninvertibleTransformException ex) {
+      throw new IllegalArgumentException(ex.getMessage(), ex);
+    }
+
+    double[] m = new double[6];
+    rasterToModel.getMatrix(m);
+    r2m00 = m[0];
+    r2m10 = m[1];
+    r2m01 = m[2];
+    r2m11 = m[3];
+    r2m02 = m[4];
+    r2m12 = m[5];
+  }
+
 
   /**
    * Set an arbitrary label string for the raster file. The label
