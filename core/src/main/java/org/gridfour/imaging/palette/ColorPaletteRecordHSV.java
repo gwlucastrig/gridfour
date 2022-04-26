@@ -36,7 +36,7 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.util.palette;
+package org.gridfour.imaging.palette;
 
 import java.awt.Color;
 

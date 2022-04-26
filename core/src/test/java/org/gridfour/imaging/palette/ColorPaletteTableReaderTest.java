@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.gridfour.util.palette;
+package org.gridfour.imaging.palette;
 
 import java.io.IOException;
 import java.io.InputStream;

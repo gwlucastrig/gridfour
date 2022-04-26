@@ -38,7 +38,7 @@
  *  http://www.java2s.com/Code/Java/2D-Graphics-GUI/Mapcolorsintonamesandviceversa.htm
  * -----------------------------------------------------------------------
  */
-package org.gridfour.util.palette;
+package org.gridfour.imaging.palette;
 
 import java.awt.Color;
 import java.io.BufferedInputStream;

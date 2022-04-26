@@ -64,9 +64,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
-import org.gridfour.util.palette.ColorPaletteRecord;
-import org.gridfour.util.palette.ColorPaletteTable;
-import org.gridfour.util.palette.ColorPaletteTableReader;
+import org.gridfour.imaging.palette.ColorPaletteRecord;
+import org.gridfour.imaging.palette.ColorPaletteTable;
+import org.gridfour.imaging.palette.ColorPaletteTableReader;
 
 /**
  * A simple demo to parse and plot the content of one or more
