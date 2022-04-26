@@ -118,7 +118,7 @@ import java.util.concurrent.TimeUnit;
  * </pre>
  * The output will appear as follows.
  * <pre>
- *  * Begin Test 1
+ *   Begin Test 1
  *   Start alpha   pool-1-thread-1
  *   Start delta   pool-1-thread-4
  *   Start gamma   pool-1-thread-3

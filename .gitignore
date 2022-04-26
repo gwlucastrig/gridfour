@@ -1,5 +1,6 @@
 # files used in building, testing, and inspecting 
 *.class
+*.log
 build/
 pmd_results.html
 nb*.xml
