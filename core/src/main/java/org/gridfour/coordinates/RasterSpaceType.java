@@ -36,12 +36,12 @@
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.gvrs;
+package org.gridfour.coordinates;
 
 /**
- * Describes whether the geometry associated with each value in the
+ * Describes whether the raster space associated with each value in the
  * raster should be interpreted as a single point value or an overall
- * value for an area. The notion of a value geometry is embedded into many
+ * value for an area. The notion of a raster space value is embedded into many
  * raster data formats, such as the GeoTIFF standard's PixelIsPoint and
  * PixelIsArea settings. It allows an application to precisely specify
  * how a value is derived for an arbitrary point on the surface described
@@ -53,7 +53,7 @@ package org.gridfour.gvrs;
  * respect to the area of coverage), you may have to resort to guesswork
  * or use the "Unspecified" value of this enumeration.
  */
-public enum GvrsGeometryType {
+public enum RasterSpaceType {
 
   /**
    * No specification was made for the raster cell geometry type.
@@ -70,22 +70,29 @@ public enum GvrsGeometryType {
 
   final int codeValue;
 
-  GvrsGeometryType(int codeValue) {
+  RasterSpaceType(int codeValue) {
     this.codeValue = codeValue;
   }
 
   /**
-   * Gets the code value to be stored in a data file to indicate what kind of
-   * predictor was used to store data
+   * Encodes a enumeration value as an integer code. Intended for
+   * use in data files that include raster space specifications,
+   * but may also be applied to user interfaces and other applications.
    *
-   * @return gets an integer code value indicating the data type; used
-   * internally.
+   * @return gets an integer code value indicating the enumeration type.
    */
   public int getCodeValue() {
     return codeValue;
   }
 
-  static GvrsGeometryType valueOf(int codeValue) {
+  /**
+   * Derives a enumeration value from an integer code. Intended for
+   * use in data files that include raster space specifications,
+   * but may also be applied to user interfaces and other applications.
+   * @param codeValue an integer in the range 0 to 2.
+   * @return a valid enumeration value.
+   */
+  public static RasterSpaceType valueOf(int codeValue) {
     switch (codeValue) {
       case 0:
         return Unspecified;

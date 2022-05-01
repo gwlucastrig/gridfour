@@ -56,6 +56,27 @@ public class GridPoint implements IGridPoint {
     this.iColumn = (int) (column + 0.5);
   }
 
+
+  /**
+   * Standard constructor.
+   * <p>
+   * The grid coordinates are a real-valued and potentially fractional
+   * row and column value.
+   *
+   * @param row a finite, real-valued coordinate in the grid system
+   * @param column a finite, real-valued coordinate in the grid system
+   * @param iRow an integer value, usually derived from the row value
+   * @param iColumn an integer value, usual derived from the column value
+   */
+  public GridPoint (double row, double column, int iRow, int iColumn) {
+    this.row = row;
+    this.column = column;
+    this.iRow = iRow;
+    this.iColumn = iColumn;
+  }
+
+
+
   /**
    * Get the row value associated with the grid point
    *
@@ -94,5 +115,11 @@ public class GridPoint implements IGridPoint {
   @Override
   public int getColumnInt() {
     return iColumn;
+  }
+
+  @Override
+  public String toString(){
+    return String.format("GridPoint row,col: (%f,%f)  (%d,%d)",
+      row, column, iRow, iColumn);
   }
 }

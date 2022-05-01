@@ -38,6 +38,7 @@
  */
 package org.gridfour.gvrs;
 
+import org.gridfour.coordinates.RasterSpaceType;
 import org.gridfour.coordinates.GeoPoint;
 import org.gridfour.coordinates.GridPoint;
 import org.gridfour.coordinates.ModelPoint;
@@ -129,12 +130,24 @@ public class GvrsFileSpecification {
 
   boolean isGeographicCoordinateSystemSet;
   boolean isCartesianCoordinateSystemSet;
+
   double x0;
   double y0;
   double x1;
   double y1;
+
+  // The cell-size values are the real-valued measures across
+  // raster cells. They may be angular units or simple distance measures.
   double cellSizeX;
   double cellSizeY;
+
+  // the fringe values are the margins around the grid that are
+  // applied to adjust for roundoff errors or the near edge effect
+  // for the RasterSpace.Point option.
+  double colFringe0;
+  double colFringe1;
+  double rowFringe0;
+  double rowFringe1;
 
   // Parameters for the model-to-raster transform
   double m2r00 = 1;
@@ -180,7 +193,7 @@ public class GvrsFileSpecification {
   String productLabel;
 
 
-  GvrsGeometryType geometryType  = GvrsGeometryType.Unspecified;
+  RasterSpaceType rasterSpace  = RasterSpaceType.Unspecified;
 
   List<CodecHolder> codecList = new ArrayList<>();
   List<String> codecIdentificationList = new ArrayList<>();
@@ -281,6 +294,17 @@ public class GvrsFileSpecification {
     int nRowsInTile,
     int nColumnsInTile) {
 
+    if (nRowsInRaster < 2) {
+      throw new IllegalArgumentException(
+        "Input value " + nRowsInRaster
+        + " is smaller than the 2-row minimum for GVRS");
+    }
+    if (nColumnsInRaster < 2) {
+      throw new IllegalArgumentException(
+        "Input value " + nColumnsInRaster
+        + " is smaller than the 2-column minimum for GVRS");
+    }
+
     version = VERSION;
     subversion = SUB_VERSION;
 
@@ -346,8 +370,7 @@ public class GvrsFileSpecification {
     y0 = 0;
     x1 = nColsInRaster - 1;
     y1 = nRowsInRaster - 1;
-    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
-    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+    applyDomain();
 
     nCellsInTile = nRowsInTile * nColsInTile;
 
@@ -388,6 +411,7 @@ public class GvrsFileSpecification {
       elementSpecifications.add(eSpec.copy());
     }
 
+    rasterSpace = s.rasterSpace;
     isGeographicCoordinateSystemSet = s.isGeographicCoordinateSystemSet;
     isCartesianCoordinateSystemSet = s.isCartesianCoordinateSystemSet;
     geoWrapsLongitude = s.geoWrapsLongitude;
@@ -397,8 +421,12 @@ public class GvrsFileSpecification {
     y0 = s.y0;
     x1 = s.x1;
     y1 = s.y1;
-    cellSizeX = s.cellSizeX;
-    cellSizeY = s.cellSizeY;
+    cellSizeX  = s.cellSizeX;
+    cellSizeY  = s.cellSizeY;
+    colFringe0 = s.colFringe0;
+    colFringe1 = s.colFringe1;
+    rowFringe0 = s.rowFringe0;
+    rowFringe1 = s.rowFringe1;
 
     m2r00 = s.m2r00;
     m2r01 = s.m2r01;
@@ -419,7 +447,7 @@ public class GvrsFileSpecification {
 
     isExtendedFileSizeEnabled = s.isExtendedFileSizeEnabled;
     isChecksumEnabled = s.isChecksumEnabled;
-    geometryType = s.geometryType;
+    rasterSpace = s.rasterSpace;
     dataCompressionEnabled = s.dataCompressionEnabled;
     for (CodecHolder holder : s.codecList) {
       codecList.add(new CodecHolder(holder));
@@ -486,7 +514,7 @@ public class GvrsFileSpecification {
    * @param lonColLast the longitude of the center point in the cell
    * in the last row and last column in the raster
    */
-  public void setGeographicCoordinates(
+  final public void setGeographicCoordinates(
     double latRow0, double lonCol0, double latRowLast, double lonColLast) {
     this.isGeographicCoordinateSystemSet = true;
     this.isCartesianCoordinateSystemSet = false;
@@ -507,8 +535,7 @@ public class GvrsFileSpecification {
     y0 = latRow0;
     x1 = gx1;
     y1 = latRowLast;
-    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
-    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+    applyDomain();
     checkGeographicCoverage();
     checkLatitudeRange();
 
@@ -535,96 +562,6 @@ public class GvrsFileSpecification {
     r2m12 = m[5];
   }
 
-
-  /**
-   * Set a geographic coordinate system to be used for interpreting the data.
-   * Note that this setting is mutually exclusive with the Cartesian
-   * coordinate system setting. The last setting applied replaces any
-   * earlier settings.
-   * <p>
-   * Various data sources take different approaches in terms of how they order
-   * their raster data in relationship to latitude. Some start with the
-   * northernmost latitude and work their way south, some start with the
-   * southernmost latitude and work their way north. Thus the arguments for
-   * this
-   * method are based on the ordering of the raster. The first pair of
-   * arguments
-   * give the coordinates for the first row and column in the grid. The second
-   * pair of arguments give the coordinates for the last.
-   * <p>
-   * Unfortunately, the possibility of longitude wrapping around the
-   * International Date line limits the flexibility for longitude
-   * specifications. This implementation assumes that the raster is organized
-   * so
-   * that the longitudes progress from west to east (longitude increases with
-   * increasing grid index). Thus, if a longitude of -90 to 90 were specified,
-   * it would assume that the raster columns went from 90 west to 90 east. But
-   * if 90, -90 were specified, it would be assumed that the raster grid went
-   * from 90 east, across the International Date Line, to 90 west.
-   * <p>
-   * This method also populates the internal AffineTransform that can be
-   * used for transforming coordinates between the geographic and grid
-   * coordinate systems.
-   *
-   * @param latRow0 the latitude of the center point in the cell
-   * in the first row and first column in the raster
-   * @param lonCol0 the longitude of the center point in the cell
-   * in the first row and first column in the raster
-   * @param latCellSpace the angular distance between rows in the raster
-   * (e.g. the delta latitude) measured from cell center to cell center
-   * @param lonCellSpace the angular distance between columns in the raster
-   * (e.g. the delta longitude) measured from cell center to cell center
-   */
-  public void setGeographicSystem(
-    double latRow0, double lonCol0, double latCellSpace, double lonCellSpace) {
-    this.isGeographicCoordinateSystemSet = true;
-    this.isCartesianCoordinateSystemSet = false;
-    if (!isFinite(latRow0)
-      || !isFinite(lonCol0)
-      || !isFinite(latCellSpace)
-      || !isFinite(lonCellSpace)) {
-      throw new IllegalArgumentException("Invalid floating-point value");
-    }
-
-    double gxDelta = lonCellSpace*(nColsInRaster-1);
-    if (gxDelta == 0) {
-      gxDelta = 360;
-    }
-    double gx0 = Angle.to180(lonCol0);
-    double gx1 = gx0 + gxDelta;
-
-    x0 = gx0;
-    y0 = latRow0;
-    x1 = gx1;
-    y1 = y0 + latCellSpace*(nRowsInRaster-1);
-    cellSizeX = lonCellSpace;
-    cellSizeY = latCellSpace;
-
-    checkGeographicCoverage();
-    checkLatitudeRange();
-
-    m2r00 = 1 / cellSizeX;
-    m2r01 = 0;
-    m2r02 = -x0 * m2r00;
-    m2r10 = 0;
-    m2r11 = 1 / cellSizeY;
-    m2r12 = -y0 * m2r11;
-    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
-    try {
-      rasterToModel = modelToRaster.createInverse();
-    } catch (NoninvertibleTransformException ex) {
-      throw new IllegalArgumentException(ex.getMessage(), ex);
-    }
-
-    double[] m = new double[6];
-    rasterToModel.getMatrix(m);
-    r2m00 = m[0];
-    r2m10 = m[1];
-    r2m01 = m[2];
-    r2m11 = m[3];
-    r2m02 = m[4];
-    r2m12 = m[5];
-  }
 
 
 
@@ -679,7 +616,7 @@ public class GvrsFileSpecification {
    * @param y1 the Y coordinate of the center point in the cell
    * in the last row and last column of the raster.
    */
-  public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
+  final public void setCartesianCoordinates(double x0, double y0, double x1, double y1) {
     isGeographicCoordinateSystemSet = false;
     isCartesianCoordinateSystemSet = true;
     geoWrapsLongitude = false;
@@ -699,10 +636,9 @@ public class GvrsFileSpecification {
     this.y0 = y0;
     this.x1 = x1;
     this.y1 = y1;
-    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
-    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+    applyDomain();
 
-    // It would be easy enough to compute the r2m matric directly, but
+    // It would be easy enough to compute the r2m matrix directly, but
     // testing showed that when we used the Java createInverse() method
     // and multiplied the two matrices togther, the values from createInverse
     // actually produced a result closer to the identify matrix.
@@ -730,80 +666,6 @@ public class GvrsFileSpecification {
     r2m12 = m[5];
   }
 
-
-  /**
-   * Sets the real-valued model to a Cartesian coordinate system.
-   * Note that this setting is mutually exclusive with the geographic
-   * coordinate system setting. The last setting applied replaces
-   * any earlier settings.
-   * <p>
-   * This method populates the internal AffineTransform that can be
-   * used for transforming coordinates between the model and grid
-   * coordinate systems.
-   * <p>
-   * The key assumption of this method is that the points (x0, y0) and
-   * (x1, y1) represent the real-valued coordinate at the <i>center</i> of
-   * their associated raster cells.
-   *
-   * @param x0 the X coordinate of the center point in the cell
-   * in the first row and first column of the raster.
-   * @param y0 the Y coordinate of the center point in the cell
-   * in the first row and first column of the raster.
-   * @param xCellSpace the distance across each raster cell in the direction
-   * of the X coordinate axis
-   * @param yCellSpace the distance across each raster cell in the direction
-   * of the Y coordinate axis
-   */
-  public void setCartesianSystem(double x0, double y0, double xCellSpace, double yCellSpace) {
-    isGeographicCoordinateSystemSet = false;
-    isCartesianCoordinateSystemSet = true;
-    geoWrapsLongitude = false;
-    if (!isFinite(x0) || !isFinite(y0) || !isFinite(xCellSpace) || !isFinite(yCellSpace)) {
-      throw new IllegalArgumentException("Invalid floating-point value");
-    }
-    if (xCellSpace<=0) {
-      throw new IllegalArgumentException(
-        "X cell spacing must be greater than zero");
-    }
-    if (yCellSpace<=0) {
-      throw new IllegalArgumentException(
-        "Y cell spacing must be greater than zero");
-    }
-
-    this.x0 = x0;
-    this.y0 = y0;
-    this.x1 = x0 + xCellSpace * (nColsInRaster - 1);
-    this.y1 = y0 + yCellSpace * (nRowsInRaster - 1);
-    cellSizeX = xCellSpace;
-    cellSizeY = yCellSpace;
-
-    // It would be easy enough to compute the r2m matric directly, but
-    // testing showed that when we used the Java createInverse() method
-    // and multiplied the two matrices togther, the values from createInverse
-    // actually produced a result closer to the identify matrix.
-
-    m2r00 = 1 / cellSizeX;
-    m2r01 = 0;
-    m2r02 = -x0 * m2r00;
-    m2r10 = 0;
-    m2r11 = 1 / cellSizeY;
-    m2r12 = -y0 * m2r11;
-    modelToRaster = new AffineTransform(m2r00, m2r10, m2r01, m2r11, m2r02, m2r12);
-    try {
-      rasterToModel = modelToRaster.createInverse();
-    } catch (NoninvertibleTransformException ex) {
-      throw new IllegalArgumentException(ex.getMessage(), ex);
-    }
-
-    double[] m = new double[6];
-    rasterToModel.getMatrix(m);
-    r2m00 = m[0];
-    r2m10 = m[1];
-    r2m01 = m[2];
-    r2m11 = m[3];
-    r2m02 = m[4];
-    r2m12 = m[5];
-  }
 
 
   /**
@@ -862,8 +724,8 @@ public class GvrsFileSpecification {
 
     isExtendedFileSizeEnabled = braf.readBoolean();
     isChecksumEnabled = braf.readBoolean();
-    int geometryCode = braf.readUnsignedByte();
-    geometryType = GvrsGeometryType.valueOf(geometryCode);
+    int rasterSpaceCode = braf.readUnsignedByte();
+    rasterSpace = RasterSpaceType.valueOf(rasterSpaceCode);
 
     int coordinateSystem = braf.readUnsignedByte();
     if (coordinateSystem == 1) {
@@ -876,8 +738,8 @@ public class GvrsFileSpecification {
     y0 = braf.leReadDouble();
     x1 = braf.leReadDouble();
     y1 = braf.leReadDouble();
-    cellSizeX = (x1 - x0) / (nColsInRaster - 1);
-    cellSizeY = (y1 - y0) / (nRowsInRaster - 1);
+
+    applyDomain();
 
     m2r00 = braf.leReadDouble();
     m2r01 = braf.leReadDouble();
@@ -1032,7 +894,7 @@ public class GvrsFileSpecification {
 
     braf.writeBoolean(isExtendedFileSizeEnabled);
     braf.writeBoolean(isChecksumEnabled);
-    braf.writeByte(geometryType.getCodeValue());
+    braf.writeByte(rasterSpace.getCodeValue());
 
     int coordinateSystem = 0;
     if (isCartesianCoordinateSystemSet) {
@@ -1353,15 +1215,18 @@ public class GvrsFileSpecification {
    * intended to represent the value at a particular point on the surface
    * described by the raster. If the geometry type is Area, the value at a row
    * and column is intended to represent the value for an entire cell centered
-   * at the coordinates associated with the row and column. In either case,
-   * GVRS treats real-valued coordinates (Cartesian or geographic) as giving the
-   * position at which the data value for a grid point exactly matches the
-   * value at the surface that is represented by the data.
+   * at the coordinates associated with the row and column.
+   * <p>For both the Area and Point cases, GVRS treats the assignment of
+   * real-valued coordinates (Cartesian or geographic) as identifying
+   * the coordinates of a single point located at the center of a raster cell.
+   * This treatment is different than that used in some other raster
+   * data formats (such as GeoTiFF), so developers should be cognizant of
+   * the difference when creating raster specifications.
    *
    * @param geometryType a valid instance of the enumeration.
    */
-  public void setGeometryType(GvrsGeometryType geometryType) {
-    this.geometryType = geometryType;
+  public void setRasterSpaceType(RasterSpaceType geometryType) {
+    this.rasterSpace = geometryType;
   }
 
   /**
@@ -1369,8 +1234,8 @@ public class GvrsFileSpecification {
    *
    * @return a valid instance of the enumeration.
    */
-  public GvrsGeometryType getGeometryType() {
-    return geometryType;
+  public RasterSpaceType getRasterSpaceType() {
+    return rasterSpace;
   }
 
   /**
@@ -1782,6 +1647,11 @@ public class GvrsFileSpecification {
         y1 = y;
       }
     }
+
+    // the cellsize computations are not necessarily correct when an AffineTransform
+    // is specified because they do not account for rotation or skew factors.
+    // however, we use the domain calculation to populate them.
+    applyDomain();
   }
   /**
    * Set the transform for mapping model coordinates to the raster grid.
@@ -1908,7 +1778,7 @@ public class GvrsFileSpecification {
   public GridPoint mapModelToGridPoint(double x, double y) {
     double col = x*m2r00 + y*m2r01 + m2r02; // left-and-right direction
     double row = x*m2r10 + y*m2r11 + m2r12; // up-and-down direction
-    return new GridPoint(row, col);
+    return makeGridPointUsingFringe(row, col);
   }
 
 
@@ -1931,11 +1801,26 @@ public class GvrsFileSpecification {
    * @return a valid instance.
    */
   public GridPoint mapGeographicToGridPoint(double latitude, double longitude) {
-    double row = (nRowsInRaster - 1) * (latitude - y0) / (y1 - y0);  // row
+    double row =  (latitude - y0) / cellSizeY;
     double delta = Angle.to360(longitude - x0);
-    double column = (nColsInRaster - 1) * delta / (x1 - x0);
-    GridPoint point = new GridPoint(row, column);
-    return point;
+    double col = delta / cellSizeX;
+    return makeGridPointUsingFringe(row, col);
+  }
+
+  private GridPoint makeGridPointUsingFringe(double row, double column){
+    int iRow = (int)(row+0.5);
+    int iCol = (int)(column+.5);
+    if(iRow ==-1 && row>=rowFringe0){
+      iRow=0;
+    }else if(iRow>=nRowsInRaster && row<=rowFringe1){
+      iRow = nRowsInRaster-1;
+    }
+    if(iCol ==-1 && column>=colFringe0){
+      iCol=0;
+    }else if(iCol>=nColsInRaster && column<=colFringe1){
+      iCol = nColsInRaster-1;
+    }
+    return new GridPoint(row, column, iRow, iCol);
   }
 
 
@@ -2048,4 +1933,19 @@ public class GvrsFileSpecification {
     return version==1 && (subversion==0 || subversion==1);
   }
 
+
+  /**
+   * Use the real-valued domain coordinates (x0, y0) and (x1, y1)
+   * to determine cell spacing and fringe values.
+   */
+  private void applyDomain(){
+      cellSizeX = (x1 - x0) / (nColsInRaster-1);
+      cellSizeY = (y1 - y0) / (nRowsInRaster-1);
+      double xUlp = Math.ulp(nColsInRaster-1);
+      double yUlp = Math.ulp(nRowsInRaster-1);
+      colFringe0 = -2 * xUlp;
+      colFringe1 = nColsInRaster - 0.5 + 2 * xUlp;
+      rowFringe0 = -2 * yUlp;
+      rowFringe1 = nRowsInRaster - 0.5 + 2 * yUlp;
+  }
 }
