@@ -319,7 +319,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * @return an integer value
    */
   public float getMaxValue() {
-    return minValue;
+    return maxValue;
   }
 
   @Override

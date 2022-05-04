@@ -38,7 +38,7 @@
  *  time and been adopted by multiple projects who hava modified it
  *  to suit their needs.  Thus, the parsing rules are also complicated.
  *
- *  
+ *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.imaging.palette;
@@ -46,10 +46,11 @@ package org.gridfour.imaging.palette;
 import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,7 +71,7 @@ import java.util.regex.Pattern;
  * https://github.com/GenericMappingTools/gmt under the directory
  * gmt-master/share/cpt.   Also, from the cpycmap.m project at
  * https://github.com/kakearney/cptcmap-pkg,
- * 
+ *
  * <p>
  * At this time, the ColorPaletteTable class does not support CYCLIC
  * palettes.
@@ -86,7 +87,7 @@ public class ColorPaletteTableReader {
     HSV
   }
 
-  
+
   private Color background = Color.white;
   private Color foreground = Color.black;
   private Color colorForNull;
@@ -111,7 +112,7 @@ public class ColorPaletteTableReader {
 
   Pattern softHingePattern
     = Pattern.compile("\\#.\\s*[Ss][Oo][Ff][Tt]_[Hh][Ii][Nn][Gg][Ee]");
-  
+
   ColorNameParser nameParser = new ColorNameParser();
 
   /**
@@ -125,8 +126,9 @@ public class ColorPaletteTableReader {
    * or specification-format error
    */
   public ColorPaletteTable read(File file) throws IOException {
-    try (FileReader fileReader = new FileReader(file);
-      BufferedReader reader = new BufferedReader(fileReader);) {
+      try (FileInputStream fins = new FileInputStream(file);
+         Reader in = new InputStreamReader(fins, StandardCharsets.ISO_8859_1);
+         BufferedReader reader = new BufferedReader(in)){
       return read(reader);
     }
   }
@@ -148,7 +150,7 @@ public class ColorPaletteTableReader {
 
   ColorPaletteTable read(BufferedReader reader) throws IOException {
     // In order to enable this class to be reused to read multiple
-    // files, reeset state variables.  
+    // files, reeset state variables.
     lineIndex = 0;
     colorModel = ColorModel.RGB;
     background = Color.white;
@@ -209,7 +211,7 @@ public class ColorPaletteTableReader {
     ColorPaletteRecord record0 = records.get(0);
     ColorPaletteRecord record1 = records.get(records.size() - 1);
     if (record0.range0 == -1 && record1.range1 == 1 && hingeSpecified) {
-      // this may be a hinged palette.  
+      // this may be a hinged palette.
       // we need to verify uniform coverage of the range of values.
       return testForContinuity(records);
     }

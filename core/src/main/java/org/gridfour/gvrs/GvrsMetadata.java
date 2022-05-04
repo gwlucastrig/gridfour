@@ -259,7 +259,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   public void setIntegers(int[] values) {
     checkTypeCompatibility(GvrsMetadataType.INTEGER);
     if (values == null || values.length == 0) {
-      this.content = new byte[0];
+      this.clearContent();
       return;
     }
     ByteBuffer bb = bbInit(GvrsMetadataType.INTEGER, values.length);
@@ -298,7 +298,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   public void setShorts(short[] values) {
     checkTypeCompatibility(GvrsMetadataType.SHORT);
     if (values == null || values.length == 0) {
-      this.content = new byte[0];
+      this.clearContent();
       return;
     }
     ByteBuffer bb = bbInit(GvrsMetadataType.SHORT, values.length);
@@ -337,7 +337,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   public void setDoubles(double[] values) {
     checkTypeCompatibility(GvrsMetadataType.DOUBLE);
     if (values == null || values.length == 0) {
-      this.content = new byte[0];
+      this.clearContent();
       return;
     }
     ByteBuffer bb = bbInit(GvrsMetadataType.DOUBLE, values.length);
@@ -361,15 +361,16 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   }
 
 
-  public void setString(String string){
+  public void setString(String string) {
     checkTypeCompatibility(GvrsMetadataType.STRING);
-    if(string==null || string.isEmpty()){
-      content = new byte[0];
+    if (string == null || string.isEmpty()) {
+      clearContent();
+    } else {
+      byte[] b = string.getBytes(StandardCharsets.UTF_8);
+      ByteBuffer bb = bbInit(GvrsMetadataType.STRING, 4 + b.length);
+      bb.putInt(b.length);
+      bb.put(b);
     }
-    byte []b = string.getBytes(StandardCharsets.UTF_8);
-    ByteBuffer bb = bbInit(GvrsMetadataType.STRING, 4+b.length);
-    bb.putInt(b.length);
-    bb.put(b);
   }
 
   public String getString(){
@@ -401,7 +402,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   public void setUnsignedShorts(short[] values) {
     checkTypeCompatibility(GvrsMetadataType.SHORT);
     if (values == null || values.length == 0) {
-      this.content = new byte[0];
+      this.clearContent();
       return;
     }
     ByteBuffer bb = bbInit(GvrsMetadataType.SHORT, values.length);
@@ -413,7 +414,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     public void setUnsignedShorts(int[] values) {
     checkTypeCompatibility(GvrsMetadataType.UNSIGNED_SHORT);
     if (values == null || values.length == 0) {
-      this.content = new byte[0];
+      this.clearContent();
       return;
     }
     ByteBuffer bb = bbInit(GvrsMetadataType.SHORT, values.length);
@@ -545,6 +546,16 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     uniqueRecordID = true;
   }
 
+   private void clearContent(){
+     content = new byte[0];
+   }
+
+  /**
+   * Implements a comparison based on name and recordID, in that order.
+   * @param o a valid instance
+   * @return an integer value following the general contract of Java's
+   * compareTo specification.
+   */
   @Override
   public int compareTo(GvrsMetadata o) {
       int test = name.compareTo(o.name);

@@ -98,6 +98,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private boolean isClosed;
   private boolean openedForWriting;
   private boolean deleteOnClose;
+  private boolean deleteOnCloseStatus;
+
   private long timeModified;
 
   // Content begins immediately after the header, so the position
@@ -493,7 +495,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
           openedForWriting = false;
           isClosed = true;
           braf.close();
-          file.delete();
+          deleteOnCloseStatus = file.delete();
           return;
       }
 
@@ -536,6 +538,17 @@ public class GvrsFile implements Closeable, AutoCloseable {
       }
       braf.close();
     }
+  }
+
+  /**
+   * Indicates if the backing file associated with this instance
+   * was successfully deleted on close.  This method will return true
+   * if and only if the file is configured to be deleted on close,
+   * the file has been closed, and the delete operation was successful.
+   * @return true if the file was deleted on close.
+   */
+  public boolean wasFileDeletedOnClose(){
+    return deleteOnCloseStatus;
   }
 
   /**

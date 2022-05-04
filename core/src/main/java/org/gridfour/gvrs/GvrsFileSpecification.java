@@ -326,7 +326,7 @@ public class GvrsFileSpecification {
       } else {
         this.nRowsInTile = 120;
       }
-      if (nColumnsInTile < 120) {
+      if (nColumnsInRaster < 120) {
         this.nColsInTile = nColsInRaster;
       } else {
         this.nColsInTile = 120;

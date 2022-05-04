@@ -181,15 +181,12 @@ public class GvrsElementIntCodedFloat extends GvrsElement {
       gridPoint.getRowInt(), gridPoint.getColumnInt(), value);
   }
 
- 
+
   public boolean isValueSupported(float value) {
     if (minValue <= value && value <= maxValue || value == fillValue) {
       return true;
     } else if (Float.isNaN(value)) {
-      if (Float.isNaN(fillValue)) {
-        return true;
-      }
-      return true;
+       return Float.isNaN(fillValue);
     } else {
       return false;
     }
