@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.gridfour.coordinates.GeoPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -102,7 +103,7 @@ public class GvrsFileSpecificationCoordinateTest {
     assertEquals(10, gp.getRow(), 1.0e-9, "corner 2, row coordinate mismatch");
     assertEquals(10, gp.getColumn(), 1.0e-9, "corner 2, col coordinate mismatch");
 
-    mp = spec.mapGridToModelPoint(10, 0); // row 10, col 0 
+    mp = spec.mapGridToModelPoint(10, 0); // row 10, col 0
     assertEquals(mx0, mp.getX(), 1.0e-9, "corner 3, x coordinate mismatch");
     assertEquals(0, mp.getY(), 1.0e-9, "corner 3, y coordinate mismatch");
     gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
@@ -110,7 +111,7 @@ public class GvrsFileSpecificationCoordinateTest {
     assertEquals(0, gp.getColumn(), 1.0e-9, "corner 3, col coordinate mismatch");
 
     // Finally, test the center
-    mp = spec.mapGridToModelPoint(5, 5); // row 4.5, col 4.5 
+    mp = spec.mapGridToModelPoint(5, 5); // row 4.5, col 4.5
     assertEquals(0, mp.getX(), 1.0e-9, "(0,0) x coordinate mismatch");
     assertEquals(0, mp.getY(), 1.0e-9, "(0,0) y coordinate mismatch");
   }
@@ -154,7 +155,7 @@ public class GvrsFileSpecificationCoordinateTest {
     assertEquals(10, gp.getRow(), 1.0e-9, "corner 2, row coordinate mismatch");
     assertEquals(10, gp.getColumn(), 1.0e-9, "corner 2, col coordinate mismatch");
 
-    mp = spec.mapGridToModelPoint(10, 0); // row 10, col 0 
+    mp = spec.mapGridToModelPoint(10, 0); // row 10, col 0
     assertEquals(mx0, mp.getX(), 1.0e-9, "corner 3, x coordinate mismatch");
     assertEquals(my1, mp.getY(), 1.0e-9, "corner 3, y coordinate mismatch");
     gp = spec.mapModelToGridPoint(mp.getX(), mp.getY());
@@ -162,8 +163,12 @@ public class GvrsFileSpecificationCoordinateTest {
     assertEquals(0, gp.getColumn(), 1.0e-9, "corner 3, col coordinate mismatch");
   }
 
+  /**
+   * Verifies that the affine transform elements are written and read
+   * correctly from a GVRS file.
+   */
   @Test
-  void transformReadAndWrite() {
+  void transformWriteAndRead() {
     File testFile = new File(tempDir, "TransformReadAndWrite.gvrs");
     if (testFile.exists()) {
       testFile.delete();
@@ -212,6 +217,67 @@ public class GvrsFileSpecificationCoordinateTest {
     AffineTransform rToM2 = spec2.getTransformRasterToModel();
     test = rToM1.equals(rToM2);
     assertTrue(test, "Raster-to-Model transforms mismatch");
-
   }
+
+  /**
+   * Compares the two ways of specifying a Cartesian model
+   * and confirms that the mappings are bijective
+   */
+  @Test
+  public void cartesianVariations() {
+    int nRow = 7;
+    int nCol = 13;
+    double x0 = -3;
+    double y0 = -3;
+    double x1 = 20;
+    double y1 = 20;
+    double sX = (x1 - x0) / (nCol - 1);
+    double sY = (y1 - y0) / (nRow - 1);
+    GvrsFileSpecification a = new GvrsFileSpecification(nRow, nCol);
+    GvrsFileSpecification b = new GvrsFileSpecification(nRow, nCol);
+    a.setCartesianCoordinates(x0, y0, x1, y1);
+    b.setCartesianModel(x0, y0, sX, sY);
+    for (int iRow = 0; iRow < nRow; iRow++) {
+      for (int iCol = 0; iCol < nCol; iCol++) {
+        ModelPoint aM = a.mapGridToModelPoint(iRow, iCol);
+        GridPoint bG = b.mapModelToGridPoint(aM.getX(), aM.getY());
+        assertEquals((double) iRow, bG.getRow(), 1.0e-6, "Failure for grid point");
+      }
+    }
+  }
+
+
+  /**
+   * Compares of the two ways of specifying a geographic model
+   * and confirms that the mappings are bijective
+   */
+  @Test
+  public void geographicVariations() {
+    int nRow = 7;
+    int nCol = 13;
+    double lat0 = -3;
+    double lat1 = 3;
+    double lon0  = 179;
+    double lon1 = -179;
+    double cellWidth = 2.0/(nCol-1);
+    double cellHeight = (lat1-lat0)/(nRow-1);
+
+    GvrsFileSpecification a = new GvrsFileSpecification(nRow, nCol);
+    GvrsFileSpecification b = new GvrsFileSpecification(nRow, nCol);
+    a.setGeographicCoordinates(lat0, lon0, lat1, lon1);
+    b.setGeographicModel(lat0, lon1, cellWidth, cellHeight);
+    for (int iRow = 0; iRow < nRow; iRow++) {
+      for (int iCol = 0; iCol < nCol; iCol++) {
+        ModelPoint aM = a.mapGridToModelPoint(iRow, iCol);
+        GridPoint bG = b.mapModelToGridPoint(aM.getX(), aM.getY());
+        assertEquals((double) iRow, bG.getRow(), 1.0e-6, "Failure for grid point");
+        GeoPoint gP = a.mapGridToGeoPoint(iRow, iCol);
+        bG = b.mapGeographicToGridPoint(gP.getLatitude(), gP.getLongitude());
+        assertEquals((double) iRow, bG.getRow(), 1.0e-6, "Failure for grid point");
+      }
+    }
+  }
+
+
+
 }
