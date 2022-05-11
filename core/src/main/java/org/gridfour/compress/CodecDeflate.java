@@ -188,7 +188,7 @@ public class CodecDeflate implements ICompressionEncoder, ICompressionDecoder {
                     testModel,
                     mCode,
                     mCodeLength);
-                if (testBytes.length < resultLength) {
+                if (testBytes != null && testBytes.length < resultLength) {
                     resultLength = testBytes.length;
                     resultBytes = testBytes;
                 }

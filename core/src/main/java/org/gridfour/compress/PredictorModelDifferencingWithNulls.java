@@ -96,6 +96,12 @@ public class PredictorModelDifferencingWithNulls implements IPredictorModel {
             nullFlag = values[rowOffset] == NULL_DATA_CODE;
         }
 
+        // nStart will not be zero if this method was called in a case
+        // where we knew there were null data codes in the stream.
+        // but as a precaution, we test anyway.
+        if(nStart==0){
+          return 0;
+        }
         double avgStart = (double) sumStart / nStart;
         encodedSeed = (int) Math.floor(avgStart + 0.5);
 

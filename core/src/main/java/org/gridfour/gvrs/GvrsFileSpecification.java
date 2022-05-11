@@ -601,10 +601,6 @@ public class GvrsFileSpecification {
         "Width and height of cells must not equal zero");
     }
 
-    double gxDelta = (nColsInRaster-1)*cellWidth;
-    if (gxDelta == 0) {
-      gxDelta = 360;
-    }
     x0  = lonCol0;
     y0 = latRow0;
     cellSizeX = cellWidth;

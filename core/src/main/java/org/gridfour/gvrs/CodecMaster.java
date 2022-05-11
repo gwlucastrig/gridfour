@@ -51,7 +51,7 @@ import org.gridfour.util.concurrent.TaskGroupExecutor;
  */
 class CodecMaster {
 
-  private class CompressorResults {
+  private static class CompressorResults {
 
     byte[] results = null;
 
@@ -71,7 +71,7 @@ class CodecMaster {
     }
   }
 
-    private class CompressorRunnable implements Runnable {
+    private static class CompressorRunnable implements Runnable {
       final CompressorResults compressorResults;
       final ICompressionEncoder compressor;
       final int codecIndex;
