@@ -55,6 +55,8 @@ import java.io.PrintStream;
 import static java.lang.Double.isFinite;
 import java.util.ArrayList;
 import java.util.List;
+import org.gridfour.coordinates.IGeoPoint;
+import org.gridfour.coordinates.IModelPoint;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.Angle;
 
@@ -1881,14 +1883,26 @@ public class GvrsFileSpecification {
     return makeGridPointUsingFringe(row, col);
   }
 
+  /**
+   * Maps a model point to a grid point. If the coordinates specified
+   * by the model point do not map to the domain of the grid coordinate
+   * system, this method will still compute grid values. Therefore,
+   * it is the responsibility of the calling application to perform
+   * whatever range checking is appropriate.
+   * @param modelPoint a valid instance
+   * @return a matching grid point.
+   */
+  public GridPoint mapModelToGridPoint(IModelPoint modelPoint){
+    return mapModelToGridPoint(modelPoint.getX(), modelPoint.getY());
+  }
+
 
 
   /**
    * Map geographic coordinates to grid coordinates storing the row and column
-   * in an array in that order. If the latitude or longitude is outside the
-   * ranges defined for these parameters, the resulting rows and columns may
-   * be
-   * outside the range of the valid grid coordinates
+   * in an instance of the GridPoint class. If the latitude or longitude is
+   * outside the ranges defined for these parameters, the resulting
+   * row and column may be outside the range of the valid grid coordinates
    * <p>
    * The transformation performed by this method is based on the parameters
    * established through a call to the setGeographicCoordinates{} method.
@@ -1907,9 +1921,32 @@ public class GvrsFileSpecification {
     return makeGridPointUsingFringe(row, col);
   }
 
+  /**
+   * Map geographic coordinates to grid coordinates storing the row and column
+   * in an instance of the GridPoint class. If the latitude or longitude is
+   * outside the ranges defined for these parameters, the resulting
+   * row and column may be outside the range of the valid grid coordinates
+   * <p>
+   * The transformation performed by this method is based on the parameters
+   * established through a call to the setGeographicCoordinates{} method.
+   * Longitudes may be adjusted according to the bounds established by the
+   * specification and in recognition of the cyclic nature of longitude
+   * coordinates (i.e. 450 degrees is equivalent to 90 degrees, etc.).
+   *
+   * @param geoPoint a valid instance.
+   * @return a valid instance of a GridPoint.
+   */
+  public GridPoint mapGeographicToGridPoint(IGeoPoint geoPoint) {
+    return mapGeographicToGridPoint(
+      geoPoint.getLatitude(), geoPoint.getLongitude());
+  }
+
+
+
+
   private GridPoint makeGridPointUsingFringe(double row, double column){
-    int iRow = (int)(row+0.5);
-    int iCol = (int)(column+.5);
+    int iRow = (int)Math.floor(row+0.5);
+    int iCol = (int)Math.floor(column+.5);
     if(iRow ==-1 && row>=rowFringe0){
       iRow=0;
     }else if(iRow>=nRowsInRaster && row<=rowFringe1){

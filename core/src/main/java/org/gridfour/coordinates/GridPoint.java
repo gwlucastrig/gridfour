@@ -52,8 +52,8 @@ public class GridPoint implements IGridPoint {
   public GridPoint (double row, double column) {
     this.row = row;
     this.column = column;
-    this.iRow = (int) (row + 0.5);
-    this.iColumn = (int) (column + 0.5);
+    this.iRow = (int) Math.floor(row + 0.5);
+    this.iColumn = (int) Math.floor(column + 0.5);
   }
 
 

@@ -172,7 +172,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
    * the integer encoding of floating point valuesFloating point
    * values are computed based on the following:
    * <pre>
-   *    encodedInteger = (int)((floatingPointValue - offset) * scale + 0.5
+   *    encodedInteger = (int)Math.floor((floatingPointValue - offset) * scale + 0.5)
    * </pre>
    * The limits for the input range are computed based on the
    * largest-magnitude values that can be represented by the
@@ -266,7 +266,7 @@ public class GvrsElementSpecificationIntCodedFloat extends GvrsElementSpecificat
       throw new IllegalArgumentException(
         "Specified value is out of range [" + minValue + ", " + maxValue + "]");
     }
-    return (int) ((value - offset) * scale + 0.5);
+    return (int) Math.floor((value - offset) * scale + 0.5);
   }
 
   /**

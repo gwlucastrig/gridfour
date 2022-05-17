@@ -486,7 +486,7 @@ public class PackageData {
               case INT_CODED_FLOAT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
-                  int iSample = (int) ((sample - zOffset) * zScale + 0.5);
+                  int iSample = (int)Math.floor ((sample - zOffset) * zScale + 0.5);
                   float fSample = iSample / zScale + zOffset;
                   float test = zElement.readValue(iRow, iCol);
                   double delta = Math.abs(fSample - test);
