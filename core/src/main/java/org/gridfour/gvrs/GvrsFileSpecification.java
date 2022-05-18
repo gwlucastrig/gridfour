@@ -371,12 +371,12 @@ public class GvrsFileSpecification {
 
     // Establish some fractional cell sizes for performing data queries
     // in the "fringe area" of the overall raster
-    double xUlp = Math.ulp(nColsInRaster);  // Unit of Least Precision (ULP)
-    double yUlp = Math.ulp(nRowsInRaster);
-    colFringe0 = -2 * xUlp;
-    colFringe1 = nColsInRaster - 0.5 + 2 * xUlp;
-    rowFringe0 = -2 * yUlp;
-    rowFringe1 = nRowsInRaster - 0.5 + 2 * yUlp;
+    double xUlp = Math.ulp((double)nColsInRaster);  // Unit of Least Precision (ULP)
+    double yUlp = Math.ulp((double)nRowsInRaster);
+    colFringe0 = -0.5 -4 * xUlp;
+    colFringe1 = nColsInRaster - 0.5 + 4 * xUlp;
+    rowFringe0 = -0.5 -4 * yUlp;
+    rowFringe1 = nRowsInRaster - 0.5 + 4 * yUlp;
 
     x0 = 0;
     y0 = 0;
@@ -803,12 +803,12 @@ public class GvrsFileSpecification {
 
     // Establish some fractional cell sizes for performing data queries
     // in the "fringe area" of the overall raster
-    double xUlp = Math.ulp(nColsInRaster);  // Unit of Least Precision (ULP)
-    double yUlp = Math.ulp(nRowsInRaster);
-    colFringe0 = -2 * xUlp;
-    colFringe1 = nColsInRaster - 0.5 + 2 * xUlp;
-    rowFringe0 = -2 * yUlp;
-    rowFringe1 = nRowsInRaster - 0.5 + 2 * yUlp;
+    double xUlp = Math.ulp((double)nColsInRaster);  // Unit of Least Precision (ULP)
+    double yUlp = Math.ulp((double)nRowsInRaster);
+    colFringe0 = -0.5 -4 * xUlp;
+    colFringe1 = nColsInRaster - 0.5 + 4 * xUlp;
+    rowFringe0 = -0.5 -4 * yUlp;
+    rowFringe1 = nRowsInRaster - 0.5 + 4 * yUlp;
 
 
     // Skip the space reserved for future variations of the tile index
@@ -1916,8 +1916,17 @@ public class GvrsFileSpecification {
    */
   public GridPoint mapGeographicToGridPoint(double latitude, double longitude) {
     double row =  (latitude - y0) / cellSizeY;
-    double delta = Angle.to360(longitude - x0);
-    double col = delta / cellSizeX;
+
+    // we implement special handling due to the cyclic nature
+    // of longitudes.
+    double delta = longitude - x0;
+    double col = delta/cellSizeX;
+    if(col<colFringe0 || col>colFringe1){
+      col = Angle.to180(delta)/cellSizeX;
+      if(col<colFringe0 || col>colFringe1){
+         col = Angle.to360(delta)/cellSizeX;
+      }
+    }
     return makeGridPointUsingFringe(row, col);
   }
 

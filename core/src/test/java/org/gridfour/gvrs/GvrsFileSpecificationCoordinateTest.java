@@ -278,6 +278,52 @@ public class GvrsFileSpecificationCoordinateTest {
     }
   }
 
+   static class TestPoint extends GeoPoint {
+    final int row;
+    final int col;
 
+    TestPoint(double latitude, double longitude, int row, int col) {
+      super(latitude, longitude);
+      this.row = row;
+      this.col = col;
+    }
+  }
+
+
+  @Test
+  void geographicToGrid(){
+     double s = 1.0 / 60.0;   // cell size, same for lat and lon
+    double h = s / 2.0;  // half cell size
+    int nRow = 180 * 60;
+    int nCol = 360 * 60;
+    double lat0 = -90 + h;
+    double lon0 = -180 + h;
+    double lat1 = 90 - h;
+    double lon1 = 180 - h;
+
+    GvrsFileSpecification spec = new GvrsFileSpecification(nRow, nCol);
+    spec.setGeographicModel(lat0, lon0, s, s);  // first method
+
+    TestPoint[] testPoints = {
+      new TestPoint(0, 0, nRow / 2, nCol / 2),
+      new TestPoint(h, h, nRow / 2, nCol / 2),
+      new TestPoint(-h, -h, nRow / 2 - 1, nCol / 2 - 1),
+      new TestPoint(-90, -180, 0, 0),
+      new TestPoint(90, 180, nRow - 1, nCol - 1),};
+
+    for (int iMethod = 0; iMethod < 2; iMethod++) {
+      for (int i = 0; i < testPoints.length; i++) {
+        TestPoint t = testPoints[i];
+        GridPoint grdPoint = spec.mapGeographicToGridPoint(t);
+        int testRow = grdPoint.getRowInt();
+        int testCol = grdPoint.getColumnInt();
+        if (testRow != t.row || testCol != t.col) {
+          System.out.println("fail");
+        }
+      }
+      spec.setGeographicCoordinates(lat0, lon0, lat1, lon1);  // second method
+    }
+
+  }
 
 }
