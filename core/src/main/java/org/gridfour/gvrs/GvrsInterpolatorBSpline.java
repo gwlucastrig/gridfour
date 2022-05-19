@@ -141,6 +141,16 @@ public class GvrsInterpolatorBSpline {
 
     /**
      * Interpolates a value for the specified x and y coordinates.
+     * <p>
+     * In the event that the coordinates are taken from a geographic
+     * coordinate system, it is assumed that the x coordinate
+     * gives a longitude and that the y coordinate gives a latitude value.
+     * Thus the order of arguments for this method would be
+     * <pre>
+     * longitude, latitude
+     * </pre>
+     * This approach is a departure from that used in other parts
+     * of the Gridfour API.
      *
      * @param x the x coordinate for interpolation
      * @param y the y coordinate for interpolation
@@ -164,15 +174,25 @@ public class GvrsInterpolatorBSpline {
      * Interpolates a value at the indicated position and also computes the unit
      * surface normal vector. Intended for rendering purposes.
      * <p>
-     * The result is stored in an array of 4 elements giving, in order, the z
-     * coordinate, and the x, y, and z components of the normal vector.
+     * In the event that the coordinates are taken from a geographic
+     * coordinate system, it is assumed that the x coordinate
+     * gives a longitude and that the y coordinate gives a latitude value.
+     * Thus the order of arguments for this method would be
+     * <pre>
+     * longitude, latitude
+     * </pre>
+     * This approach is a departure from that used in other parts
+     * of the Gridfour API
+     * <p>
+     * The result is stored in instance of the IterpolationResult class.
+     * <p>
+     * This method may throw an IllegalArgumentException if the specified
+     * coordinates are out-of-bounds.
      *
      * @param x the x coordinate for interpolation
      * @param y the y coordinate for interpolation
-     * @return a valid array, if successful populated with floating point
-     * values;
-     * otherwise, populated with NaN.
-     * @throws IOException in the event of an IO error
+     * @return An instance of InterpolationResult.
+     * @throws IOException in the event of an IO error.
      */
     public InterpolationResult zNormal(double x, double y) throws IOException {
         GridPoint g;
@@ -263,8 +283,8 @@ public class GvrsInterpolatorBSpline {
     }
 
     private float[] loadSamples(double row, double col) throws IOException {
-        int iRow = (int) row;
-        int iCol = (int) col;
+        int iRow = (int) Math.floor(row);
+        int iCol = (int) Math.floor(col);
         if (standardHandlingLeft <= iCol && iCol <= standardHandlingRight) {
             int col0 = iCol - 1;
             int row0 = blockLimit(iRow - 1, nRowsInRaster);
@@ -305,10 +325,12 @@ public class GvrsInterpolatorBSpline {
         int n1, n2;
         float[] z1;
         float[] z2;
-        if (iCol == 0) {
-            col0 = nColsForWrap - 1;
-            n1 = 1;
-            n2 = 3;
+        // the column cooordinate should be larger than iCol
+        // and less than iCol+1
+        if (iCol <= 0) {
+            col0 = nColsForWrap - 1 + iCol;
+            n1 = nColsForWrap - col0;
+            n2 = 4-n1;
             z1 = element.readBlock(row0, col0, 4, n1);
             z2 = element.readBlock(row0, 0, 4, n2);
         } else {

@@ -49,13 +49,12 @@ public class GridPoint implements IGridPoint {
    * @param row a finite, real-valued coordinate in the grid system
    * @param column a finite, real-valued coordinate in the grid system
    */
-  public GridPoint (double row, double column) {
+  public GridPoint(double row, double column) {
     this.row = row;
     this.column = column;
     this.iRow = (int) Math.floor(row + 0.5);
     this.iColumn = (int) Math.floor(column + 0.5);
   }
-
 
   /**
    * Standard constructor.
@@ -68,14 +67,12 @@ public class GridPoint implements IGridPoint {
    * @param iRow an integer value, usually derived from the row value
    * @param iColumn an integer value, usual derived from the column value
    */
-  public GridPoint (double row, double column, int iRow, int iColumn) {
+  public GridPoint(double row, double column, int iRow, int iColumn) {
     this.row = row;
     this.column = column;
     this.iRow = iRow;
     this.iColumn = iColumn;
   }
-
-
 
   /**
    * Get the row value associated with the grid point
@@ -117,8 +114,32 @@ public class GridPoint implements IGridPoint {
     return iColumn;
   }
 
+  /**
+   * Returns the floating point value associated with the columnar position
+   * of the grid point. This value is provided as a convenience for developers
+   * who find it useful to specify coordinates in terms of (x, y)
+   * rather than row and column.
+   *
+   * @return a potentially non-integral floating-point value.
+   */
+  public double getX() {
+    return column;
+  }
+
+  /**
+   * Returns the floating point value associated with the row position
+   * of the grid point. This value is provided as a convenience for developers
+   * who find it useful to specify coordinates in terms of (x, y)
+   * rather than row and column.
+   *
+   * @return a potentially non-integral floating-point value.
+   */
+  public double getY() {
+    return row;
+  }
+
   @Override
-  public String toString(){
+  public String toString() {
     return String.format("GridPoint row,col: (%f,%f)  (%d,%d)",
       row, column, iRow, iColumn);
   }
