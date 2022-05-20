@@ -1678,6 +1678,29 @@ public class GvrsFileSpecification {
     elementSpecifications.add(specification);
   }
 
+  /**
+   * Provides a convenience method that allows an application to add
+   * an element specification without constructing its own instance.
+   * The element added to the overall specification is based on
+   * default settings and uses the name specified by the calling application.
+   * @param name the name of the floating-point element to be added.
+   */
+  public void addElementFloat(String name){
+    GvrsElementSpecification eSpec = new GvrsElementSpecificationFloat(name);
+    addElementSpecification(eSpec);
+  }
+
+  /**
+   * Provides a convenience method that allows an application to add
+   * an element specification without constructing its own instance.
+   * The element added to the overall specification is based on
+   * default settings and uses the name specified by the calling application.
+   * @param name the name of the integer element to be added.
+   */
+  public void addElementInt(String name){
+    GvrsElementSpecification eSpec = new GvrsElementSpecificationInt(name);
+    addElementSpecification(eSpec);
+  }
 
   /**
    * Gets an affine transform for mapping real-valued "model" coordinates
