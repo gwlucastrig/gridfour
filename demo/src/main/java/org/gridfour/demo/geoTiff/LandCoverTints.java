@@ -33,10 +33,9 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import javax.imageio.ImageIO;
 import org.apache.commons.imaging.FormatCompliance;
 import org.apache.commons.imaging.ImageReadException;
-import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.color.ColorCieLab;
 import org.apache.commons.imaging.color.ColorConversions;
 import org.apache.commons.imaging.color.ColorXyz;
@@ -44,9 +43,9 @@ import org.apache.commons.imaging.common.bytesource.ByteSourceFile;
 import org.apache.commons.imaging.formats.tiff.TiffContents;
 import org.apache.commons.imaging.formats.tiff.TiffDirectory;
 import org.apache.commons.imaging.formats.tiff.TiffField;
+import org.apache.commons.imaging.formats.tiff.TiffImagingParameters;
 import org.apache.commons.imaging.formats.tiff.TiffReader;
 import org.apache.commons.imaging.formats.tiff.constants.GeoTiffTagConstants;
-import org.apache.commons.imaging.formats.tiff.constants.TiffConstants;
 
 /**
  * Accesses the Natural Earth Land Cover file and obtains interpolated
@@ -100,11 +99,11 @@ public class LandCoverTints {
         // Read the directories in the TIFF file.  Directories are the
         // main data element of a TIFF file. They usually include an image
         // element, but sometimes just carry metadata. This example
-        // reads all the directories in the file.   Typically reading
+        // reads just the first in the file.   But, typically, reading
         // the directories is not a time-consuming operation.
-        HashMap<String, Object> params = new HashMap<>();
+        TiffImagingParameters  params = new TiffImagingParameters();
         TiffContents contents = tiffReader.readFirstDirectory(
-            byteSource, params, true, formatCompliance);
+            byteSource,  true, formatCompliance);
 
         // Read the first Image File Directory (IFD) in the file.  A practical
         // implementation could use any of the directories in the file.
@@ -148,11 +147,8 @@ public class LandCoverTints {
         w = x1 - x0 + 1;
         h = y1 - y0 + 1;
 
-        params.put(TiffConstants.PARAM_KEY_SUBIMAGE_X, x0);
-        params.put(TiffConstants.PARAM_KEY_SUBIMAGE_Y, y0);
-        params.put(TiffConstants.PARAM_KEY_SUBIMAGE_WIDTH, w);
-        params.put(TiffConstants.PARAM_KEY_SUBIMAGE_HEIGHT, h);
-        BufferedImage image = Imaging.getBufferedImage(file, params);
+        params.setSubImage(x0, y0, w, h);
+        BufferedImage image = directory.getTiffImage(params);
         // ImageIO.write(image, "PNG", new File("conus_tints.png"));
         xrgb = new int[w * h];
         image.getRGB(0, 0, w, h, xrgb, 0, w);

@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
 import javax.imageio.ImageIO;
 import org.apache.commons.imaging.FormatCompliance;
 import org.apache.commons.imaging.ImageReadException;
@@ -40,6 +39,7 @@ import org.apache.commons.imaging.common.bytesource.ByteSourceFile;
 import org.apache.commons.imaging.formats.tiff.TiffContents;
 import org.apache.commons.imaging.formats.tiff.TiffDirectory;
 import org.apache.commons.imaging.formats.tiff.TiffField;
+import org.apache.commons.imaging.formats.tiff.TiffImagingParameters;
 import org.apache.commons.imaging.formats.tiff.TiffRasterData;
 import org.apache.commons.imaging.formats.tiff.TiffReader;
 import org.apache.commons.imaging.formats.tiff.constants.GeoTiffTagConstants;
@@ -324,9 +324,8 @@ public class DemoCOG {
         landCoverTints.extendNearShoreColors(100);
         ps.println("Reading data from file");
         long time0 = System.nanoTime();
-        HashMap<String, Object> params = new HashMap<>();
-        TiffRasterData rasterData
-          = directory.getFloatingPointRasterData(params);
+        TiffImagingParameters  params = new TiffImagingParameters();
+        TiffRasterData rasterData = directory.getRasterData(params);
         long time1 = System.nanoTime();
         ps.println("Data read in " + ((time1 - time0) / 1.0e+6) + " ms");
 
