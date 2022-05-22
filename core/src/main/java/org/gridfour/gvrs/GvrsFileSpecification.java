@@ -1206,14 +1206,9 @@ public class GvrsFileSpecification {
 
   /**
    * Indicates whether the extended file size option is enabled. If the
-   * extended
-   * file size option is not enabled, the maximum size of a file is 32
+   * extended file size option is not enabled, the maximum size of a file is 32
    * gigabytes. Larger files may be specified using this option, but doing so
    * will increase the amount of internal memory used to process the files.
-   * <p>
-   * <strong>Warning:</strong>At this time the extended file size option is
-   * not
-   * implemented by the GvrsFile class.
    *
    * @param extendedFileSizeEnabled true if extended file sizes are enabled;
    * otherwise false.
@@ -1699,6 +1694,19 @@ public class GvrsFileSpecification {
    */
   public void addElementInt(String name){
     GvrsElementSpecification eSpec = new GvrsElementSpecificationInt(name);
+    addElementSpecification(eSpec);
+  }
+
+
+  /**
+   * Provides a convenience method that allows an application to add
+   * an element specification without constructing its own instance.
+   * The element added to the overall specification is based on
+   * default settings and uses the name specified by the calling application.
+   * @param name the name of the integer element to be added.
+   */
+  public void addElementShort(String name){
+    GvrsElementSpecification eSpec = new GvrsElementSpecificationShort(name);
     addElementSpecification(eSpec);
   }
 

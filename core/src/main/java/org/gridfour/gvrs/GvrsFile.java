@@ -490,55 +490,88 @@ public class GvrsFile implements Closeable, AutoCloseable {
    */
   @Override
   public void close() throws IOException {
-    if (!isClosed) {
-      codecMaster.shutdown();
+    if(isClosed){
+      return;
+    }
 
-      if(openedForWriting && deleteOnClose){
-          openedForWriting = false;
-          isClosed = true;
-          braf.close();
-          deleteOnCloseStatus = file.delete();
-          return;
-      }
+    codecMaster.shutdown();
 
-      if (openedForWriting) {
-        tileCache.flush();
-        braf.seek(FILEPOS_MODIFICATION_TIME);
-        long closingTime = System.currentTimeMillis();
-        braf.leWriteLong(closingTime);
-        braf.leWriteLong(0); // opened for writing time
-
-        long freeSpaceIndexPos = recordMan.writeFreeSpaceIndexRecord();
-        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_INDEX);
-        braf.leWriteLong(freeSpaceIndexPos);
-
-        long metadataIndexPos = recordMan.writeMetadataIndexRecord();
-        braf.seek(FILEPOS_OFFSET_TO_METADATA_INDEX);
-        braf.leWriteLong(metadataIndexPos);
-
-        // At present, there is only one tile index record.
-        // In the future, addition records may be added.
-        long tileIndexPos = recordMan.writeTileIndexRecord();
-        braf.seek(FILEPOS_OFFSET_TO_TILE_INDEX);
-        braf.leWriteLong(tileIndexPos);
-
-        if (spec.isChecksumEnabled) {
-          long checksum = tabulateChecksumFromHeader();
-          braf.leWriteInt((int) checksum);
-        }
-        braf.flush();
-        timeModified = closingTime;
-      }
+    if(openedForWriting && deleteOnClose){
+      // because the file will be deleted, there is no need
+      // to perform the flush operations.  Close the underlying
+      // random-access file, delete the file, and exit.
+      IOException exceptionDuringClose = null;
       openedForWriting = false;
       isClosed = true;
-
-      // set the elements to an inaccessible state to indicate
-      // that the file is closed.
-      for (GvrsElement element : elements) {
-        element.tileIndex = -1;
-        element.tileElement = null;
+      nullifyAccessElements();
+      try{
+         braf.close();
+      }catch(IOException ioex){
+        exceptionDuringClose = ioex;
       }
-      braf.close();
+      deleteOnCloseStatus = file.delete();
+      if(exceptionDuringClose !=null){
+        throw exceptionDuringClose;
+      }
+      return;
+    }
+
+    IOException exceptionDuringFlush = null;
+    if (openedForWriting ) {
+      openedForWriting = false;
+      if(!recordMan.writeFailure){
+        try {
+          tileCache.flush();
+          braf.seek(FILEPOS_MODIFICATION_TIME);
+          long closingTime = System.currentTimeMillis();
+          braf.leWriteLong(closingTime);
+          braf.leWriteLong(0); // opened for writing time
+
+          long freeSpaceIndexPos = recordMan.writeFreeSpaceIndexRecord();
+          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_INDEX);
+          braf.leWriteLong(freeSpaceIndexPos);
+
+          long metadataIndexPos = recordMan.writeMetadataIndexRecord();
+          braf.seek(FILEPOS_OFFSET_TO_METADATA_INDEX);
+          braf.leWriteLong(metadataIndexPos);
+
+          // At present, there is only one tile index record.
+          // In the future, addition records may be added.
+          long tileIndexPos = recordMan.writeTileIndexRecord();
+          braf.seek(FILEPOS_OFFSET_TO_TILE_INDEX);
+          braf.leWriteLong(tileIndexPos);
+
+          if (spec.isChecksumEnabled) {
+            long checksum = tabulateChecksumFromHeader();
+            braf.leWriteInt((int) checksum);
+          }
+          braf.flush();
+          timeModified = closingTime;
+        } catch (IOException ioex) {
+          exceptionDuringFlush = ioex;
+        }
+      }
+    }
+
+
+    isClosed = true;
+    nullifyAccessElements();
+
+    braf.close();
+
+    if(exceptionDuringFlush != null){
+      throw exceptionDuringFlush;
+    }
+  }
+
+  /**
+   * Used during a close operation to null out any elements in the
+   * tile cache and any elements that may be holding references to them.
+   */
+  private void nullifyAccessElements(){
+    for (GvrsElement element : elements) {
+      element.tileIndex = -1;
+      element.tileElement = null;
     }
   }
 

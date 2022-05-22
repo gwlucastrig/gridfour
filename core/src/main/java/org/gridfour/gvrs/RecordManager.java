@@ -99,6 +99,8 @@ class RecordManager {
 
   final HashMap<String, GvrsMetadataReference> metadataRefMap = new HashMap<>();
 
+  boolean writeFailure;
+
   RecordManager(
     GvrsFileSpecification spec,
     CodecMaster rasterCodec,
@@ -374,10 +376,10 @@ class RecordManager {
     // output content is as follows:
     //     1.  Tile index (positive integer)
     //     2.  N-element sets of
-    //            Length of data for element 
+    //            Length of data for element
     //               a. If length==standardSize, uncompressed element data
     //               b. If length<standardSize, compressed element data
-    // 
+    //
     // The compressed element data is in an opaque format.  Note that even
     // when compression is enabled, data with a high degree of randomness
     // (high information entropy) will not compress well. In fact, sometimes
@@ -438,6 +440,7 @@ class RecordManager {
           if (posToStore > MAX_NON_EXTENDED_FILE_POS
             && !spec.isExtendedFileSizeEnabled) {
             // see explanation above
+            writeFailure = true;
             throw new IOException(FILE_POS_TOO_BIG);
           }
           tilePositionIndex.setFilePosition(tileIndex, posToStore);
@@ -454,6 +457,7 @@ class RecordManager {
       posToStore = fileSpaceAlloc(payloadSize, RecordType.Tile);
       if (posToStore > MAX_NON_EXTENDED_FILE_POS && !spec.isExtendedFileSizeEnabled) {
         // see explanation above
+        writeFailure = true;
         throw new IOException(FILE_POS_TOO_BIG);
       }
       // set the position, seek the start of the record,
@@ -679,8 +683,8 @@ class RecordManager {
       }
   }
 
-  
-  
+
+
   void analyzeAndReport(PrintStream ps) throws IOException {
 
     int nCompressedTiles = 0;
@@ -842,7 +846,7 @@ class RecordManager {
       node = node.next;
     }
     sizeFreeNodes = 4 + nFreeNodes * 12;
-    
+
     braf.leWriteInt(nFreeNodes);
     node = freeList;
     for (int i = 0; i < nFreeNodes; i++) {
