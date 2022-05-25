@@ -22,10 +22,10 @@ data compression, contouring, surface analysis, and other operations aimed
 at analyzing and understanding data stored in raster form.
 
 ## Our Inspiration
-Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.gebco.net/) . That ambitious
+Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.org/) . That ambitious
 undertaking aims to map 100 percent of the ocean floor by 2030.  To put that in perspective,
 the project organizers estimate that, today, only about 20 percent of the world's oceans are fully
-mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q4) &#41;.  So there's a lot of work to be done
+mapped &#40;see [Seabed 2030, FAQ](https://seabed2030.org/faq/#q4) &#41;.  So there's a lot of work to be done
 in the next decade.
 
 On thing is certain, the existence of projects like Seabed 2030 will result in massive collections
@@ -106,4 +106,4 @@ _ETOPO1 Global Relief Model_. Accessed December 2019 from [https://www.ngdc.noaa
 
 ## Notes
 <a name="note1">&#91;1&#93;</a>Point count estimated using survey-resolution table given in 
-[Seabed 2030, FAQ](https://seabed2030.gebco.net/faq/#q5). 
+[Seabed 2030, FAQ](https://seabed2030.org/faq/#q5). 
