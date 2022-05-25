@@ -52,7 +52,9 @@ import org.gridfour.interpolation.InterpolatorBSpline;
 
 /**
  * Performs interpolations over a GVRS raster file using the classic B-Spline
- * algorithm.
+ * algorithm. This class combines access routines for extracting sample
+ * data from GVRS raster files with the general-purpose InterpolatorBSpline.java
+ * class implemented as part of the Gridfour software library.
  * <p>
  * For geographic coordinates, logic is implemented to support cases where the
  * interpolated values span the coordinate-system division (usually at +/-180
@@ -60,10 +62,13 @@ import org.gridfour.interpolation.InterpolatorBSpline;
  * <p>
  * This class is intended to be used for applications that may require millions
  * of calculations. Therefore, emphasis has been placed on speed.
- * <strong>Under development</strong> Module has undergone some testing and
- * seems to reliably compute correct values. Development is required to add more
- * more methods, including the computation of surface derivatives and proper
- * access to GVRS files of dimension higher than 1.
+ * <p>
+ * The coordinate systems used for interpolation are described in the
+ * Gridfour project wiki article
+ * <a href="https://github.com/gwlucastrig/gridfour/wiki/Gridfour-Raster-Index-and-Coordinate-Systems">
+ * Gridfour Raster Index and Coordinate Systems</a>. The article includes
+ * a discussion of the concept of a "fringe" region at the periphery of
+ * the interpolation domain.
  */
 public class GvrsInterpolatorBSpline {
 
@@ -282,29 +287,69 @@ public class GvrsInterpolatorBSpline {
         return (1 - cs) * y0 + cs * y1;
     }
 
-    private float[] loadSamples(double row, double col) throws IOException {
+    private float[] loadSamples(double pRow, double pCol) throws IOException {
+      double row = pRow;
+      double col = pCol;
+
+      // check to see if the row falls within the valid range
+      // if it falls outside the valid interpolation region but
+      // within the limits of the "fringe area", we constrain its value.
+      // otherwise, we cannot perform an interpolation.
+      if(row<0){
+        if(row<spec.rowFringe0){
+          return null;
+        }
+        row =0;
+      }else if(row>nRowsInRaster - 1){
+        if(row>spec.rowFringe1){
+          return null;
+        }
+        row = nRowsInRaster - 1;
+      }
+
         int iRow = (int) Math.floor(row);
         int iCol = (int) Math.floor(col);
+        // in many cases, the column falls well within the bounds
+        // in which we can interpolate and no special checks are needed
+        // to see if the column is in bounds.  Check for the simple case
+        // with standard handling.
         if (standardHandlingLeft <= iCol && iCol <= standardHandlingRight) {
             int col0 = iCol - 1;
             int row0 = blockLimit(iRow - 1, nRowsInRaster);
             u = col - col0 - 1; // x parameter
             v = row - row0 - 1; // y parameter
-
             return element.readBlock(row0, col0, 4, 4);
-
         }
 
+        // If we get here, the column values are out of the range
+        // that can be used for a simple interpolation block.
+        // If the coordinate system is geographic in nature, and the
+        // data spans the entire range of longitude, it is possible
+        // that we can pull up the appropriate columns by processing
+        // the transition across ends of the range of longitudes.
+        // This situation occurs commonly in cases where the query
+        // coordinates are near the International Date Line.
+        // But it can arise in other cases depending on how longitude
+        // coordinates are mapped to columns.
         if (geoWrapsLongitude) {
             return loadWrappingSamples(row, col, iRow, iCol);
         }
-        // either it's a Cartesian coordinate system or a geographic system
-        // with limited coverage
-        if (iCol < 0 || iCol > nColsInRaster - 1) {
-            return null;
+
+        // If we get here, we are faced with either
+        // a Cartesian coordinate system or a geographic system
+        // with limited coverage.  In either case, the columnar coordinates
+        // are not cyclic and no wrapping logic is applied.
+        // We do perform the same fringe-related logic that was applied
+        // to rows.
+        if(col<spec.colFringe0 || col>spec.colFringe1){
+          return null;
         }
-        if (row < 0 || row > nRowsInRaster - 1) {
-            return null;
+        if(col<0){
+          col = 0;
+          iCol = 0;
+        }else if(col>nColsInRaster-1){
+          col = nColsInRaster - 1;
+          iCol = nColsInRaster - 1;
         }
 
         int col0 = blockLimit(iCol - 1, nColsInRaster);
@@ -313,12 +358,12 @@ public class GvrsInterpolatorBSpline {
         v = row - row0 - 1; // y parameter
 
         return element.readBlock(row0, col0, 4, 4);
-
     }
 
     private float[] loadWrappingSamples(double row, double col, int iRow, int iCol) throws IOException {
 
-        // iCol will be in the range nColsInRaster-2 to nColsInRaster-1
+        // iCol is in the vacinity of the coordinate wrapping columns.
+        // It will be in the range nColsInRaster-2 to nColsInRaster-1
         // or it will be equal to zero.
         int row0 = blockLimit(iRow - 1, nRowsInRaster);
         int col0;
