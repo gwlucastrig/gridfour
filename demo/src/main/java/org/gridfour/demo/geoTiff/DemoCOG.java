@@ -337,10 +337,15 @@ public class DemoCOG {
         // image.
         //     The xScale is adjusted for the convergence of the meridians
         // at the center latitude of the raster data set.
+        //     GeoTIFF gives rows starting at the northern part of the tile
+        // with the latitude decreasing as row index increases.  This approach
+        // would lead to a negative cell-spacing.  But, by tradition, GeoTIFFs
+        // give the cell spacing along the y axis as a positive value.
+        // We negate it here.
         double cenLat = (lat1 + lat0) / 2.0;
         double cosCenLat = Math.cos(Math.toRadians(cenLat));
         double yScale
-          = pixScale[1] * (Math.PI / 180) * EARTH_MEAN_RADIUS;
+          = -pixScale[1] * (Math.PI / 180) * EARTH_MEAN_RADIUS;
         double xScale
           = pixScale[0] * (Math.PI / 180) * EARTH_MEAN_RADIUS * cosCenLat;
 
@@ -398,8 +403,23 @@ public class DemoCOG {
                   InterpolationTarget.FirstDerivatives,
                   result);
                 // double z = result.z;  not used, included for documentation
+                //   If we wish to find meaningful derivatives, then the
+                // scales for the row and column cell spacing must be
+                // in a consistent coordinate system with the elevation
+                // and also reflect the geometry of the raster over which
+                // the interpolation is performed.
+                //    We noted above that yScale value is negative. It reflects
+                // the cell spacing and the fact that a GeoTIFF gives rows
+                // in order from noth to south.  Since the interpolation was
+                // performed over grid spacing, the yScale will be negative
+                // and the derivative will reflect Cartesian coordinates.
+                //   The derivatives computed here are tangent to the surface
+                // The surface normal would just be the cross product
+                //    N = (1, 0, dz/dx) X (0, 1, dz/dy)
+                //      =  (-dz/dx,  -dz/dy,   1.0)
+                // We convert it to a unit vector for conventience.
                 double nx = -result.zx * steepen;
-                double ny = result.zy * steepen;
+                double ny = -result.zy * steepen;
                 double s = Math.sqrt(nx * nx + ny * ny + 1);
                 nx /= s;
                 ny /= s;
@@ -469,7 +489,7 @@ public class DemoCOG {
         ps.println("Writing image to " + outputFile);
         ImageIO.write(bImage, "JPEG", outputFile);
 
-        double mPerPix = reductionFactor * yScale;
+        double mPerPix = Math.abs(reductionFactor * yScale);
         BufferedImage sImage = makeReducedImage(adjustedWidth, adjustedHeight, argb, reductionFactor);
 
         if (scaleBar) {

@@ -1339,10 +1339,14 @@ public class GvrsFileSpecification {
    * Gets the sizes for the cells based on the coordinate system set in the
    * specification. These sizes are the distances measured along the x and y
    * axes in the coordinate system specified for this instance.
+   * <p>
+   * Note: If this instance specifies a geographic model, then the cell
+   * size will be in degrees, with the index-of-zero element of the array
+   * (the x coordinate) corresponding to longitude and the index-of-one
+   * corresponding to latitude.
    *
    * @return a valid array of dimension 2 giving, respectively, the x and y
-   * cell
-   * sizes.
+   * cell sizes.
    */
   public double[] getCellSizes() {
     double[] s = new double[2];

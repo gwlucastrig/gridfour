@@ -187,12 +187,27 @@ public class GvrsInterpolatorBSpline {
      * longitude, latitude
      * </pre>
      * This approach is a departure from that used in other parts
-     * of the Gridfour API
+     * of the Gridfour API.
      * <p>
      * The result is stored in instance of the IterpolationResult class.
      * <p>
      * This method may throw an IllegalArgumentException if the specified
      * coordinates are out-of-bounds.
+     * <p>
+     * The first derivatives computed by this method are based on the model
+     * coordinate system specified by the GvrsFile instance that
+     * was used to construct this class. For Geographic coordinates, the
+     * angular cell spacing (given in degrees) is converted to meters.
+     * So, for example, a partial derivative for a surface giving elevation in
+     * meters z = f(x, y) would be unitless tangents (dz/dx, dz/dy)
+     * with the units of change in elevation being cancelled out by
+     * the units of change in distance.  While this approach is imperfect,
+     * it is what is used at this stage of the Gridfour software's
+     * development.
+     *     Note, also, that for geographic models, the X scale across columns
+     * is adjusted according to the latitude specified for the interpolation
+     * point (to account for the convergence of the meridians).
+     *
      *
      * @param x the x coordinate for interpolation
      * @param y the y coordinate for interpolation
