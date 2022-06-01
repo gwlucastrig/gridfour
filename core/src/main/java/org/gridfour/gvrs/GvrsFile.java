@@ -659,7 +659,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
       }
       ps.format("%nFile size:                           %12d bytes, %4.2f MB%n",
         fileSize, fileSize / (1024.0 * 1024.0));
-      ps.format("Average bits per sample (estimated):     %6.4f%n",
+      ps.format("Average bits per sample based on file size:     %6.4f%n",
         avgBitsPerSample);
     }
   }

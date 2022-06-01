@@ -690,6 +690,7 @@ class RecordManager {
     int nCompressedTiles = 0;
     int nNonCompressedTiles = 0;
     long nonCompressedBytes = 0;
+    long compressedBytes = 0;
 
     int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
     for (int tileIndex = 0; tileIndex < nTiles; tileIndex++) {
@@ -712,6 +713,7 @@ class RecordManager {
           braf.skipBytes(n);
         } else {
           compressed = true;
+          compressedBytes+=n;
           byte[] packing = new byte[n];
           braf.readFully(packing);
           codecMaster.analyze(spec.nRowsInTile, spec.nColsInTile, packing);
@@ -725,6 +727,13 @@ class RecordManager {
     }
     int populatedTiles = nCompressedTiles + nNonCompressedTiles;
     codecMaster.reportAndClearAnalysisData(ps, populatedTiles);
+    if(nCompressedTiles>0){
+      long nCompressedSamples =
+        (long)nCompressedTiles*(long)spec.getNumberOfCellsInTile();
+      double bitsPerCompressedSample =
+        (double)(compressedBytes*8L)/(double)nCompressedSamples;
+      ps.format("Bits per compressed sample %8.4f%n", bitsPerCompressedSample);
+    }
     if (nCompressedTiles > 0 && nNonCompressedTiles > 0) {
       int n = nCompressedTiles + nNonCompressedTiles;
       double percentNonCompressed

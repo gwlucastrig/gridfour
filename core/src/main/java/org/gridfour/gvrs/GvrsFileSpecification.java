@@ -1602,9 +1602,18 @@ public class GvrsFileSpecification {
     ps.format("Cells in Raster:   %12d%n", cellsInRaster);
     ps.format("Cells in Tile:     %12d%n", nCellsInTile);
 
-    ps.println("");
-    ps.format("Range x values:      %11.6f, %11.6f, (%f)%n", x0, x1, x1 - x0);
-    ps.format("Range y values:      %11.6f, %11.6f, (%f)%n", y0, y1, y1 - y0);
+    ps.println("Range of Values, Cell Center");
+    ps.format("   x values:      %11.6f, %11.6f, (%f)%n", x0, x1, x1 - x0);
+    ps.format("   y values:      %11.6f, %11.6f, (%f)%n", y0, y1, y1 - y0);
+
+    ps.println("Range of Values, Full Domain");
+    ps.format("   x values:      %11.6f, %11.6f, (%f)%n",
+      x0-cellSizeX/2, x1+cellSizeX/2, x1 - x0 + cellSizeX);
+    ps.format("   y values:      %11.6f, %11.6f, (%f)%n",
+      y0-cellSizeY/2, y1+cellSizeY/2, y1 - y0+cellSizeY);
+
+
+
     ps.format("Data compression:       %s%n",
       isDataCompressionEnabled() ? "enabled" : "disabled");
     ps.println("");
@@ -2152,5 +2161,42 @@ public class GvrsFileSpecification {
     r2m11 = m[3];
     r2m02 = m[4];
     r2m12 = m[5];
+  }
+
+
+  /**
+   * Gets a safe copy of the element specifications currently stored
+   * in this instance.
+   * @return a valid, potentially empty, list of element specifications.
+   */
+  public List<GvrsElementSpecification> getElementSpecifications(){
+      List<GvrsElementSpecification>specList = new ArrayList<>();
+      for(GvrsElementSpecification eSpec : elementSpecifications){
+        specList.add(eSpec.copy());
+      }
+      return specList;
+  }
+
+  /**
+   * Gets the element specification that matches the specified name, if any.
+   * <p>
+   * Note that the return value from this method is a reference to the
+   * specification that is currently stored in this instance. It is not
+   * a safe copy. Any changes to the returned object will affect the
+   * content of this instance.
+   * @param name the name to be matched.
+   * @return if matched, a valid specification; otherwise, a null
+   */
+  public GvrsElementSpecification getElementSpecification(String name){
+    if(name==null){
+      return null;
+    }
+    String target = name.trim();
+    for(GvrsElementSpecification eSpec: elementSpecifications){
+      if(target.equals(eSpec.getName())){
+        return eSpec;
+      }
+    }
+    return null;
   }
 }

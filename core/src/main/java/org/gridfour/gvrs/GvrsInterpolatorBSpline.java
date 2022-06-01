@@ -46,6 +46,7 @@ package org.gridfour.gvrs;
 
 import org.gridfour.coordinates.GridPoint;
 import java.io.IOException;
+import org.gridfour.coordinates.GeoPoint;
 import org.gridfour.interpolation.InterpolationResult;
 import org.gridfour.interpolation.InterpolationTarget;
 import org.gridfour.interpolation.InterpolatorBSpline;
@@ -152,7 +153,7 @@ public class GvrsInterpolatorBSpline {
      * gives a longitude and that the y coordinate gives a latitude value.
      * Thus the order of arguments for this method would be
      * <pre>
-     * longitude, latitude
+     *     longitude, latitude
      * </pre>
      * This approach is a departure from that used in other parts
      * of the Gridfour API.
@@ -172,7 +173,7 @@ public class GvrsInterpolatorBSpline {
         double r = g.getRow();
         double c = g.getColumn();
 
-        return zInterp(r, c, 0);
+        return zInterpGrid(r, c);
     }
 
     /**
@@ -214,7 +215,7 @@ public class GvrsInterpolatorBSpline {
      * @return An instance of InterpolationResult.
      * @throws IOException in the event of an IO error.
      */
-    public InterpolationResult zNormal(double x, double y) throws IOException {
+     public InterpolationResult zNormal(double x, double y) throws IOException {
         GridPoint g;
         double dx = du;
         double dy = dv;
@@ -238,9 +239,67 @@ public class GvrsInterpolatorBSpline {
             return result;
         }
 
+        // the u and v vlaues are computed inside loadSamples
         return bSpline.interpolate(1.0 + v, 1.0 + u, 4, 4, z, dy, dx, InterpolationTarget.FirstDerivatives, null);
     }
 
+     /**
+     * Interpolates a value at the indicated position and also computes the unit
+     * surface normal vector. Intended for rendering purposes.
+     * <p>
+     * In the event that the coordinates are taken from a geographic
+     * coordinate system, it is assumed that the x coordinate
+     * gives a longitude and that the y coordinate gives a latitude value.
+     * <p>
+     * The result is stored in instance of the IterpolationResult class.
+     * <p>
+     * This method may throw an IllegalArgumentException if the specified
+     * coordinates are out-of-bounds.
+     * <p>
+     * The first derivatives computed by this method are based on the model
+     * coordinate system specified by the GvrsFile instance that
+     * was used to construct this class. For Geographic coordinates, the
+     * angular cell spacing (given in degrees) is converted to meters.
+     * So, for example, a partial derivative for a surface giving elevation in
+     * meters z = f(x, y) would be unitless tangents (dz/dx, dz/dy)
+     * with the units of change in elevation being cancelled out by
+     * the units of change in distance.  While this approach is imperfect,
+     * it is what is used at this stage of the Gridfour software's
+     * development.
+     *     Note, also, that for geographic models, the X scale across columns
+     * is adjusted according to the latitude specified for the interpolation
+     * point (to account for the convergence of the meridians).
+     *
+     *
+     * @param row coordinate for interpolation, not necessarily integral
+     * @param column coordinate for interpolation, not necessarily integral
+     * @return An instance of InterpolationResult.
+     * @throws IOException in the event of an IO error.
+     */
+     public InterpolationResult zNormalGrid(double row, double column) throws IOException {
+        float z[] = loadSamples(row, column);
+        if (z == null) {
+            InterpolationResult result = new InterpolationResult();
+            result.nullify();
+            return result;
+        }
+
+        double dx = du;
+         if (geoCoordinates) {
+            GeoPoint g = gvrs.mapGridToGeoPoint(row, column);
+            double s = Math.cos(Math.toRadians(g.getLatitude()));
+            dx = s * du;
+            if (dx < 1) {
+                dx = 1;
+            }
+        }
+
+        // the u and v vlaues are computed inside loadSamples
+        return bSpline.interpolate(1.0 + v, 1.0 + u, 4, 4, z, dv, dx,
+          InterpolationTarget.FirstDerivatives, null);
+    }
+
+ 
     private int blockLimit(int i, int n) {
         if (i < 0) {
             return 0;
@@ -250,18 +309,24 @@ public class GvrsInterpolatorBSpline {
         return i;
     }
 
-    private double zInterp(double row, double col, int index) throws IOException {
-        float z[] = loadSamples(row, col);
+    /**
+     * Interpolate the value at the specified grid coordinates.
+     * Note that grid coordinates are not restricted to integral values
+     * but may specify points between sample points (thus requiring
+     * an interpolation).
+     * @param row the row coordinate for the interpolation point
+     * @param column the column coordinate for the interpolation point
+     * @return if successful, a valid interpolation value; otherwise,
+     * the fill value for this element.
+     * @throws IOException in the event of a non-recoverable I/O exception
+     */
+    public double zInterpGrid(double row, double column ) throws IOException {
+        float z[] = loadSamples(row, column);
         if (z == null) {
             return Double.NaN;
         }
-        if (index > 0) {
-            // for convenience, copy the data down to the start of the array
-            System.arraycopy(z, index * 16, z, 0, 16);
-        }
-
+        // the u and v vlaues are computed inside loadSamples
         return bSpline.interpolateValue(1.0 + v, 1.0 + u, 4, 4, z);
-
     }
 
     /**
