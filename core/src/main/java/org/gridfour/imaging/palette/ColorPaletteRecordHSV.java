@@ -107,18 +107,21 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
     // we don't really know which direction the interpolation should
     // go, clockwise or counterclockwise.  So we assume that we will use
     // the direction which is the shortest angular distance.  we do this
-    // by constraing the change to be within the range -180 to 180
+    // by constraining the change to be within the range -180 to 180
     double dH = h1 - h0;
-    if (dH <= -180) {
-      dH += 360;
-    } else if (dH > 180) {
-      dH -= 360;
+    if(Math.abs(dH)<1.0e-6){
+        deltaH = 0;
+    }else{
+        if (dH <= -180) {
+          dH += 360;
+        } else if (dH > 180) {
+          dH -= 360;
+        }
+        if (dH == 0) {
+          dH = 360;
+        }
+        deltaH = dH;
     }
-    if (dH == 0) {
-      dH = 360;
-    }
-    deltaH = dH;
-
     wrapAround = h0 + deltaH > 360.0 || h0 + deltaH < 0;
 
     int rgb = Color.HSBtoRGB((float) h0, (float) s0, (float) v0) | 0xff000000;
@@ -137,8 +140,8 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
     return record;
   }
 
-  
-  
+
+
   @Override
   public int getArgb(double z) {
     double t = (z - range0) / (range1 - range0);

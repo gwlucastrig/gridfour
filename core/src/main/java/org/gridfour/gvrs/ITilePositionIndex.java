@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 12/2021  G. Lucas     Created  
+ * 12/2021  G. Lucas     Created
  *
  * Notes:
  *
@@ -41,7 +41,8 @@ import java.io.IOException;
 import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
- *
+ * Defines an interface for creating index elements to allow applications
+ * to access tiles in a random-access data file.
  */
 public interface ITilePositionIndex {
 
@@ -97,8 +98,8 @@ public interface ITilePositionIndex {
    * @throws IOException in the event of an unhandled I/O exception.
    */
   void writeTilePositions(BufferedRandomAccessFile braf) throws IOException;
-  
-  
+
+
   /**
    * Gets the count of the number of tiles that are currently populated.
    * This count does not include tiles that may have been written to, but are

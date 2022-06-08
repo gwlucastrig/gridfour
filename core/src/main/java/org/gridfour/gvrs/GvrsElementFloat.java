@@ -40,8 +40,8 @@ import java.io.IOException;
 import org.gridfour.coordinates.GridPoint;
 
 /**
- * Provides a concrete definition of a GvrsElementSpecification that specifies
- * integer data
+ * Provides a concrete definition of the GvrsElement class to access
+ * four-byte floating-point data elements.
  */
 public class GvrsElementFloat extends GvrsElement {
 

@@ -53,7 +53,7 @@ class RasterTileCache {
   int nTilesInCache;
   RasterTile firstTile;
   RasterTile lastTile;
-  final RecordManager recordMan;
+  final RecordManager recordManager;
   final GvrsFileSpecification spec;
 
   HashMap<Integer, RasterTile> tileMap = new HashMap<>();
@@ -67,9 +67,15 @@ class RasterTileCache {
   private long nTilesDiscarded;
   private long nTileFirst;
 
-  RasterTileCache(GvrsFileSpecification spec, RecordManager tileStore) {
+  /**
+   * Constructs a tile-cache tied to the GvrsFile from which the file
+   * specification and record manager were taken.
+   * @param spec a valid instance
+   * @param recordManager a valid instance
+   */
+  RasterTileCache(GvrsFileSpecification spec, RecordManager recordManager) {
     tileCacheSize = DEFAULT_TILE_CACHE_SIZE;
-    this.recordMan = tileStore;
+    this.recordManager = recordManager;
     this.spec = spec;
   }
 
@@ -121,7 +127,7 @@ class RasterTileCache {
       // the tile was not found in the cache.  If the tile exists
       // in the file, read it and add it to the cache.  Otherwise,
       // return a null to indicate "not found"
-      if (!recordMan.doesTileExist(tileIndex)) {
+      if (!recordManager.doesTileExist(tileIndex)) {
         priorUnsatistiedRequest = tileIndex;
         return null;
       }
@@ -149,7 +155,7 @@ class RasterTileCache {
       false);
 
     nTileRead++;
-    recordMan.readTile(tile);
+    recordManager.readTile(tile);
 
     // add to head of linked list
     tileMap.put(tile.tileIndex, tile);
@@ -233,7 +239,7 @@ class RasterTileCache {
 
   void writeTile(RasterTile tile) throws IOException {
     nTilesWritten++;
-    recordMan.writeTile(tile);
+    recordManager.writeTile(tile);
     tile.clearWritingRequired();
   }
 

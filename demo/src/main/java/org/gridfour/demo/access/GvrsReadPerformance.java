@@ -89,10 +89,19 @@ public class GvrsReadPerformance {
     ps.println("Reading file " + file.getPath());
     GvrsReadPerformance reader = new GvrsReadPerformance(ps, file);
 
+    // Note:  Each of the following tests opens the file,
+    // processes its content, and then closes it.  The reason that
+    // an open GvrsFile object is not retained between test is that
+    // we wish to ensure that each test is clean and has no lingering data
+    // retained in its cache from previous tests.
+    ps.println("");
+    ps.println(
+      "Test           Total time (s)    "
+      +"Mean value       Samples     Million sample/sec");
     for (int iTest = 0; iTest < 3; iTest++) {
       reader.testRowMajorScan(ps);
-      reader.testRowBlockScan(ps);
       reader.testColumnMajorScan(ps);
+      reader.testRowBlockScan(ps);
       reader.testTileBlockScan(ps);
       reader.testTileLoadTime(ps);
       ps.println("");
@@ -100,7 +109,7 @@ public class GvrsReadPerformance {
   }
 
   void report(PrintStream ps, String label, double deltaT, double avgValue, long nSamples) {
-    ps.format("%-15s %12.6f %12.3f %12d  %12.6f%n",
+    ps.format("%-15s %10.3f %15.3f %15d  %15.3f%n",
       label, deltaT, avgValue, nSamples, nSamples / deltaT / 1000000.0);
   }
 
