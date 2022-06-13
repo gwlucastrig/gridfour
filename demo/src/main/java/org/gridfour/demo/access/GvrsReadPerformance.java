@@ -44,6 +44,8 @@ import org.gridfour.gvrs.GvrsElement;
 import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
+import org.gridfour.gvrs.GvrsMetadata;
+import org.gridfour.gvrs.GvrsMnc;
 
 /**
  * A simple demonstration application that reads the entire content of a Gvrs
@@ -51,18 +53,27 @@ import org.gridfour.gvrs.GvrsFileSpecification;
  */
 public class GvrsReadPerformance {
 
-  File inputFile;
-  GvrsFileSpecification spec;
-  int nRowsInRaster;
-  int nColsInRaster;
-  int nRowsInTile;
-  int nColsInTile;
-  int nRowsOfTiles;
-  int nColsOfTiles;
+  private final static String[] usage = {
+    "PackageData  -- create a Gvrs file from from ETOPO1 or GEBCO_2019 Global DEM files",
+    "Arguments:",
+    "    GvrsReadPerformance  <input_file>  [-multithread]",
+    "Input file is mandatory.  Multi-threading option can be used to test",
+    "the effects of multi-threading when processing compressed files",};
+
+  final File inputFile;
+  final GvrsFileSpecification spec;
+  final int nRowsInRaster;
+  final int nColsInRaster;
+  final int nRowsInTile;
+  final int nColsInTile;
+  final int nRowsOfTiles;
+  final int nColsOfTiles;
+
+  boolean multiThreadingEnabled;
 
   GvrsReadPerformance(PrintStream ps, File inputFile) throws IOException {
     this.inputFile = inputFile;
-    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+    try ( GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
       spec = gvrs.getSpecification();
       nRowsInRaster = spec.getRowsInGrid();
       nColsInRaster = spec.getColumnsInGrid();
@@ -73,39 +84,24 @@ public class GvrsReadPerformance {
       ps.format("Number of samples in grid:  %12d%n", spec.getNumberOfCellsInGrid());
       ps.format("Number of tiles in file:    %12d%n",
         spec.getRowsOfTilesInGrid() * spec.getColumnsOfTilesInGrid());
+
+      ps.println("Data compression enabled: " + spec.isDataCompressionEnabled());
+      if (spec.isDataCompressionEnabled()) {
+        GvrsMetadata metadata
+          = gvrs.readMetadata(GvrsMnc.GvrsCompressionCodecs.name(), 0);
+        ps.println("Compression codecs:");
+        if (metadata == null) {
+          ps.println("    Not specified");
+        } else {
+          ps.println("    " + metadata.getString());
+        }
+      }
     }
 
   }
 
-  public static void main(String[] args) throws IOException {
-
-    PrintStream ps = System.out;
-
-    if (args.length == 0) {
-      System.out.println("No input file specified");
-      System.exit(0);
-    }
-    File file = new File(args[0]);
-    ps.println("Reading file " + file.getPath());
-    GvrsReadPerformance reader = new GvrsReadPerformance(ps, file);
-
-    // Note:  Each of the following tests opens the file,
-    // processes its content, and then closes it.  The reason that
-    // an open GvrsFile object is not retained between test is that
-    // we wish to ensure that each test is clean and has no lingering data
-    // retained in its cache from previous tests.
-    ps.println("");
-    ps.println(
-      "Test           Total time (s)    "
-      +"Mean value       Samples     Million sample/sec");
-    for (int iTest = 0; iTest < 3; iTest++) {
-      reader.testRowMajorScan(ps);
-      reader.testColumnMajorScan(ps);
-      reader.testRowBlockScan(ps);
-      reader.testTileBlockScan(ps);
-      reader.testTileLoadTime(ps);
-      ps.println("");
-    }
+  void setMultiThreadingEnabled(boolean multiThreadingEnabled) {
+    this.multiThreadingEnabled = multiThreadingEnabled;
   }
 
   void report(PrintStream ps, String label, double deltaT, double avgValue, long nSamples) {
@@ -114,8 +110,11 @@ public class GvrsReadPerformance {
   }
 
   void testRowMajorScan(PrintStream ps) throws IOException {
-    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
-            gvrs.setTileCacheSize(GvrsCacheSize.Large);
+    try ( GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      if (multiThreadingEnabled) {
+        gvrs.setMultiThreadingEnabled(true);
+      }
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
       List<GvrsElement> elementList = gvrs.getElements();
       GvrsElement element = elementList.get(0);
       GvrsElementType dType = element.getDataType();
@@ -158,7 +157,10 @@ public class GvrsReadPerformance {
   }
 
   void testColumnMajorScan(PrintStream ps) throws IOException {
-    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+    try ( GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      if (multiThreadingEnabled) {
+        gvrs.setMultiThreadingEnabled(true);
+      }
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
       List<GvrsElement> elementList = gvrs.getElements();
       GvrsElement element = elementList.get(0);
@@ -202,7 +204,10 @@ public class GvrsReadPerformance {
   }
 
   void testRowBlockScan(PrintStream ps) throws IOException {
-    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+    try ( GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      if (multiThreadingEnabled) {
+        gvrs.setMultiThreadingEnabled(true);
+      }
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
       List<GvrsElement> elementList = gvrs.getElements();
       GvrsElement element = elementList.get(0);
@@ -246,7 +251,10 @@ public class GvrsReadPerformance {
   }
 
   void testTileBlockScan(PrintStream ps) throws IOException {
-    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+    try ( GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      if (multiThreadingEnabled) {
+        gvrs.setMultiThreadingEnabled(true);
+      }
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
       List<GvrsElement> elementList = gvrs.getElements();
       GvrsElement element = elementList.get(0);
@@ -293,8 +301,11 @@ public class GvrsReadPerformance {
   }
 
   void testTileLoadTime(PrintStream ps) throws IOException {
-    try (GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
-            gvrs.setTileCacheSize(GvrsCacheSize.Small);
+    try ( GvrsFile gvrs = new GvrsFile(inputFile, "r")) {
+      if (multiThreadingEnabled) {
+        gvrs.setMultiThreadingEnabled(true);
+      }
+      gvrs.setTileCacheSize(GvrsCacheSize.Small);
       List<GvrsElement> elementList = gvrs.getElements();
       GvrsElement element = elementList.get(0);
 
@@ -321,6 +332,50 @@ public class GvrsReadPerformance {
       long time1 = System.nanoTime();
       double deltaT = (time1 - time0) / 1.0e+9;
       report(ps, "Tile Load", deltaT, avgValue, nSample);
+    }
+  }
+
+  public static void main(String[] args) throws IOException {
+
+    PrintStream ps = System.out;
+
+    if (args.length == 0) {
+      for (String s : usage) {
+        System.out.println(s);
+      }
+      System.exit(0);
+    }
+
+    File file = new File(args[0]);
+    ps.println("Reading file " + file.getPath());
+    boolean multiThreadingEnabled = false;
+    for (int i = 1; i < args.length; i++) {
+      if ("-multithread".equalsIgnoreCase(args[i])) {
+        multiThreadingEnabled = true;
+        break;
+      }
+    }
+
+    GvrsReadPerformance reader = new GvrsReadPerformance(ps, file);
+    reader.setMultiThreadingEnabled(multiThreadingEnabled);
+    ps.format("Multi-threading enabled: " + multiThreadingEnabled);
+
+    // Note:  Each of the following tests opens the file,
+    // processes its content, and then closes it.  The reason that
+    // an open GvrsFile object is not retained between test is that
+    // we wish to ensure that each test is clean and has no lingering data
+    // retained in its cache from previous tests.
+    ps.println("");
+    ps.println(
+      "Test           Total time (s)    "
+      + "Mean value       Samples     Million sample/sec");
+    for (int iTest = 0; iTest < 3; iTest++) {
+      reader.testRowMajorScan(ps);
+      reader.testColumnMajorScan(ps);
+      reader.testRowBlockScan(ps);
+      reader.testTileBlockScan(ps);
+      reader.testTileLoadTime(ps);
+      ps.println("");
     }
   }
 
