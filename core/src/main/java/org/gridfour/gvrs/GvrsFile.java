@@ -113,7 +113,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final RasterTileCache tileCache;
   private final List<GvrsElement> elements = new ArrayList<>();
 
-
+  private boolean multiThreadingEnabled;
+  private TileDecompressionAssistant tileDecompAssistant;
 
   private static File tempFile() throws IOException {
     Path filePath = Files.createTempFile("gvrstemp", ".gvrs");
@@ -495,6 +496,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
     }
 
     codecMaster.shutdown();
+    if(tileDecompAssistant !=null){
+        tileDecompAssistant.shutdown();
+    }
 
     if(openedForWriting && deleteOnClose){
       // because the file will be deleted, there is no need
@@ -1279,8 +1283,9 @@ public class GvrsFile implements Closeable, AutoCloseable {
 
   /**
    * Sets multi-threading enabled. At this time, multi-threaded processing
-   * is only supported in the compressing of data. If an application
-   * is not compressing data, this setting will be ignored.
+   * is only supported in the processing of compressed data. If the associated
+   * GvrsFile instance is not configured for data compression,
+   * this setting will be ignored.
    * <p>
    * Future development for the GVRS API may expand the use of multi-threaded
    * processing.
@@ -1295,7 +1300,27 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * otherwise, false (default false).
    */
   public void setMultiThreadingEnabled(boolean multiThreadingEnabled) {
-    codecMaster.setMultiThreadingEnabled(multiThreadingEnabled);
+    if(multiThreadingEnabled){
+        if(this.multiThreadingEnabled){
+            // multi-threading has been enabled already, nothing to do
+            return;
+        }
+    }else{
+        // if it's turned on, it can't be turned off by the current implementation
+        // if it's turned off, then there's nothing to do.
+        return;
+    }
+
+    if(openedForWriting && spec.isDataCompressionEnabled()){
+         codecMaster.setMultiThreadingEnabled(multiThreadingEnabled);
+    }
+    if(!this.openedForWriting && spec.isDataCompressionEnabled()){
+        // when the file is open strictly for reading, GVRS can take advantage
+        // of a background thread using the TileDecompAssistant class.
+        tileDecompAssistant = new TileDecompressionAssistant(spec);
+        tileDecompAssistant.start();
+        tileCache.setTileDecompAssistant(tileDecompAssistant);
+    }
   }
 
 }

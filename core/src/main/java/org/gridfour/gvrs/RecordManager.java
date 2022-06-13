@@ -83,7 +83,7 @@ class RecordManager {
     = "File size exceeds 32GB limit for non-extended format";
 
   private final GvrsFileSpecification spec;
-  private final CodecMaster codecMaster;
+   final CodecMaster codecMaster;
   private final BufferedRandomAccessFile braf;
   private final long basePosition;
   private final int standardTileDataSizeInBytes;
@@ -472,7 +472,11 @@ class RecordManager {
       braf.seek(posToStore + 4);
     }
 
-    tile.writeStandardFormat(braf);
+    for (TileElement e : tile.elements) {
+      int n = e.getStandardSize();
+      braf.leWriteInt(n);
+      e.writeStandardFormat(braf);
+    }
     fileSpaceFinishRecord(posToStore, payloadSize);
 
   }
@@ -488,10 +492,42 @@ class RecordManager {
 
     nTileReads++;
     braf.seek(filePos);
-    //braf.skipBytes(4);  // skip tileIndex, could be used for diagnostics.
-    int tileIndexFromFile = braf.leReadInt();
-    assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
-    tile.readStandardFormat(braf, codecMaster);
+    braf.skipBytes(4);  // skip tileIndex, could be used for diagnostics.
+    //int tileIndexFromFile = braf.leReadInt();
+    //assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
+    for (TileElement e : tile.elements) {
+      int n = braf.leReadInt();
+      if (n == e.getStandardSize()) {
+          e.readStandardFormat(braf);
+      } else {
+          byte[] encoding = new byte[n];
+          braf.readFully(encoding);
+          e.decode(codecMaster, encoding);
+      }
+    }
+  }
+
+  byte[][] readTilePacking(RasterTile tile) throws IOException {
+    int tileIndex = tile.tileIndex;
+
+    long filePos = tilePositionIndex.getFilePosition(tileIndex);
+    if (filePos == 0) {
+      return new byte[0][];
+    }
+
+    nTileReads++;
+    braf.seek(filePos);
+    braf.skipBytes(4);  // skip tileIndex, could be used for diagnostics.
+    //int tileIndexFromFile = braf.leReadInt();
+    //assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
+    int k=0;
+    byte [][]packing = new byte[tile.elements.length][];
+    for (TileElement e : tile.elements) {
+      int n = braf.leReadInt();
+      packing[k] = new byte[n];
+      braf.readFully(packing[k]);
+    }
+    return packing;
   }
 
   void scanFileForTiles() throws IOException {

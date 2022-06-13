@@ -38,10 +38,8 @@
  */
 package org.gridfour.gvrs;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
  * Provides methods and elements for accessing a tile from a raster data set.
@@ -142,30 +140,6 @@ class RasterTile {
   int getStandardSize() {
     return standardSize;
   }
-
-  void writeStandardFormat(BufferedRandomAccessFile braf) throws IOException {
-    for (TileElement e : elements) {
-      int n = e.getStandardSize();
-      braf.leWriteInt(n);
-      e.writeStandardFormat(braf);
-    }
-  }
- 
-
-  void readStandardFormat(BufferedRandomAccessFile braf, CodecMaster codec) throws IOException {
-    for (TileElement e : elements) {
-      int n = braf.leReadInt();
-      if(n==e.getStandardSize()){
-        e.readStandardFormat(braf);
-      }else{
-        byte []encoding = new byte[n];
-         braf.readFully(encoding);
-             e.decode(codec, encoding);
-      }
-    }
-  }
- 
- 
 
   void setIntValue(int tileRow, int tileColumn, int value) {
     writingRequired = true;
