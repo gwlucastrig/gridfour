@@ -61,7 +61,6 @@ public class HuffmanEncoder {
     // Nodes for organizing the Huffman tree
     SymbolNode left;
     SymbolNode right;
-    SymbolNode parent;
 
     SymbolNode() {
       isLeaf = false;
@@ -79,15 +78,8 @@ public class HuffmanEncoder {
       this.left = left;
       this.right = right;
       this.count = right.count + left.count;
-      SymbolNode self = this;
-      left.parent = self;
-      right.parent = self;
       left.bit = 0;
       right.bit = 1;
-    }
-
-    void setParent(SymbolNode parent) {
-      this.parent = parent;
     }
 
     @Override
@@ -105,10 +97,6 @@ public class HuffmanEncoder {
   int nBitsInTree;
   int nBitsInText;
   int nBitsTotal;
-
-  public HuffmanEncoder() {
-
-  }
 
   SymbolNode makeLeaf(int symbol) {
     nLeafNodes++;

@@ -263,8 +263,16 @@ public class ColorPaletteTableReader {
       return;
     }
 
-    String key = matcher.group(1).toUpperCase();
-    String value = matcher.group(2).toUpperCase();
+    String key = matcher.group(1);
+    String value = matcher.group(2);
+    if(key==null || value==null){
+      // this shouldn't happen, but was identified as a vulnerability
+      // by a static code analyzer.
+      return;
+    }
+
+    key = key.toUpperCase();
+    value = value.toUpperCase();
 
     if ("COLOR_MODEL".equals(key)) {
       switch (value) {

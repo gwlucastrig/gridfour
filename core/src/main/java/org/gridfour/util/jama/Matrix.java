@@ -52,7 +52,7 @@ import java.io.StreamTokenizer;
 </UL>
 <DL>
 <DT><B>Example of use:</B></DT>
- 
+
 <DD>Solve a linear system A x = b and compute the residual norm, ||b - A x||.
 <PRE>
       double[][] vals = {{1.,2.,3},{4.,5.,6.},{7.,8.,10.}};
@@ -68,7 +68,7 @@ import java.io.StreamTokenizer;
 @version 5 August 1998
 */
 
-public class Matrix implements Cloneable, java.io.Serializable {
+public class Matrix implements java.io.Serializable {
 
 /* ------------------------
    Class variables
@@ -138,7 +138,7 @@ public class Matrix implements Cloneable, java.io.Serializable {
    /** Construct a matrix quickly without checking arguments.
    @param A    Two-dimensional array of doubles.
    @param m    Number of rows.
-   @param n    Number of colums.
+   @param n    Number of columns.
    */
 
    public Matrix (double[][] A, int m, int n) {

@@ -314,15 +314,12 @@ public class PackageData {
     long nSum = 0;
     try (GvrsFile gvrs = new GvrsFile(outputFile, spec)) {
       gvrs.setMultiThreadingEnabled(enableMultiThreading);
+      gvrs.setTileCacheSize(GvrsCacheSize.Large);
 
       gvrs.writeMetadata(GvrsMnc.Copyright,
-        "This data is in the public domain and may be used free of charge");
-
+         "This data is in the public domain and may be used free of charge");
       gvrs.writeMetadata(GvrsMnc.TermsOfUse,
-        "This data should not be used for navigation");
-
-      GvrsElement zElement = gvrs.getElement("z");
-      gvrs.setTileCacheSize(GvrsCacheSize.Large);
+         "This data should not be used for navigation");
       storeGeoreferencingInformation(gvrs);
 
       // Initialize data-statistics collection ---------------------------
@@ -339,6 +336,7 @@ public class PackageData {
 
       // -----------------------------------------------------------------
       // Package the data
+      GvrsElement zElement = gvrs.getElement("z");
       long time0 = System.currentTimeMillis();
       for (int iRow = 0; iRow < nRows; iRow++) {
         if (iRow % 1000 == 999) {
@@ -438,9 +436,12 @@ public class PackageData {
       try (GvrsFile gvrs = new GvrsFile(outputFile, "r")) {
         long time1 = System.currentTimeMillis();
         ps.println("Opening complete in " + (time1 - time0) + " ms");
+
+        gvrs.setMultiThreadingEnabled(enableMultiThreading);
+        gvrs.setTileCacheSize(GvrsCacheSize.Large);
         GvrsFileSpecification testSpec = gvrs.getSpecification();
         String testLabel = testSpec.getLabel();
-                  ps.println("Label:     "+testLabel);
+        ps.println("Label:     "+testLabel);
         GvrsMetadata m = gvrs.readMetadata("Copyright", 0);
         if (m != null) {
 
@@ -449,7 +450,6 @@ public class PackageData {
         GvrsElement zElement = gvrs.getElement("z");
         ps.println("Element:   " + zElement.getName() + ", " + zElement.getDescription());
 
-        gvrs.setTileCacheSize(GvrsCacheSize.Large);
         for (int iRow = 0; iRow < nRows; iRow++) {
           if (iRow % 10000 == 9999) {
             time1 = System.currentTimeMillis();

@@ -58,13 +58,11 @@ public class TileDecompressionAssistant implements Runnable {
     final int tileIndex;
     final RasterTile tile;
     final byte[][] packing;
-    boolean isFinished;
 
     DecompTask(RasterTile tile, byte[][] packing) {
       this.tileIndex = tile.tileIndex;
       this.tile = tile;
       this.packing = packing;
-      this.isFinished = false;
     }
 
     void process() throws IOException {

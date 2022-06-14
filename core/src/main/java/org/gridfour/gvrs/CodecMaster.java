@@ -95,8 +95,6 @@ class CodecMaster {
       }
     }
 
-    int seed;
-
     List<CodecHolder> codecList = new ArrayList<>();
     private boolean implementsFloats;
 
