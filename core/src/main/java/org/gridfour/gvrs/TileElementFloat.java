@@ -52,6 +52,7 @@ class TileElementFloat extends TileElement {
   final float minValue;
   final float maxValue;
   final float fillValue;
+  final Float fillValueRef;
 
   /**
    * Constructs a element and allocates memory for storage.
@@ -80,13 +81,14 @@ class TileElementFloat extends TileElement {
     minValue = fSpec.minValue;
     maxValue = fSpec.maxValue;
     fillValue = fSpec.fillValue;
+    fillValueRef = fillValue; // automatically boxed to instance of Float
 
     values = new float[nCells];
     if (initializeValues) {
       Arrays.fill(values, fillValue);
     }
   }
- 
+
   @Override
   void writeStandardFormat(BufferedRandomAccessFile braf) throws IOException {
     for (int i = 0; i < values.length; i++) {
@@ -129,19 +131,16 @@ class TileElementFloat extends TileElement {
 
   @Override
   void setValue(int index, float value) {
-    // because value can be a Float.NaN 
-    // we handle this one differently than in the related classes
+    // using the fillValueRef (an instance of Float) handles the
+    // case where both the input and fill values are Float.NaN
 
-    if (minValue <= value && value <= maxValue || value == fillValue) {
+    if (minValue <= value && value <= maxValue || fillValueRef.equals(value)) {
       values[index] = value;
       parent.writingRequired = true;
     } else if (Float.isNaN(value)) {
-      if (Float.isNaN(fillValue)) {
-        values[index] = value;
-        parent.writingRequired = true;
-      } else {
-        throw new IllegalArgumentException("Value of NaN is not supported by this instance");
-      }
+      // we've already established that the fill value is not NaN
+      throw new IllegalArgumentException(
+        "Value of NaN is not supported by this instance");
     } else {
       throw new IllegalArgumentException("Value " + value
         + " is out of range [" + minValue + ", " + maxValue + "]");
@@ -195,7 +194,7 @@ class TileElementFloat extends TileElement {
   void setToNullState() {
     Arrays.fill(values, fillValue);
   }
- 
+
   @Override
   public String toString() {
     return "Float Tile";
@@ -236,8 +235,8 @@ class TileElementFloat extends TileElement {
   float getFillValue(){
     return fillValue;
   }
-  
-  
+
+
   @Override
   int getFillValueInt(){
     return Integer.MIN_VALUE;

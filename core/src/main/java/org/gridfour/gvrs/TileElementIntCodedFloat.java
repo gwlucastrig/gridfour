@@ -48,7 +48,7 @@ import org.gridfour.io.BufferedRandomAccessFile;
  */
 class TileElementIntCodedFloat extends TileElement {
 
-  // TO DO: this is not the right design choice.  The problem here is that an 
+  // TO DO: this is not the right design choice.  The problem here is that an
   // application could write a value, read back the same value, but then
   // when the tile is stored and read back in, it may contain different values
   // due to the integer encoding not being a perfect match for itself.
@@ -58,6 +58,7 @@ class TileElementIntCodedFloat extends TileElement {
   final float minValue;
   final float maxValue;
   final float fillValue;
+  final Float fillValueRef;
   final float scale;
   final float offset;
 
@@ -92,6 +93,7 @@ class TileElementIntCodedFloat extends TileElement {
     minValue = fSpec.minValue;
     maxValue = fSpec.maxValue;
     fillValue = fSpec.fillValue;
+    fillValueRef = fillValue; // automatically boxed to instance of Float
     scale = fSpec.scale;
     offset = fSpec.offset;
     minValueI = fSpec.minValueI;
@@ -148,18 +150,18 @@ class TileElementIntCodedFloat extends TileElement {
 
   @Override
   void setValue(int index, float value) {
-    if (value == fillValue) {
+    // using the fillValueRef (an instance of Float) handles the
+    // case where both the input and fill values are Float.NaN
+    if (fillValueRef.equals(value)) {
       values[index] = fillValueI;
       parent.writingRequired = true;
     } else if (minValue <= value && value <= maxValue) {
       values[index] = (int) Math.floor((value - offset) * scale + 0.5);
       parent.writingRequired = true;
     } else if (Float.isNaN(value)) {
-      if (Float.isNaN(fillValue)) {
-        values[index] = fillValueI;
-      } else {
-        throw new IllegalArgumentException("Value of NaN is not supported by this instance");
-      }
+      // we've already established that the fill value is not NaN
+      throw new IllegalArgumentException(
+        "Value of NaN is not supported by this instance");
     } else {
       throw new IllegalArgumentException("Value " + value
         + " is out of range [" + minValue + ", " + maxValue + "]");
