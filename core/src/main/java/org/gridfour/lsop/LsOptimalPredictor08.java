@@ -165,12 +165,12 @@ public class LsOptimalPredictor08 {
      * Computes the coefficients for an optimal predictor. In the unusual case
      * that no solution is available, or that the input data size is inadequate,
      * a null value will be returned.
-     *
-     * The layout of the coefficients is as shown below
+     * <p>
+     * The layout of the computed coefficients is as shown below
      * <pre>
-     *    row i:      u3   u0   S(i,j)
-     *    row i-1:    u4   u1   u2
-     *    row i-2:    u5   u6   u7
+     *    row i:      u[3]   u[0]   S(i,j)
+     *    row i-1:    u[4]   u[1]   u[2]
+     *    row i-2:    u[5]   u[6]   u[7]
      * </pre>
      *
      * @param nRows a value of 4 or greater

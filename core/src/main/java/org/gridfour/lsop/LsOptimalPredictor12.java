@@ -228,8 +228,8 @@ public class LsOptimalPredictor12 {
     float u10 = u[9];
     float u11 = u[10];
     float u12 = u[11];
-    // u[12] is the coefficient for the lagrange multplier itself,
-    // which we do not use in the predictor
+    // u13, or u[12], would  the coefficient for the lagrange multplier itself,
+    // which we do not use in the predictor and do not populate in code.
 
     // Allocate a new mCodec with storage for the interior codes
     // use it to store the delta values.
@@ -280,12 +280,12 @@ public class LsOptimalPredictor12 {
    * Computes the coefficients for an optimal predictor. In the unusual case
    * that no solution is available, or that the input data size is inadequate,
    * a null value will be returned.
-   *
-   * The layout of the coefficients is as shown below
+   * <p>
+   * The array indexing of the computed coefficients is as shown below
    * <pre>
-   *    row i:      u3   u0   S(i,j)
-   *    row i-1:    u4   u1   u2
-   *    row i-2:    u5   u6   u7
+   *    row i:      u[5]     u[0]     S(i,j)
+   *    row i-1:    u[6]     u[1]     u[2]      u[3]    u[4]
+   *    row i-2:    u[7]     u[8]     u[9]      u[10]   u[11]
    * </pre>
    *
    * @param nRows a value of 6 or greater
