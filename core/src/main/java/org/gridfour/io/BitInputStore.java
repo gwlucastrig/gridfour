@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 09/2019  G. Lucas     Created  
+ * 09/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -52,19 +52,19 @@ public class BitInputStore {
     // masl[1] = 00000001
     // mask[2] = 00000011
     // mask[3] = 00000111
-    // etc.   
+    // etc.
     long m = 1L;
     for (int i = 1; i < 64; i++) {
       mask[i] = m;
       m = (m << 1) | 1L;
     }
   }
-  
-  
+
+
   private final byte []text;
     private final int nBits;
     private int nBytesProcessed;
-    
+
   private long scratch;
   private int iBit;
   private int nBitsInScratch;
@@ -80,8 +80,8 @@ public class BitInputStore {
     nBitsInScratch = 0;
     text = input;
   }
-  
-  
+
+
     /**
    * Construct a reader that will extract bits from the specified input.
    *
@@ -170,25 +170,15 @@ public class BitInputStore {
     nBitsInScratch = 64;
     if(nBytesProcessed+8<=text.length){
       // there are enough bytes to populate an entire long
-      // this expression could be more efficiently coded in a single
-      // expression using Horners rule, but the need to mask with the
-      // 0xffL makes for a very messy expression.  I do wish Java supported
-      // an unsigned byte type.
-      scratch = text[nBytesProcessed + 7] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed + 6] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed + 5] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed + 4] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed + 3] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed + 2] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed + 1] & 0xffL;
-      scratch <<= 8;
-      scratch |= text[nBytesProcessed] & 0xffL;  
+      // use a variation on Horners rule to unpack the content
+        scratch = ((((((text[nBytesProcessed + 7] << 8
+                | (text[nBytesProcessed + 6] & 0xffL)) << 8
+                | (text[nBytesProcessed + 5] & 0xffL)) << 8
+                | (text[nBytesProcessed + 4] & 0xffL)) << 8
+                | (text[nBytesProcessed + 3] & 0xffL)) << 8
+                | (text[nBytesProcessed + 2] & 0xffL)) << 8
+                | (text[nBytesProcessed + 1] & 0xffL)) << 8
+                | (text[nBytesProcessed] & 0xffL);
       nBytesProcessed+=8;
     }else{
       scratch =0;
@@ -198,8 +188,8 @@ public class BitInputStore {
       }
     }
   }
-  
-  
+
+
   /**
    * Gets the current bit position within the input store.
    * This is the position from which the next bit will be read.
