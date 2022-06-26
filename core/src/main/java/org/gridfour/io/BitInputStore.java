@@ -31,6 +31,8 @@
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
  * 09/2019  G. Lucas     Created
+ * 06/2022  G. Lucas     Streamlined some code, improved processing speed
+ *                       by about 10 percent and added better comments.
  *
  * Notes:
  *
@@ -108,16 +110,17 @@ public class BitInputStore {
    * @return a value of 1 or 0
    */
   public int getBit() {
-    if (iBit == nBits) {
-      throw new ArrayIndexOutOfBoundsException("Attempt to read past end of data");
-    }
-    iBit++;
     if (nBitsInScratch == 0) {
+      if (iBit >= nBits) {
+        throw new ArrayIndexOutOfBoundsException("Attempt to read past end of data");
+      }
       moveTextToScratch();
     }
+
     int bit = (int) (scratch & 1L);
     scratch >>>= 1;
     nBitsInScratch--;
+    iBit++;
     return bit;
   }
 
@@ -134,58 +137,75 @@ public class BitInputStore {
               "Attempt to get a number of bits not in range [1..32]: "
                       +nBitsInValue);
     }
+
+    // The assumption here is that there will usually be sufficient
+    // bits remaining in scratch to satisfy the request.  So we test
+    // for a simplified-processing condition.
+    if (nBitsInScratch >= nBitsInValue) {
+      int v = (int) (scratch & mask[nBitsInValue]);
+      scratch >>>= nBitsInValue;
+      nBitsInScratch -= nBitsInValue;
+      iBit += nBitsInValue;
+      return v;
+    }
+
+    // There are insufficient bits remaining in scratch.
+    // We will have to fetch some from the text.  Verify that there will
+    // be sufficient bits to satisfy the request.
     if (iBit + nBitsInValue > nBits) {
       throw new ArrayIndexOutOfBoundsException("Attempt to read past end of data");
     }
+
+
+    // if we get here, we know that nBitsInScratch < nBitsInValue
+    // Use what we have (nBitsInScratch could be zero) and shift
+    // in additional data from the text
+    long v = scratch;
+    int nBitsShort = nBitsInValue - nBitsInScratch;
+    int nBitsCopied = nBitsInScratch;
+    moveTextToScratch();
+    v |= (scratch & mask[nBitsShort]) << nBitsCopied;
+    scratch >>>= nBitsShort;
+    nBitsInScratch -= nBitsShort;
     iBit += nBitsInValue;
-    if (nBitsInScratch == 0) {
-      moveTextToScratch();
-    }
 
-    long v;
-    if (nBitsInScratch < nBitsInValue) {
-      int nBitsShort = nBitsInValue - nBitsInScratch;
-      v = scratch;
-      int nBitsCopied = nBitsInScratch;
-      moveTextToScratch();
-      long bits = scratch & mask[nBitsShort];
-      v |= bits << nBitsCopied;
-      scratch >>>= nBitsShort;
-      nBitsInScratch -= nBitsShort;
-    } else {
-      v = scratch & mask[nBitsInValue];
-      scratch >>>= nBitsInValue;
-      nBitsInScratch -= nBitsInValue;
-    }
     return (int) v;
-
   }
+
 
   /**
    * Transfers the content of the scratch buffer to the main text arrays. If
    * necessary, the storage for the text will be expanded. The marker element
    * will be reset to 1.
+   * <p>
+   * This method assumes that a check has already been performed to verify
+   * that there is data remaining in the text.
    */
   private void moveTextToScratch() {
-    nBitsInScratch = 64;
-    if(nBytesProcessed+8<=text.length){
+
+    if (nBytesProcessed + 8 <= text.length) {
       // there are enough bytes to populate an entire long
       // use a variation on Horners rule to unpack the content
-        scratch = ((((((text[nBytesProcessed + 7] << 8
-                | (text[nBytesProcessed + 6] & 0xffL)) << 8
-                | (text[nBytesProcessed + 5] & 0xffL)) << 8
-                | (text[nBytesProcessed + 4] & 0xffL)) << 8
-                | (text[nBytesProcessed + 3] & 0xffL)) << 8
-                | (text[nBytesProcessed + 2] & 0xffL)) << 8
-                | (text[nBytesProcessed + 1] & 0xffL)) << 8
-                | (text[nBytesProcessed] & 0xffL);
-      nBytesProcessed+=8;
-    }else{
-      scratch =0;
-      for(int i=text.length-1; i>=nBytesProcessed; i--){
-        scratch<<=8;
-        scratch|=text[i]&0xff;
+      scratch = ((((((text[nBytesProcessed + 7] << 8
+        | (text[nBytesProcessed + 6] & 0xffL)) << 8
+        | (text[nBytesProcessed + 5] & 0xffL)) << 8
+        | (text[nBytesProcessed + 4] & 0xffL)) << 8
+        | (text[nBytesProcessed + 3] & 0xffL)) << 8
+        | (text[nBytesProcessed + 2] & 0xffL)) << 8
+        | (text[nBytesProcessed + 1] & 0xffL)) << 8
+        | (text[nBytesProcessed] & 0xffL);
+      nBytesProcessed += 8;
+      nBitsInScratch = 64;
+    } else {
+      int k = 0;
+      scratch = 0;
+      for (int i = text.length - 1; i >= nBytesProcessed; i--) {
+        scratch <<= 8;
+        scratch |= text[i] & 0xff;
+        k++;
       }
+      nBytesProcessed += k;
+      nBitsInScratch = k * 8;
     }
   }
 

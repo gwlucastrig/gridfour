@@ -44,7 +44,7 @@ import org.gridfour.io.BufferedRandomAccessFile;
  * Defines an interface for creating index elements to allow applications
  * to access tiles in a random-access data file.
  */
-public interface ITilePositionIndex {
+interface ITilePositionIndex {
 
   /**
    * Gets the file position for the specified tile.

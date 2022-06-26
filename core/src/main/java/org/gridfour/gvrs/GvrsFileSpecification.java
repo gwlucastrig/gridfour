@@ -210,9 +210,9 @@ public class GvrsFileSpecification {
   }
 
   private void initDefaultCodecList() {
-    addCodecSpec(CodecType.GvrsHuffman.toString(), CodecHuffman.class);
-    addCodecSpec(CodecType.GvrsDeflate.toString(), CodecDeflate.class);
-    addCodecSpec(CodecType.GvrsFloat.toString(), CodecFloat.class);
+    addCodecSpec(GvrsCodecType.GvrsHuffman.toString(), CodecHuffman.class);
+    addCodecSpec(GvrsCodecType.GvrsDeflate.toString(), CodecDeflate.class);
+    addCodecSpec(GvrsCodecType.GvrsFloat.toString(), CodecFloat.class);
   }
 
   /**

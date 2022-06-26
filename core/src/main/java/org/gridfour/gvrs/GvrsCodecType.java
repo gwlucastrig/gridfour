@@ -40,7 +40,7 @@ package org.gridfour.gvrs;
  * Used to represent the coder-decoders (codecs) that are defined for Gvrs.
  * Others may be added by application code.
  */
-public enum CodecType {
+public enum GvrsCodecType {
     /**
      * The Huffman encoding is used to compress data.
      */
