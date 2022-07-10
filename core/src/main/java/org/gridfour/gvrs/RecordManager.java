@@ -768,7 +768,9 @@ class RecordManager {
         (long)nCompressedTiles*(long)spec.getNumberOfCellsInTile();
       double bitsPerCompressedSample =
         (double)(compressedBytes*8L)/(double)nCompressedSamples;
-      ps.format("Bits per compressed sample %8.4f%n", bitsPerCompressedSample);
+      ps.format(
+        "%nBits per compressed sample (excluding file overhead) %8.4f%n",
+        bitsPerCompressedSample);
     }
     if (nCompressedTiles > 0 && nNonCompressedTiles > 0) {
       int n = nCompressedTiles + nNonCompressedTiles;

@@ -88,6 +88,8 @@ import org.gridfour.compress.ICompressionDecoder;
 strictfp public class LsDecoder12 implements ICompressionDecoder {
 
     private CodecStats[] codecStats;
+    private TabulatorDelta []statsCoefficientsAbs;
+    private TabulatorDelta []statsCoefficients;
 
     @Override
     public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
@@ -241,17 +243,16 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
                 z12 = values[index - 2 * nColumns + 2];
                 float p
                     = u1 * z1
-                    + u2 * z2
-                    + u3 * z3
-                    + u4 * z4
-                    + u5 * z5
-                    + u6 * z6
-                    + u7 * z7
-                    + u8 * z8
-                    + u9 * z9
-                    + u10 * z10
-                    + u11 * z11
-                    + u12 * z12;
+                    + (u2 * z2
+                    + (u3 * z3
+                    + (u4 * z4
+                    + (u5 * z5
+                    + (u6 * z6
+                    + (u7 * z7
+                    + (u8 * z8
+                    + (u9 * z9
+                    + (u10 * z10
+                    + (u11 * z11 + u12 * z12))))))))));
                 int estimate = StrictMath.round(p);
                 values[index] = estimate + m32.decode();
 
@@ -298,12 +299,25 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
             codecStats[4] = new CodecStats(PredictorModelType.None);
             codecStats[5] = new CodecStats(PredictorModelType.None);
         }
+        if(statsCoefficientsAbs == null){
+          statsCoefficientsAbs = new TabulatorDelta[12];
+          statsCoefficients = new TabulatorDelta[12];
+          for(int i=0; i<12; i++){
+             statsCoefficientsAbs[i] = new TabulatorDelta();
+             statsCoefficients[i] = new TabulatorDelta();
+          }
+        }
 
         LsHeader header = new LsHeader(packing, 0);
         int nInitializerCodes = header.getCodedInitializerLength();
         int nInteriorCodes = header.getCodedInteriorLength();
         int format = header.getCompressionType();
         int headerSize = header.getHeaderSize();
+        float []coefficients = header.getOptimalPredictorCoefficients();
+        for(int i=0; i<12; i++){
+          statsCoefficientsAbs[i].tabulate(Math.abs(coefficients[i]));
+          statsCoefficients[i].tabulate(coefficients[i]);
+        }
 
         long nBytesForInitializers = 0;
         long nBytesForInterior = 0;
@@ -427,13 +441,30 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
             }
         }
 
+        ps.println("");
+        ps.println("");
+        ps.println("Magnitude of LSOP  coefficients");
+        ps.println(
+          "     --- Abs(coefficient[i]) ---                      coefficient[i]");
+        ps.println(
+          " i        Min           Max           Mean            Mean-True-Value");
+        for(int i=0; i<statsCoefficientsAbs.length; i++){
+          ps.format("%2d: %14.6e %14.6e %14.6e     %14.6e%n",
+            i,
+            statsCoefficientsAbs[i].getMinValue(),
+            statsCoefficientsAbs[i].getMaxValue(),
+            statsCoefficientsAbs[i].getMeanAbsValue(),
+            statsCoefficients[i].getMeanSignedValues()
+            );
+        }
+        ps.println("");
     }
 
     @Override
     public void clearAnalysisData() {
-        if (codecStats != null) {
             codecStats = null;
-        }
+            statsCoefficientsAbs = null;
+            statsCoefficients = null;
     }
 
     @Override
