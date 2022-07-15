@@ -77,6 +77,8 @@ public class LsEncoder12 implements ICompressionEncoder {
 
   private boolean deflateEnabled = true;
 
+  private boolean valueChecksumEnabled;
+
   /**
    * Enables or disables the use of Deflate in the compression sequence.
    * When Deflate is enabled, this class will attempt to compress data
@@ -92,12 +94,41 @@ public class LsEncoder12 implements ICompressionEncoder {
     this.deflateEnabled = enabled;
   }
 
+
+  /**
+   * Enables or disables the inclusion of a value checksum in the compressed
+   * encoding.  The value checksum is an optional element that is computed
+   * from the raw data values.  It provides decompression implementations with
+   * a diagnostic for assessing whether a decompression operation correctly
+   * recovered the original data even when the original data is not
+   * available for comparison. This feature is needed because LSOP depends
+   * on floating-point calculations that exactly match those that were performed
+   * when the data was compressed.
+   * <p>
+   * While this feature is unnecessary when working strictly with Java implementations,
+   * it will be useful when porting to alternative languages.  The floating-point
+   * semantics of alternate languages are not necessarily the same as Java.
+   * <p>
+   * Note that including the checksum will add 4 bytes of overhead to each
+   * compressed tile.
+   *
+   * @param valueChecksumEnabled sets the enable status for checksum.
+   */
+  public void setValueChecksumEnabled(boolean valueChecksumEnabled){
+    this.valueChecksumEnabled = valueChecksumEnabled;
+  }
+
   @Override
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
     LsOptimalPredictorResult result = optimalPredictor.encode(
       nRows, nCols, values);
     if (result == null) {
       return null;
+    }
+
+    int checksum = 0;
+    if (valueChecksumEnabled) {
+      checksum = LsHeader.computeChecksum(nRows, nCols, values);
     }
 
     // construct an array giving the header for the packing.
@@ -111,7 +142,9 @@ public class LsEncoder12 implements ICompressionEncoder {
       result.coefficients,
       result.nInitializerCodes,
       result.nInteriorCodes,
-      LsHeader.COMPRESSION_TYPE_HUFFMAN);
+      LsHeader.COMPRESSION_TYPE_HUFFMAN,
+      valueChecksumEnabled,
+      checksum);
 
     HuffmanEncoder huffman = new HuffmanEncoder();
     BitOutputStore store = new BitOutputStore();
@@ -166,9 +199,18 @@ public class LsEncoder12 implements ICompressionEncoder {
       // the overall grid is larger than Huffman.
       return packing;
     }
+    header = LsHeader.packHeader(
+      codecIndex,
+      12,
+      result.seed,
+      result.coefficients,
+      result.nInitializerCodes,
+      result.nInteriorCodes,
+      LsHeader.COMPRESSION_TYPE_DEFLATE,
+      valueChecksumEnabled,
+      checksum);
 
     packing = new byte[header.length + initN + insideN];
-    header[header.length - 1] = LsHeader.COMPRESSION_TYPE_DEFLATE;
     System.arraycopy(header, 0, packing, 0, header.length);
     System.arraycopy(initPack, 0, packing, header.length, initN);
     System.arraycopy(insidePack, 0, packing, header.length + initN, insideN);

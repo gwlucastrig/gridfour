@@ -93,7 +93,6 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
 
     @Override
     public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
-
         LsHeader header = new LsHeader(packing, 0);
         int seed = header.getSeed();
         int nInitializerCodes = header.getCodedInitializerLength();
@@ -137,6 +136,12 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
         CodecM32 m32 = unpackInitializers(initializerCodes, seed, nRows, nColumns, values);
         unpackInterior(interiorCodes, u, m32, nRows, nColumns, values);
 
+      if (header.valueChecksumIncluded) {
+        int checksum = LsHeader.computeChecksum(nRows, nColumns, values);
+        if (checksum != header.valueChecksum) {
+          System.out.format("%20d %20d%n", checksum, header.valueChecksum);
+        }
+      }
         return values;
     }
 
@@ -241,18 +246,18 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
                 index = iRow * nColumns + iCol;
                 z5 = values[index - nColumns + 2];
                 z12 = values[index - 2 * nColumns + 2];
-                float p
-                    = u1 * z1
-                    + (u2 * z2
-                    + (u3 * z3
-                    + (u4 * z4
-                    + (u5 * z5
-                    + (u6 * z6
-                    + (u7 * z7
-                    + (u8 * z8
-                    + (u9 * z9
-                    + (u10 * z10
-                    + (u11 * z11 + u12 * z12))))))))));
+                float p = u1 * z1
+                    + u2 * z2
+                    + u3 * z3
+                    + u4 * z4
+                    + u5 * z5
+                    + u6 * z6
+                    + u7 * z7
+                    + u8 * z8
+                    + u9 * z9
+                    + u10 * z10
+                    + u11 * z11
+                    + u12 * z12;
                 int estimate = StrictMath.round(p);
                 values[index] = estimate + m32.decode();
 
@@ -384,6 +389,7 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
         stats.addCountsForM32(temp.length, temp);
         //stats.addCountsForM32(nInitializerCodes, initializerCodes);
         //stats.addCountsForM32(nInteriorCodes, interiorCodes);
+
     }
 
     @Override

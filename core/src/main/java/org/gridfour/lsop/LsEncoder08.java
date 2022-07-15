@@ -80,7 +80,9 @@ public class LsEncoder08 implements ICompressionEncoder {
             result.coefficients,
             result.nInitializerCodes,
             result.nInteriorCodes,
-            1);
+            LsHeader.COMPRESSION_TYPE_DEFLATE,
+            false,
+            0);
 
         Deflater deflater = new Deflater(6);
         deflater.setInput(result.initializerCodes, 0, result.nInitializerCodes);
@@ -114,6 +116,16 @@ public class LsEncoder08 implements ICompressionEncoder {
         huffman.encode(store, result.nInteriorCodes, result.interiorCodes);
         int huffLength = store.getEncodedTextLengthInBytes();
         if (huffLength < initN + insideN) {
+            header = LsHeader.packHeader(
+              codecIndex,
+              8,
+              result.seed,
+              result.coefficients,
+              result.nInitializerCodes,
+              result.nInteriorCodes,
+              LsHeader.COMPRESSION_TYPE_HUFFMAN,
+              false,
+              0);
             packing = new byte[header.length + huffLength];
             byte[] huff = store.getEncodedText();
             header[header.length - 1] = 0;

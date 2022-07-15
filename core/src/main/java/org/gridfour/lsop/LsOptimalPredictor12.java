@@ -238,19 +238,18 @@ public class LsOptimalPredictor12 {
     for (int iRow = 2; iRow < nRows; iRow++) {
       for (int iCol = 2; iCol < nColumns - 2; iCol++) {
         int index = iRow * nColumns + iCol;
-        float p
-          = u1 * values[index - 1]
-          + (u2 * values[index - nColumns - 1]
-          + (u3 * values[index - nColumns]
-          + (u4 * values[index - nColumns + 1]
-          + (u5 * values[index - nColumns + 2]
-          + (u6 * values[index - 2]
-          + (u7 * values[index - nColumns - 2]
-          + (u8 * values[index - 2 * nColumns - 2]
-          + (u9 * values[index - 2 * nColumns - 1]
-          + (u10 * values[index - 2 * nColumns]
-          + (u11 * values[index - 2 * nColumns + 1]
-          + u12 * values[index - 2 * nColumns + 2]))))))))));
+        float p = u1 * values[index - 1]
+          + u2 * values[index - nColumns - 1]
+          + u3 * values[index - nColumns]
+          + u4 * values[index - nColumns + 1]
+          + u5 * values[index - nColumns + 2]
+          + u6 * values[index - 2]
+          + u7 * values[index - nColumns - 2]
+          + u8 * values[index - 2 * nColumns - 2]
+          + u9 * values[index - 2 * nColumns - 1]
+          + u10 * values[index - 2 * nColumns]
+          + u11 * values[index - 2 * nColumns + 1]
+          + u12 * values[index - 2 * nColumns + 2];
         int estimate = StrictMath.round(p);
         int delta = values[index] - estimate;
         interiorCodec.encode(delta);

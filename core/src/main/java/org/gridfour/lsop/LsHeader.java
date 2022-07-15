@@ -30,11 +30,26 @@
  * ------   ---------    -------------------------------------------------
  * 08/2020  G. Lucas     Created
  *
- * Notes:
- *
+ * About the optional checksum:
+ *   While working on Gridfour release 1.0.3, we identified a requirement
+ * to be able to include a checksum for the original value set that could
+ * be stored as part of a compressed sequence.  This feature would be useful
+ * when creating Gridfour libraries in other languages because it would
+ * aid developers in assessing the correctness of their decompression
+ * sequence.  This is important because the LSOP algorithm depends on the ability
+ * of a non-Java program to match exactly the floating-point calculations performed
+ * by the Java compressor (or vice versa). Having a checksum gives a way
+ * to see it the output of a decompressor matches the original input even
+ * when the input data is not immediately available.
+ *    Because we did not want to break compatibility with existing files
+ * we specified this checksum as optional.  There were unused bits in the
+ * compression-type indicator in the header, so we appropriated the high-order
+ * bit to determine whether a checksum is supplied.
  * -----------------------------------------------------------------------
  */
 package org.gridfour.lsop;
+
+import org.gridfour.util.GridfourCRC32C;
 
 /**
  * Provides utilities for reading the LsHeader from a packing.
@@ -44,8 +59,25 @@ package org.gridfour.lsop;
  */
 public class LsHeader {
 
+  /**
+   * A code value indicating that the post-prediction code sequence was
+   * compressed using Huffman coding in the Gridfour format
+   */
   public final static int COMPRESSION_TYPE_HUFFMAN = 0;
+  /**
+   * A code value indicating that the post-prediction code sequence was compressed
+   * using the Deflate library.
+   */
   public final static int COMPRESSION_TYPE_DEFLATE = 1;
+  /**
+   * A mask for extracting the compression type from a packing.
+   */
+  public final static int COMPRESSION_TYPE_MASK = 0x0f;
+  /*
+   * A bit flag indicating that the packing includes a checksum.
+  */
+  public final static int VALUE_CHECKSUM_INCLUDED = 0x80;
+
   protected final int codecIndex;
   protected final int nCoefficients;
   protected final int seed;
@@ -54,6 +86,8 @@ public class LsHeader {
   protected final int nInteriorCodes;
   protected final int compressionType;
   protected final int headerSize;
+  protected boolean valueChecksumIncluded;
+  protected int valueChecksum;
 
   /**
    * Constructs a instance populated with parameters extracted from the
@@ -89,7 +123,13 @@ public class LsHeader {
     offset += 4;
     nInteriorCodes = unpackInteger(packing, offset);
     offset += 4;
-    compressionType = packing[offset++];
+    compressionType = packing[offset]&COMPRESSION_TYPE_MASK;
+    valueChecksumIncluded = (packing[offset]&VALUE_CHECKSUM_INCLUDED)!=0;
+    offset++;
+    if(valueChecksumIncluded){
+      valueChecksum = unpackInteger(packing, offset);
+      offset += 4;
+    }
     headerSize = offset - packingOffset;
   }
 
@@ -105,6 +145,9 @@ public class LsHeader {
    * @param nInteriorCodes the number of M32 codes in the interior
    * @param compressionTypeCode indicates which standard compression method
    * (Huffman or Deflate) was used to compress the M32 code sequence
+   * @param valueChecksumIncluded indicates that the header includes a
+   * CRC32C checksum computed from the source data.
+   * @param valueChecksum a checksum, if included
    * @return an array in the exact size of the packing.
    */
   public static byte[] packHeader(
@@ -114,7 +157,9 @@ public class LsHeader {
     float[] u,
     int nInitializationCodes,
     int nInteriorCodes,
-    int compressionTypeCode) {
+    int compressionTypeCode,
+    boolean valueChecksumIncluded,
+    int valueChecksum) {
     // the header is 15+N*4 bytes:
     //   for 8 predictor coefficients:  47 bytes
     //   for 12 predictor coefficients: 63 bytes
@@ -125,8 +170,8 @@ public class LsHeader {
     //    4 bytes    nInitializationCodes
     //    4 bytes    nInteriorCodes
     //    1 byte     method
-
-    byte[] packing = new byte[15 + nCoefficients * 4];
+    int packsize = 15+nCoefficients*4 + (valueChecksumIncluded? 4:0);
+    byte[] packing = new byte[packsize];
     packing[0] = (byte) (codecIndex & 0xff);
     packing[1] = (byte) nCoefficients;
     int offset = packInteger(packing, 2, seed);
@@ -135,7 +180,14 @@ public class LsHeader {
     }
     offset = packInteger(packing, offset, nInitializationCodes);
     offset = packInteger(packing, offset, nInteriorCodes);
-    packing[offset++] = (byte)compressionTypeCode;
+    int typeCode = compressionTypeCode;
+    if(valueChecksumIncluded){
+      typeCode|=VALUE_CHECKSUM_INCLUDED;
+    }
+    packing[offset++] = (byte)typeCode;
+    if(valueChecksumIncluded){
+      offset = packInteger(packing, offset, valueChecksum);
+    }
     return packing;
   }
 
@@ -151,7 +203,9 @@ public class LsHeader {
       result.coefficients,
       result.nInitializerCodes,
       result.nInteriorCodes,
-      compressionTypeCode);
+      compressionTypeCode,
+      false,
+      0);
   }
 
 
@@ -252,4 +306,55 @@ public class LsHeader {
   public int getHeaderSize() {
     return headerSize;
   }
+
+  /**
+   * Computes the checksums for a set of values to be stored using the
+   * LSOP compressor format.
+   * @param nRows the number of rows in the raster
+   * @param nColumns the number of columns in the raster
+   * @param values an array giving the values in the raster
+   * @return a computed CRC32C checksum value.
+   */
+   public static int computeChecksum(int nRows, int nColumns, int[] values) {
+    int n = nRows * nColumns;
+    byte[] b = new byte[n * 4];
+    int k = 0;
+    for (int i = 0; i < n; i++) {
+      int v = values[i];
+      b[k++] = (byte) (v & 0xff);
+      b[k++] = (byte) ((v >> 8) & 0xff);
+      b[k++] = (byte) ((v >> 16) & 0xff);
+      b[k++] = (byte) ((v >> 24) & 0xff);
+    }
+
+    GridfourCRC32C crc32 = new GridfourCRC32C();
+    crc32.update(b);
+    return (int) crc32.getValue();
+  }
+
+   /**
+    * Indicates whether the value checksum was calculated and stored as
+    * part of the header. The value checksum is a diagnostic intended to
+    * assist in ensuring correct floating-point calculations when porting
+    * Gridfour to other languages and development environments.
+    * @return true if the checksum is included; otherwise, zero.
+    */
+   public boolean isValueChecksumIncluded(){
+     return valueChecksumIncluded;
+   }
+
+   /**
+    * Gets the value checksum stored in this header (if enabled).
+    * The value checksum is a CRC32C checksum computed when the data
+    * is stored. It is intended to support verification of floating-point
+    * calculations when porting Gridfour to other languages and
+    * development environments. It can also be used when archiving data
+    * as a second level of checksum support. Because it adds overhead,
+    * it is often omitted from compressed files.
+    * @return if enabled, a valid CRC32C checksum; otherwise, a zero
+    */
+   public int getValueChecksum(){
+     return valueChecksum;
+   }
+
 }
