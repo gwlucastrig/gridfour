@@ -88,8 +88,6 @@ import org.gridfour.compress.ICompressionDecoder;
 strictfp public class LsDecoder12 implements ICompressionDecoder {
 
     private CodecStats[] codecStats;
-    private TabulatorDelta []statsCoefficientsAbs;
-    private TabulatorDelta []statsCoefficients;
 
     @Override
     public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
@@ -304,14 +302,7 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
             codecStats[4] = new CodecStats(PredictorModelType.None);
             codecStats[5] = new CodecStats(PredictorModelType.None);
         }
-        if(statsCoefficientsAbs == null){
-          statsCoefficientsAbs = new TabulatorDelta[12];
-          statsCoefficients = new TabulatorDelta[12];
-          for(int i=0; i<12; i++){
-             statsCoefficientsAbs[i] = new TabulatorDelta();
-             statsCoefficients[i] = new TabulatorDelta();
-          }
-        }
+
 
         LsHeader header = new LsHeader(packing, 0);
         int nInitializerCodes = header.getCodedInitializerLength();
@@ -319,10 +310,6 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
         int format = header.getCompressionType();
         int headerSize = header.getHeaderSize();
         float []coefficients = header.getOptimalPredictorCoefficients();
-        for(int i=0; i<12; i++){
-          statsCoefficientsAbs[i].tabulate(Math.abs(coefficients[i]));
-          statsCoefficients[i].tabulate(coefficients[i]);
-        }
 
         long nBytesForInitializers = 0;
         long nBytesForInterior = 0;
@@ -448,29 +435,11 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
         }
 
         ps.println("");
-        ps.println("");
-        ps.println("Magnitude of LSOP  coefficients");
-        ps.println(
-          "     --- Abs(coefficient[i]) ---                      coefficient[i]");
-        ps.println(
-          " i        Min           Max           Mean            Mean-True-Value");
-        for(int i=0; i<statsCoefficientsAbs.length; i++){
-          ps.format("%2d: %14.6e %14.6e %14.6e     %14.6e%n",
-            i,
-            statsCoefficientsAbs[i].getMinValue(),
-            statsCoefficientsAbs[i].getMaxValue(),
-            statsCoefficientsAbs[i].getMeanAbsValue(),
-            statsCoefficients[i].getMeanSignedValues()
-            );
-        }
-        ps.println("");
     }
 
     @Override
     public void clearAnalysisData() {
             codecStats = null;
-            statsCoefficientsAbs = null;
-            statsCoefficients = null;
     }
 
     @Override
