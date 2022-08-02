@@ -811,7 +811,7 @@ public class GvrsFileSpecification {
     rowFringe1 = nRowsInRaster - 0.5 + 4 * yUlp;
 
 
-    // Skip the space reserved for future variations of the tile index
+    // Skip the space reserved for future variations of the tile map
     braf.skipBytes(5*4);
 
     nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
@@ -985,7 +985,7 @@ public class GvrsFileSpecification {
     braf.leWriteInt(nColsInRaster);
     braf.leWriteInt(nRowsInTile);
     braf.leWriteInt(nColsInTile);
-    braf.leWriteInt(0); // specify type of tile index (for future use)
+    braf.leWriteInt(0); // specify type of tile map (for future use)
     braf.leWriteInt(0); // reserved for future use
     braf.leWriteInt(0);
     braf.leWriteInt(0);

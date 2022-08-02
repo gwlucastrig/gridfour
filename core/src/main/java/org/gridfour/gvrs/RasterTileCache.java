@@ -59,7 +59,7 @@ class RasterTileCache {
 
   TileDecompressionAssistant tileDecompAssistant;
 
-  HashMap<Integer, RasterTile> tileMap = new HashMap<>();
+  HashMap<Integer, RasterTile> cachedTilesMap = new HashMap<>();
   int priorUnsatistiedRequest = -1;
 
   // Counters for gathering access statistics
@@ -127,7 +127,7 @@ class RasterTileCache {
         nTileFoundInCache++;
         return firstTile;
       }
-      tile = tileMap.get(tileIndex);
+      tile = cachedTilesMap.get(tileIndex);
       if (tile != null) {
         // we've already established that the tile is not the first tile
         tile.prior.next = tile.next;
@@ -194,9 +194,9 @@ class RasterTileCache {
     }
 
     // add to head of linked list
-    tileMap.put(tile.tileIndex, tile);
+    cachedTilesMap.put(tile.tileIndex, tile);
     nTilesInCache++;
-    //assert nTilesInCache == tileMap.size() : "cache size mismatch";
+    //assert nTilesInCache == cachedTilesMap.size() : "cache size mismatch";
     if (firstTile == null) {
       firstTile = tile;
       lastTile = tile;
@@ -262,12 +262,12 @@ class RasterTileCache {
       nTilesInCache = 0;
       firstTile = null;
       lastTile = null;
-      tileMap.clear();
+      cachedTilesMap.clear();
     } else {
       nTilesInCache--;
       lastTile = lastTile.prior;
       lastTile.next = null;
-      tileMap.remove(temp.tileIndex);
+      cachedTilesMap.remove(temp.tileIndex);
     }
 
     if (temp.isWritingRequired()) {
@@ -317,7 +317,7 @@ class RasterTileCache {
       }
     }
     ps.format("Tile Cache%n");
-    ps.format("   Tiles In Map:              %12d%n", tileMap.size());
+    ps.format("   Tiles In Map:              %12d%n", cachedTilesMap.size());
     ps.format("   Tiles Fetched:             %12d%n", nTileGets);
     ps.format("   Tiles Fetched from Cache:  %12d (%4.1f%%)%n", nTileFoundInCache, percentInCache);
     ps.format("   Repeated Fetches:          %12d (%4.1f%%)%n", nTileFirst, percentFirst);
@@ -393,7 +393,7 @@ class RasterTileCache {
     int predictedIndex = targetIndex + 1;
     if (tileDecompAssistant.getPendingTaskCount() < 2
       && predictedIndex < nTilesInRaster
-      && !tileMap.containsKey(predictedIndex)
+      && !cachedTilesMap.containsKey(predictedIndex)
       && recordManager.doesTileExist(predictedIndex)) {
       int predictedTileRow = predictedIndex / spec.nColsOfTiles;
       int predictedTileCol = predictedIndex - predictedTileRow * spec.nColsOfTiles;

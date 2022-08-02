@@ -87,10 +87,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
 
   // Gives the offset to the field in the header that is used to
-  // store the file positions for the index records.
-  private final static long FILEPOS_OFFSET_TO_FREESPACE_INDEX = 56;
-  private final static long FILEPOS_OFFSET_TO_METADATA_INDEX = 64;
-  private final static long FILEPOS_OFFSET_TO_TILE_INDEX = 80;
+  // store the file positions for the map records.
+  private final static long FILEPOS_OFFSET_TO_FREESPACE_MAP = 56;
+  private final static long FILEPOS_OFFSET_TO_METADATA_MAP = 64;
+  private final static long FILEPOS_OFFSET_TO_TILE_MAP = 80;
 
   private final File file;
   private final GvrsFileSpecification spec;
@@ -229,13 +229,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.leWriteLong(timeModified);  // pos 32: time modified
     braf.leWriteLong(timeModified);    // pos 40: time opened
     braf.leWriteLong(0); // pos 48: offset to content, also length of the header
-    braf.leWriteLong(0); // pos 56: offset to freespace index
-    braf.leWriteLong(0); // pos 64: offset to metadata index
+    braf.leWriteLong(0); // pos 56: offset to freespace map
+    braf.leWriteLong(0); // pos 64: offset to metadata map
 
     braf.leWriteShort(1); // number of levels. Currently fixed at 1
     byte[] zeroes = new byte[6];
     braf.writeFully(zeroes);
-    braf.leWriteLong(0); // pos 80: offset to first (currently, only) tile index
+    braf.leWriteLong(0); // pos 80: offset to first (currently, only) tile map
 
     // write a block of two reserved longs for future use.
     braf.leWriteLong(0);
@@ -356,16 +356,16 @@ public class GvrsFile implements Closeable, AutoCloseable {
     filePosContent = braf.leReadLong();
     sizeOfHeaderInBytes = (int) filePosContent;
 
-    long filePosFreeSpaceIndexRecord = braf.leReadLong();
-    long filePosMetadataIndexRecord = braf.leReadLong();
+    long filePosFreeSpaceMapRecord = braf.leReadLong();
+    long filePosMetadataMapRecord = braf.leReadLong();
     int nLevels = braf.leReadShort(); // right now, always 1.
     if(nLevels!=1){
       throw new IOException("Unsupported number of levels "+nLevels);
     }
     braf.skipBytes(6);
-    // for now, there is only one tile index record.  This may
+    // for now, there is only one tile-map record.  This may
     // change in the future if we support raster pyramids.
-    long filePosTileIndexRecord = braf.leReadLong();
+    long filePosTileMapRecord = braf.leReadLong();
 
     // skip the currently reserved block of 16 bytes
     braf.skipBytes(16);
@@ -392,34 +392,34 @@ public class GvrsFile implements Closeable, AutoCloseable {
     codecMaster = new CodecMaster(spec.codecList);
     recordMan = new RecordManager(spec, codecMaster, braf, filePosContent);
     long savePos = braf.getFilePosition();
-    if (filePosFreeSpaceIndexRecord > 0) {
-      recordMan.readFreespaceIndexRecord(filePosFreeSpaceIndexRecord);
+    if (filePosFreeSpaceMapRecord > 0) {
+      recordMan.readFreespaceMapRecord(filePosFreeSpaceMapRecord);
       if (writingEnabled) {
         // presumably, the content is going to change and the existing
-        // index data will become obsolete.  So dispose of it and zero out
-        // the file position for the index record.
+        // map data will become obsolete.  So dispose of it and zero out
+        // the file position for the map record.
 
-        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_INDEX);
+        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_MAP);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosFreeSpaceIndexRecord);
+        recordMan.fileSpaceDealloc(filePosFreeSpaceMapRecord);
       }
     }
 
-    if (filePosMetadataIndexRecord > 0) {
-      recordMan.readMetadataIndexRecord(filePosMetadataIndexRecord);
+    if (filePosMetadataMapRecord > 0) {
+      recordMan.readMetadataMapRecord(filePosMetadataMapRecord);
       if (writingEnabled) {
-        braf.seek(FILEPOS_OFFSET_TO_METADATA_INDEX);
+        braf.seek(FILEPOS_OFFSET_TO_METADATA_MAP);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosMetadataIndexRecord);
+        recordMan.fileSpaceDealloc(filePosMetadataMapRecord);
       }
     }
 
-    if (filePosTileIndexRecord > 0) {
-      recordMan.readTileIndexRecord(filePosTileIndexRecord);
+    if (filePosTileMapRecord > 0) {
+      recordMan.readTileMapRecord(filePosTileMapRecord);
       if (writingEnabled) {
-        braf.seek(FILEPOS_OFFSET_TO_TILE_INDEX);
+        braf.seek(FILEPOS_OFFSET_TO_TILE_MAP);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosTileIndexRecord);
+        recordMan.fileSpaceDealloc(filePosTileMapRecord);
       }
     }
     braf.seek(savePos);
@@ -531,19 +531,19 @@ public class GvrsFile implements Closeable, AutoCloseable {
           braf.leWriteLong(closingTime);
           braf.leWriteLong(0); // opened for writing time
 
-          long freeSpaceIndexPos = recordMan.writeFreeSpaceIndexRecord();
-          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_INDEX);
-          braf.leWriteLong(freeSpaceIndexPos);
+          long freeSpaceMapPos = recordMan.writeFreeSpaceMapRecord();
+          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_MAP);
+          braf.leWriteLong(freeSpaceMapPos);
 
-          long metadataIndexPos = recordMan.writeMetadataIndexRecord();
-          braf.seek(FILEPOS_OFFSET_TO_METADATA_INDEX);
-          braf.leWriteLong(metadataIndexPos);
+          long metadataMapPos = recordMan.writeMetadataMapRecord();
+          braf.seek(FILEPOS_OFFSET_TO_METADATA_MAP);
+          braf.leWriteLong(metadataMapPos);
 
-          // At present, there is only one tile index record.
+          // At present, there is only one tile map record.
           // In the future, addition records may be added.
-          long tileIndexPos = recordMan.writeTileIndexRecord();
-          braf.seek(FILEPOS_OFFSET_TO_TILE_INDEX);
-          braf.leWriteLong(tileIndexPos);
+          long tileMapPos = recordMan.writeTileMapRecord();
+          braf.seek(FILEPOS_OFFSET_TO_TILE_MAP);
+          braf.leWriteLong(tileMapPos);
 
           if (spec.isChecksumEnabled) {
             long checksum = tabulateChecksumFromHeader();
@@ -1128,16 +1128,19 @@ public class GvrsFile implements Closeable, AutoCloseable {
   /**
    * Gets the UUID assigned to this specification (and any GVRS files derived
    * from it). The UUID is an arbitrary value automatically assigned to the
-   * specification. Its intended use it to allow GVRS to correlate files of
-   * different types (such as the main GVRS file and its associated index
-   * file).
+   * specification. Potential uses include inventory control, production
+   * records, and as keys in databases that are used to track GVRS files.
+   * It may also be used to support associations with <i>sidecar</i> files
+   * that may be implemented by applications that use GVRS.
    * <p>
    * The UUID is established by the GvrsFile constructor when a GVRS
    * file is first created. One set, it is never modified.
    * <p>
-   * Internally, the UUID is an arbitrary set of 16 bytes. Non-Java language
-   * implementations in languages/environments that do not have built-in
-   * support for UUIDs are free to implement this feature as they see fit.
+   * Internally, the UUID is an arbitrary set of 16 bytes. Following the
+   * conventions of the Java API, the UUI is created using the Leach-Salz variant.
+   * Non-Java language implementations or implementations in languages/environments
+   * that do not have built-in support for UUIDs are free to implement this
+   * feature as they see fit.
    *
    * @return a valid UUID
    */
@@ -1323,4 +1326,49 @@ public class GvrsFile implements Closeable, AutoCloseable {
     }
   }
 
+
+   /**
+   * Gets a count of the number of tiles that are currently populated with
+   * data values.  In general, GVRS does not store tiles in which all data
+   * cells are assigned with the "fill" value.  In unusual cases, such tiles
+   * may be retained, particularly if the GVRS file is opened for writing
+   * and has not been flushed.
+   * <p>
+   * The return value from this method is undefined if the file is currently
+   * closed.
+   * @return a positive integer, potentially zero.
+   */
+  public int getCountOfPopulatedTiles() {
+    if(this.isClosed()){
+      return 0;
+    }
+    return this.recordMan.getCountOfPopulatedTiles();
+  }
+
+  /**
+   * Gets an estimate of the number of bits per populated sample.
+   * This calculation is intended to be as fair a measure of data compression
+   * effectiveness as possible:
+   * <ol>
+   * <li>Empty tiles are not counted. This includes tiles that are
+   * exclusively populated with "fill" values.</li>
+   * <li>The sample count is computed from the number of populated
+   * tiles times the number of cells per tile.</li>
+   * <li>The bit rate is computed using file size, so it reflects the overhead
+   * contributed by the tile management itself.</li>
+   * <li>If a file is opened for writing, it should be flushed before this
+   * method is applied</li>
+   * <li>The return value from this method is undefined if a file is not opened</li>
+   * </ol>
+   * @return a positive floating-point value.
+   */
+  public double getBitRate(){
+    long n = getCountOfPopulatedTiles();
+    if(n==0){
+      return 0;
+    }
+    long nCells = n*(long)spec.nCellsInTile;
+    long flen = file.length();
+    return  (8.0*flen)/nCells;
+  }
 }

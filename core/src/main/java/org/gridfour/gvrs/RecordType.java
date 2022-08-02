@@ -48,7 +48,7 @@ enum RecordType {
    */
   Freespace(0),
   /**
-   * The record contains metadaa.
+   * The record contains metadata.
    */
   Metadata(1),
   /**
@@ -56,19 +56,19 @@ enum RecordType {
    */
   Tile(2),
   /**
-   * The record contains an index of freespace records.
+   * The record contains a map of free file-space records.
    */
-  FreespaceIndex(3),
-  
-  /** 
-   * The record contains an index of metadata records.
-   */
-  MetadataIndex(4),
-  
+  FreespaceMap(3),
+
   /**
-   * The record contains an index of tile records.
+   * The record contains a map of metadata records.
    */
-  TileIndex(5);
+  MetadataMap(4),
+
+  /**
+   * The record contains a map of tile records.
+   */
+  TileMap(5);
 
   final int codeValue;
 
@@ -86,7 +86,7 @@ enum RecordType {
   int getCodeValue() {
     return codeValue;
   }
- 
+
 
   /**
    * Gets the enumeration type associated with the specified code value.
@@ -103,14 +103,14 @@ enum RecordType {
       case 2:
         return Tile;
       case 3:
-        return FreespaceIndex;
+        return FreespaceMap;
       case 4:
-        return MetadataIndex;
+        return MetadataMap;
       case 5:
-        return TileIndex;
+        return TileMap;
       default:
         return null; // invalid type
     }
   }
- 
+
 }

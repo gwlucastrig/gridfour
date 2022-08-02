@@ -41,10 +41,10 @@ import java.io.IOException;
 import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
- * Defines an interface for creating index elements to allow applications
+ * Defines an interface for creating map elements to allow applications
  * to access tiles in a random-access data file.
  */
-interface ITilePositionIndex {
+interface ITilePositionMap {
 
   /**
    * Gets the file position for the specified tile.
@@ -55,7 +55,7 @@ interface ITilePositionIndex {
   long getFilePosition(int tileIndex);
 
   /**
-   * Gets the amount of storage space required to store the tile index, in
+   * Gets the amount of storage space required to store the tile map, in
    * bytes.
    *
    * @return a positive value, in bytes.
@@ -81,7 +81,7 @@ interface ITilePositionIndex {
 
   /**
    * Store the specified offset at the position given by the
-   * tile row and column. If necessary, the index is resized
+   * tile row and column. If necessary, the map is resized
    * to accommodate the specified coordinates.
    * <p>
    * File positions must be positive values and a multiple of eight.

@@ -40,16 +40,15 @@ package org.gridfour.gvrs;
 
 /**
  * Defines types for raster-related files used in the GVRS system.
+ * At this time, only one type, the GVRS raster, is defined. Additional
+ * types may be considered in the future.
  */
 enum RasterFileType {
     /**
-     * The simple gvrs raster file type
+     * The simple GVRS raster file type
      */
-    GvrsRaster("gvrs", "gvrs raster"),
-    /**
-     * The optional index file for gvrs rasters
-     */
-    GvrsIndex("gvrx", "gvrs index");
+    GvrsRaster("gvrs", "gvrs raster");
+
 
     private final String extension;
     private final String identifier;

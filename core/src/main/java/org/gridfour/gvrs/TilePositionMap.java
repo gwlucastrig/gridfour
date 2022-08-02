@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 12/2021  G. Lucas     Created  
+ * 12/2021  G. Lucas     Created
  *
  * Notes:
  *
@@ -40,19 +40,23 @@ import java.io.IOException;
 import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
- * Provides an index configured to store file positions in the form
- * of long (8-byte) integers. This is the representation used for file
- * offsets in Java and the JVM. It far exceeds the capacity
- * of any file system currently in existence.
+ * Provides a map configured to store file positions of up to
+ * 32 gigabytes (34,359,738,368 bytes).
  * <p>
- * Although this format is required for files larger than 32 GB, it
- * can also be used for smaller files. The disadvantage to this approach
- * is that it requires roughly twice the memory that the compact
- * index uses for storing tile positions.
+ * Internally, the file positions are stored in a 4-byte integer array.
+ * This class makes the assumption that the position is always a multiple
+ * of either and always a positive long integer. Long integers are converted
+ * to 4-byte integers by dividing them by 8 when they are stored and multiplying
+ * them by 8 when they are retrieved.
+ * <p>
+ * Note that it for files larger than 16 gigabytes, the internal values
+ * for the tile positions may be expressed as negative numbers. WHen these
+ * values are cast to longs, they are converted to positive values
+ * by applying a bit mask when.
  */
-class TilePositionExtendedIndex implements ITilePositionIndex {
+class TilePositionMap implements ITilePositionMap{
 
-  private long[][] offsets;
+  private int[][] offsets;
   private int row0;
   private int col0;
   private int row1;
@@ -63,17 +67,17 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
   private final int nColsOfTiles;
 
   /**
-   * Creates an empty tile index with potential dimensions
+   * Creates an empty tile map with potential dimensions
    * of the specifications.
    *
    * @param spec a valid instance
    */
-  TilePositionExtendedIndex(GvrsFileSpecification spec) {
+  TilePositionMap(GvrsFileSpecification spec) {
     this.nRowsOfTiles = spec.nRowsOfTiles;
     this.nColsOfTiles = spec.nColsOfTiles;
     //  this.preAllocate = preAllocate;
     //  if (preAllocate) {
-    //    offsets = new long[nRowsOfTiles][nColsOfTiles];
+    //    offsets = new int[nRowsOfTiles][nColsOfTiles];
     //    row1 = nRowsOfTiles - 1;
     //    col1 = nColsOfTiles - 1;
     //    nRows = nRowsOfTiles;
@@ -83,12 +87,12 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
 
   /**
    * Store the specified offset at the position given by the
-   * tile row and column. If necessary, the index is resized
+   * tile row and column. If necessary, the internal map (grid) is resized
    * to accommodate the specified coordinates.
    * <p>
    * File positions must be positive values and a multiple of eight.
    *
-   * @param index the index of the tile to be stored.
+   * @param tileIndex the index of the tile to be stored.
    * @param offset the file position, in bytes.
    */
   @Override
@@ -106,8 +110,8 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
       col1 = col;
       row0 = row;
       row1 = row;
-      offsets = new long[1][1];
-      offsets[0][0] = offset;
+      offsets = new int[1][1];
+      offsets[0][0] = (int) (offset / 8L); // may be negative
       return;
     }
 
@@ -115,7 +119,7 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
       int nAdded = col0 - col;
       int n = nCols + nAdded;
       for (int i = 0; i < nRows; i++) {
-        long[] x = new long[n];
+        int[] x = new int[n];
         System.arraycopy(offsets[i], 0, x, nAdded, nCols);
         offsets[i] = x;
       }
@@ -125,7 +129,7 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
       int nAdded = col - col1;
       int n = nCols + nAdded;
       for (int i = 0; i < nRows; i++) {
-        long[] x = new long[n];
+        int[] x = new int[n];
         System.arraycopy(offsets[i], 0, x, 0, nCols);
         offsets[i] = x;
       }
@@ -136,28 +140,28 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
     if (row < row0) {
       int nAdded = row0 - row;
       int n = nRows + nAdded;
-      long[][] x = new long[n][];
+      int[][] x = new int[n][];
       System.arraycopy(offsets, 0, x, nAdded, nRows);
       offsets = x;
       for (int i = 0; i < nAdded; i++) {
-        offsets[i] = new long[nCols];
+        offsets[i] = new int[nCols];
       }
       nRows = n;
       row0 = row;
     } else if (row > row1) {
       int nAdded = row - row1;
       int n = nRows + nAdded;
-      long[][] x = new long[n][];
+      int[][] x = new int[n][];
       System.arraycopy(offsets, 0, x, 0, nRows);
       offsets = x;
       for (int i = 0; i < nAdded; i++) {
-        offsets[nRows + i] = new long[nCols];
+        offsets[nRows + i] = new int[nCols];
       }
       nRows = n;
       row1 = row;
     }
 
-    offsets[row - row0][col - col0] = offset;
+    offsets[row - row0][col - col0] = (int) (offset / 8L); // may be negative
   }
 
   /**
@@ -176,7 +180,7 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
 
     // for files larger than 16 GB, the offset value may be negative.
     // so a mask is applied to convert it to a positive value.
-    return offsets[row - row0][col - col0];
+    return (((long) offsets[row - row0][col - col0]) & 0xffffffffL) * 8L;
   }
 
   /**
@@ -214,13 +218,13 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
       offsets = null;
       // no position records follow in file.
     } else {
-      offsets = new long[nRows][];
+      offsets = new int[nRows][];
       for (int i = 0; i < nRows; i++) {
-        offsets[i] = new long[nCols];
+        offsets[i] = new int[nCols];
       }
       for (int i = 0; i < nRows; i++) {
         for (int j = 0; j < nCols; j++) {
-          offsets[i][j] = braf.leReadLong();
+          offsets[i][j] = braf.leReadInt();
         }
       }
     }
@@ -241,14 +245,14 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
     if (nCols > 0) {
       for (int i = 0; i < nRows; i++) {
         for (int j = 0; j < nCols; j++) {
-          braf.leWriteLong(offsets[i][j]);
+          braf.leWriteInt(offsets[i][j]);
         }
       }
     }
   }
 
   /**
-   * Gets the amount of storage space required to store the tile index, in
+   * Gets the amount of storage space required to store the tile map, in
    * bytes.
    *
    * @return a positive value, in bytes.
@@ -256,14 +260,14 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
   @Override
   public int getStorageSize() {
     int nCells = nRows * nCols;
-    return 16 + 8 * nCells;
+    return 16 + 4*nCells;
   }
 
   @Override
-   public int getCountOfPopulatedTiles() {
+  public int getCountOfPopulatedTiles() {
     int count = 0;
     for (int i = 0; i < offsets.length; i++) {
-      long[] strip = offsets[i];
+      int[] strip = offsets[i];
       for (int j = 0; j < strip.length; j++) {
         if (strip[j] != 0) {
           count++;
@@ -272,6 +276,4 @@ class TilePositionExtendedIndex implements ITilePositionIndex {
     }
     return count;
   }
-  
-  
 }
