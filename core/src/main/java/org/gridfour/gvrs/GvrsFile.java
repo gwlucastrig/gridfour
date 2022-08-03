@@ -1371,4 +1371,14 @@ public class GvrsFile implements Closeable, AutoCloseable {
     long flen = file.length();
     return  (8.0*flen)/nCells;
   }
+
+  /**
+   * Requests that the file associated with this instance be deleted when the
+   * file is closed. This option applies only when a file is open for
+   * write access. Deletion will be attempted when the file is properly
+   * closed. If the file is not closed, it will not be deleted automatically.
+   */
+  public void deleteOnClose(){
+    this.deleteOnClose = true;
+  }
 }
