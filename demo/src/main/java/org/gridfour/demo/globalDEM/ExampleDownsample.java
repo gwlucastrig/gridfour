@@ -72,6 +72,19 @@ public class ExampleDownsample {
 
   }
 
+  boolean isOptionSpecified(String []args, String target){
+    for(int i=0; i<args.length; i++){
+      String s = args[i];
+      int n = s.length();
+      if(s.startsWith("-no") && n>3 && target.equals(s.substring(3, n))){
+        return true;
+      }else if(s.startsWith("-") && n>1 && target.equals(s.substring(1,n))){
+        return true;
+      }
+    }
+    return false;
+  }
+
   private void process(PrintStream ps, String[] args) throws IOException  {
     TestOptions options = new TestOptions();
     options.argumentScan(args);
@@ -105,7 +118,13 @@ public class ExampleDownsample {
 
     boolean[] matched = new boolean[args.length];
 
-    int factor = options.scanIntOption(args, "factor", matched, 2);
+    int factor =
+      options.scanIntOption(args, "-factor", matched, 2);
+
+    Boolean compression = null;
+    if(isOptionSpecified(args, "compress")){
+      compression = options.scanBooleanOption(args, "-compress", matched, Boolean.FALSE);
+    }
 
     ps.format("Input file:        %s%n", inputFile.getPath());
     ps.format("Output file:       %s%n", outputFile.getPath());
@@ -117,7 +136,8 @@ public class ExampleDownsample {
     // Open the input file and use it, along with the factor,
     // to create a specification for the down-sampled file.
     try ( GvrsFile input = new GvrsFile(inputFile, "r");
-      GvrsFile output = new GvrsFile(outputFile, makeSpec(input, factor)))
+      GvrsFile output = new GvrsFile(outputFile,
+        makeSpec(input, factor, compression)))
     {
       // Even though the metadata may not necessarily be defined for
       // the down-sampled data, this application transcribes it
@@ -223,9 +243,11 @@ public class ExampleDownsample {
    * specified factor.
    * @param input a valid GVRS file instance
    * @param factor a positive integer
+   * @param compression if non-null, indicates a value to override the
+   * specifications from the input file.
    * @return a valid specification instance
    */
-  private GvrsFileSpecification makeSpec(GvrsFile input, int factor) {
+  private GvrsFileSpecification makeSpec(GvrsFile input, int factor, Boolean compression) {
 
     // Obtain the source input specification and use it to construct
     // a compatible output specification
@@ -278,6 +300,9 @@ public class ExampleDownsample {
     // ----------------------------------------------------------------
     // Copy optional elements that have a functional role in the output
     boolean dataCompressionEnabled = inSpec.isDataCompressionEnabled();
+    if(compression!=null){
+      dataCompressionEnabled = compression;
+    }
     outSpec.setDataCompressionEnabled(dataCompressionEnabled);
     boolean checksumEnabled = inSpec.isChecksumEnabled();
     outSpec.setChecksumEnabled(checksumEnabled);
