@@ -45,6 +45,7 @@ import org.gridfour.compress.ICompressionEncoder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Provides specification strings related to the use of data encoders
@@ -96,7 +97,7 @@ class CodecSpecification {
         return decoderClassName;
     }
 
-    CodecHolder getHolder(boolean mandatory) throws IOException {
+    CodecHolder constructHolder(boolean mandatory) throws IOException {
 
         Class<?> encoderClass = null;
         try {
@@ -184,4 +185,17 @@ class CodecSpecification {
         return csList;
     }
 
+  /**
+   * Indicates whether the input CodecHolder instance completely matches
+   * the specifications in this instance.
+   *
+   * @param holder a valid instance
+   * @return true if the CodecHolder content matches this specification;
+   * otherwise, false.
+   */
+  boolean matches(CodecHolder holder) {
+    return holder != null
+      && Objects.equals(encoderClassName, holder.encoderClassName)
+      && Objects.equals(decoderClassName, holder.decoderClassName);
+  }
 }

@@ -215,6 +215,25 @@ public class GvrsFileSpecification {
     addCodecSpec(GvrsCodecType.GvrsFloat.toString(), CodecFloat.class);
   }
 
+  private CodecHolder getCodecHolderFromList(String identifier){
+    for(CodecHolder codec : codecList){
+      if(identifier.equals(codec.getIdentification())){
+        return codec;
+      }
+    }
+    return null;
+  }
+
+  private CodecSpecification getCodecSpecificationFromList(
+    List<CodecSpecification> specList, String identifier){
+     for(CodecSpecification spec: specList){
+       if(identifier.equals(spec.getIdentification())){
+         return spec;
+       }
+     }
+     return null;
+  }
+
   /**
    * Updates the codec list based on information read during the file-opening
    * operation. This includes the list of specification identifiers that
@@ -223,7 +242,11 @@ public class GvrsFileSpecification {
    * CodecSpecification elements that were read from the file.
    * CodecSpecfication elements are just a set of strings giving Java
    * class names and will be populated only if the file being read
-   * was a Java file.
+   * was a Java file. This approach allows applications to add their
+   * own custom codecs to a GVRS file.
+   * <p>
+   * Note that the input CodecSpecification list may be empty, particularly
+   * if the source GVRS file was created by a non-Java API.
    *
    * @param specList a valid, potentially empty list of codec specification
    * identifiers and class-name elements.
@@ -234,31 +257,49 @@ public class GvrsFileSpecification {
     List<CodecSpecification> specList) throws IOException {
 
     List<CodecHolder> resultList = new ArrayList<>();
+
+    // The codecIdentificationList is a list of keys (Codec identifiers)
+    // indicating which codecs are used for data compression.  Compressed
+    // tiles will refer to these codecs by numerical index.
+    // We need to loop through the keys and match them up to specifications
+
+
     for (String s : codecIdentificationList) {
-      CodecHolder result;
-      CodecHolder registeredHolder = null;
-      for (CodecHolder holder : codecList) {
-        if (s.equals(holder.getIdentification())) {
-          registeredHolder = holder;
-          break;
-        }
-      }
-      result = registeredHolder;
-      boolean mandatory = registeredHolder == null;
-      for (CodecSpecification test : specList) {
-        if (s.equals(test.getIdentification())) {
-          CodecHolder candidate = test.getHolder(mandatory);
-          if (candidate != null) {
-            result = candidate;
+      CodecHolder holder = getCodecHolderFromList(s); // a candidate
+      CodecSpecification spec = this.getCodecSpecificationFromList(specList, s);
+      if (spec != null) {
+        // there are two cases to consider:
+        //    1.  if the holder is null, it means that the standard codecs
+        //        do not define a codec that matches the identification string
+        //        The code below will query the Java JVM to see if its
+        //        current classpath includes a compressor and decompressor
+        //        classes that match those in the specification.
+        //        The existence of a match is mandatory (without it, the
+        //        source data file cannot be read).
+        //    2. if the holder is not null, it means that thespecification
+        //         provides alternate classes for performing the compression
+        //         and decompression.  If the code below cannot resolve
+        //         those alternate classes, it can still fall back on the
+        //         standards.
+        if (holder == null) {
+          holder = spec.constructHolder(true);
+        } else if (!spec.matches(holder)) {
+          CodecHolder test = spec.constructHolder(false);
+          if (test != null) {
+            holder = test;
           }
         }
-      }
 
-      resultList.add(result);
+        if (holder == null) {
+          throw new IOException(
+            "Unable to find match for compression codec: " + s);
+        }
+        resultList.add(holder);
+      }
     }
 
     // replace the current codec list with the results.
-    // the current list will usually be the default list.
+    // the current list will often be the default list.
     codecList.clear();
     codecList.addAll(resultList);
   }

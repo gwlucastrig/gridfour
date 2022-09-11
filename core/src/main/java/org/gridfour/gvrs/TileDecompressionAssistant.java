@@ -47,7 +47,7 @@ import java.util.List;
  * Implements a background thread to expedite the decompression
  * of data.
  */
-public class TileDecompressionAssistant implements Runnable {
+class TileDecompressionAssistant implements Runnable {
 
   /**
    * Implements a private class that is used to run decompression operations

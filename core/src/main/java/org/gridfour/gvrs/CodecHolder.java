@@ -58,16 +58,19 @@ class CodecHolder {
     private final Class<?> decoder;
     private ICompressionEncoder encoderInstance;
     private ICompressionDecoder decoderInstance;
+    String encoderClassName;
+    String decoderClassName;
 
     /**
      * A private constructor to deter application code from creating
      * instances of this class.
      */
     private CodecHolder() {
-        identification = null;
+        identification = "";
         encoder = null;
         decoder = null;
     }
+
 
     /**
      * Constructs an instance of this class.
@@ -80,6 +83,12 @@ class CodecHolder {
         this.identification = identification;
         this.encoder = encoder;
         this.decoder = decoder;
+        if(encoder!=null){
+          encoderClassName = encoder.getName();
+        }
+        if(decoder!=null){
+          decoderClassName = decoder.getName();
+        }
     }
 
     CodecHolder(CodecHolder c) {
@@ -197,7 +206,8 @@ class CodecHolder {
         if (encoderInstance == null) {
             if (encoder != null) {
                 try {
-                    encoderInstance = (ICompressionEncoder) getInstance(identification, encoder);
+                    encoderInstance =
+                      (ICompressionEncoder) getInstance(identification, encoder);
                 } catch (IOException ioex) {
                     // dontCare
                 }
@@ -210,7 +220,8 @@ class CodecHolder {
         if (decoderInstance == null) {
             if (decoder != null) {
                 try {
-                    decoderInstance = (ICompressionDecoder) getInstance(identification, decoder);
+                    decoderInstance =
+                      (ICompressionDecoder) getInstance(identification, decoder);
                 } catch (IOException ioex) {
                     // dontCare
                 }
