@@ -90,6 +90,8 @@ public class GvrsInspector {
       if (s.contains("checksum")) {
         inspectionFailed = true;
         badHeader = true;
+      }else{
+        throw ioex;
       }
       return;
     }

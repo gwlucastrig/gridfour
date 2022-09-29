@@ -830,10 +830,15 @@ class RecordManager {
   }
 
   void readTileDirectory(long filePosTileDirectory) throws IOException {
-    // 8 bytes are reserved for future use
-    // eventually, we may have different kinds of tile directories and
-    // they will tell us which variation is in use.
-    braf.seek(filePosTileDirectory + 8);
+    // In version 1.02, 4 bytes are reserved for future use.
+    // For versions 1.03 and beyond, 8 bytes are reserved for future use.
+    // In future work, we may have different kinds of tile directories.
+    // The first byte will tell us which variation is in use.
+    if(spec.isVersion102()){
+       braf.seek(filePosTileDirectory + 4);
+    }else{
+       braf.seek(filePosTileDirectory + 8); // ensures byte alignment with longs
+    }
     tileDirectory.readTilePositions(braf);
   }
 

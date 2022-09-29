@@ -171,9 +171,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     if (content.length > 0) {
       sumStorage += 4 + content.length;
     }
-    if (descriptionLength > 0) {
-      sumStorage += 2 + descriptionLength;
-    }
+    sumStorage += 2 + descriptionLength;
     return sumStorage;
   }
 
@@ -231,6 +229,7 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     if (content.length > 0) {
       braf.write(content);
     }
+
     braf.leWriteUTF(description);
   }
 
