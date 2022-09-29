@@ -57,7 +57,7 @@ import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.gvrs.GvrsMetadata;
-import org.gridfour.gvrs.GvrsMnc;
+import org.gridfour.gvrs.GvrsMetadataNames;
 import org.gridfour.io.FastByteArrayOutputStream;
 import org.gridfour.lsop.LsCodecUtility;
 import ucar.ma2.Array;
@@ -316,9 +316,9 @@ public class PackageData {
       gvrs.setMultiThreadingEnabled(enableMultiThreading);
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
 
-      gvrs.writeMetadata(GvrsMnc.Copyright,
+      gvrs.writeMetadata(GvrsMetadataNames.Copyright,
          "This data is in the public domain and may be used free of charge");
-      gvrs.writeMetadata(GvrsMnc.TermsOfUse,
+      gvrs.writeMetadata(GvrsMetadataNames.TermsOfUse,
          "This data should not be used for navigation");
       storeGeoreferencingInformation(gvrs);
 
@@ -551,7 +551,7 @@ public class PackageData {
     b = fbaos.toByteArray();
     String wkt = new String(b, StandardCharsets.UTF_8);
 
-    GvrsMetadata metadataWKT = GvrsMnc.WKT.newInstance();
+    GvrsMetadata metadataWKT = GvrsMetadataNames.WKT.newInstance();
     metadataWKT.setDescription("Well-Known Text, geographic metadata");
     metadataWKT.setString(wkt);
     gvrs.writeMetadata(metadataWKT);

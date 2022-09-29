@@ -74,7 +74,7 @@ public class GvrsFileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 2;
+  static final byte SUB_VERSION = 3;
 
   /**
    * Major version for this instance (set by constructor or when read from a file)
@@ -85,6 +85,11 @@ public class GvrsFileSpecification {
    * Minor version for this instance (set by constructor or when read from file).
    */
   final int subversion;
+
+  /**
+   * A flag indicating that the open file was written in the 1.02 format
+   */
+  final boolean version102;
 
   /**
    * Time of construction for the specification
@@ -209,10 +214,17 @@ public class GvrsFileSpecification {
     codecList.add(spec);
   }
 
+  /**
+   * Initializes the default codec list with the standard definitions
+   * from the GVRS API.  Note that this method will not instantiate the
+   * codec classes.  Instantiation is performed on an on-demand basis.
+   * It is common for a GVRS file to not access all the possible codecs
+   * in the API, so we avoid instantiating unneeded classes.
+   */
   private void initDefaultCodecList() {
-    addCodecSpec(GvrsCodecType.GvrsHuffman.toString(), CodecHuffman.class);
-    addCodecSpec(GvrsCodecType.GvrsDeflate.toString(), CodecDeflate.class);
-    addCodecSpec(GvrsCodecType.GvrsFloat.toString(), CodecFloat.class);
+    addCodecSpec(GvrsCodecType.GvrsHuffman.name(), CodecHuffman.class);
+    addCodecSpec(GvrsCodecType.GvrsDeflate.name(), CodecDeflate.class);
+    addCodecSpec(GvrsCodecType.GvrsFloat.name(), CodecFloat.class);
   }
 
   private CodecHolder getCodecHolderFromList(String identifier){
@@ -339,6 +351,7 @@ public class GvrsFileSpecification {
 
     version = VERSION;
     subversion = SUB_VERSION;
+    version102 = false;
 
     timeCreated = System.currentTimeMillis();
     this.nRowsInRaster = nRowsInRaster;
@@ -453,6 +466,7 @@ public class GvrsFileSpecification {
   public GvrsFileSpecification(GvrsFileSpecification s) {
     version = VERSION;
     subversion = SUB_VERSION;
+    version102 = false;
 
     timeCreated = s.timeCreated;
     nRowsInRaster = s.nRowsInRaster;
@@ -831,6 +845,7 @@ public class GvrsFileSpecification {
   GvrsFileSpecification(BufferedRandomAccessFile braf, int version, int subversion) throws IOException {
     this.version = version;
     this.subversion = subversion;
+    version102 = (version==1 && subversion==2);
 
     initDefaultCodecList();
 
@@ -922,6 +937,101 @@ public class GvrsFileSpecification {
       }
     }
 
+    readElementSpecifications(braf);
+    productLabel = braf.leReadUTF();
+  }
+
+
+  final void readElementSpecifications(BufferedRandomAccessFile braf) throws IOException {
+    if(version102){
+       readElementSpecifications102(braf);
+       return;
+    }
+    int nElements = braf.leReadInt();
+    for (int iElement = 0; iElement < nElements; iElement++) {
+      int dataTypeCode = braf.readByte();
+      boolean isContinuous = braf.readBoolean();
+      braf.skipBytes(6); // reserved for future use
+
+      if (dataTypeCode < 0 || dataTypeCode > 3) {
+        throw new IOException(
+          "Unsupported value for data-type code: " + dataTypeCode);
+      }
+      GvrsElementType dataType = GvrsElementType.valueOf(dataTypeCode);
+
+      GvrsElementSpecification spec;
+      String name = braf.leReadUTF();
+      switch (dataType) {
+        case SHORT:
+          short sMinValue = braf.leReadShort();
+          short sMaxValue = braf.leReadShort();
+          short sFillValue = braf.leReadShort();
+          GvrsElementSpecificationShort sSpec
+            = new GvrsElementSpecificationShort(name, sMinValue, sMaxValue, sFillValue);
+          elementSpecifications.add(sSpec);
+          spec = sSpec;
+          break;
+        case FLOAT: {
+          float fMinValue = braf.leReadFloat();
+          float fMaxValue = braf.leReadFloat();
+          float fFillValue = braf.leReadFloat();
+          GvrsElementSpecificationFloat fSpec
+            = new GvrsElementSpecificationFloat(name, fMinValue, fMaxValue, fFillValue);
+          elementSpecifications.add(fSpec);
+            spec = fSpec;
+        }
+        break;
+        case INT_CODED_FLOAT: {
+          float fMinValue = braf.leReadFloat();
+          float fMaxValue = braf.leReadFloat();
+          float fFillValue = braf.leReadFloat();
+          float scale = braf.leReadFloat();
+          float offset = braf.leReadFloat();
+          int iMinValue = braf.leReadInt();  // NO PMD diagnostic
+          int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
+          int iFillValue = braf.leReadInt(); // NO PMD diagnostic
+          GvrsElementSpecificationIntCodedFloat icfSpec
+            = new GvrsElementSpecificationIntCodedFloat(
+              name, scale, offset,
+              iMinValue, iMaxValue, iFillValue,
+              fMinValue, fMaxValue, fFillValue);
+          elementSpecifications.add(icfSpec);
+          spec = icfSpec;
+        }
+        break;
+
+        case INTEGER:
+        default:
+          int iMinValue = braf.leReadInt();  // NO PMD diagnostic
+          int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
+          int iFillValue = braf.leReadInt(); // NO PMD diagnostic
+          GvrsElementSpecificationInt iSpec
+            = new GvrsElementSpecificationInt(name, iMinValue, iMaxValue, iFillValue);
+          elementSpecifications.add(iSpec);
+          spec = iSpec;
+          break;
+      }
+
+      // The continuous flag was read before the spec instance was constructed.
+      // It could not be set before, but now that the spec is initialized,
+      // we can do so.  In future development, perhaps we should extend
+      // the element specification constructors to accept it as an argument
+      spec.setContinuous(isContinuous);
+      spec.setDescription(braf.leReadUTF());
+      spec.setUnitOfMeasure(braf.leReadUTF());
+      spec.setLabel(braf.leReadUTF());
+    }
+
+  }
+
+
+  /**
+   * Reads element specifications from the legacy version 1.02
+   * @param braf a valid instance
+   * @throws IOException in the event of a unhandled IO exception.
+   */
+  final void readElementSpecifications102(BufferedRandomAccessFile braf) throws IOException {
+
     int nElements = braf.leReadInt();
     for (int iElement = 0; iElement < nElements; iElement++) {
       int dataTypeCode = braf.readByte();
@@ -929,13 +1039,8 @@ public class GvrsFileSpecification {
       boolean hasUnitOfMeasure = braf.readBoolean();
       boolean hasLabel = braf.readBoolean();
       boolean isContinuous;
-      if(version==1 && subversion==0){
-         // the legacy version does not have flags
-         isContinuous = true;
-      }else{
-         isContinuous = braf.readBoolean();
-         braf.skipBytes(7); // reserved for future use
-      }
+      isContinuous = braf.readBoolean();
+      braf.skipBytes(7); // reserved for future use
 
       if (dataTypeCode < 0 || dataTypeCode > 3) {
         throw new IOException(
@@ -1009,8 +1114,8 @@ public class GvrsFileSpecification {
       spec.setContinuous(isContinuous);
     }
 
-    productLabel = braf.leReadUTF();
   }
+
 
 
   /**
@@ -1026,7 +1131,7 @@ public class GvrsFileSpecification {
     braf.leWriteInt(nColsInRaster);
     braf.leWriteInt(nRowsInTile);
     braf.leWriteInt(nColsInTile);
-    braf.leWriteInt(0); // specify type of tile map (for future use)
+    braf.leWriteInt(0); // specify type of tile directory (for future use)
     braf.leWriteInt(0); // reserved for future use
     braf.leWriteInt(0);
     braf.leWriteInt(0);
@@ -1087,11 +1192,8 @@ public class GvrsFileSpecification {
       GvrsElementType dataType = e.dataType;
       int codeValue = (byte) dataType.getCodeValue();
       braf.writeByte(codeValue);
-      braf.writeBoolean(e.description!=null); // has description
-      braf.writeBoolean(e.unitOfMeasure!=null); // has unit of measure
-      braf.writeBoolean(e.label!=null); // has a label
       braf.writeBoolean(e.continuous);
-      byte []zeroes = new byte[7];
+      byte []zeroes = new byte[6]; // reserved for future use
       braf.writeFully(zeroes);
       braf.leWriteUTF(e.name);
       switch (dataType) {
@@ -1126,22 +1228,13 @@ public class GvrsFileSpecification {
           braf.leWriteInt(iSpec.fillValue);
           break;
       }
-      if(e.description!=null){
+
         braf.leWriteUTF(e.description);
-      }
-      if(e.unitOfMeasure!=null){
         braf.leWriteUTF(e.unitOfMeasure);
-      }
-      if(e.label!=null){
         braf.leWriteUTF(e.label);
-      }
     }
 
-    if(productLabel==null){
-      braf.leWriteShort(0);
-    }else{
-      braf.leWriteUTF(productLabel);
-    }
+    braf.leWriteUTF(productLabel);
   }
 
   /**
@@ -1610,11 +1703,11 @@ public class GvrsFileSpecification {
   }
 
   /**
-   * Get the compression codes currently registered with the specification
+   * Get the compression codes currently registered with this instance
    *
    * @return a valid list of specifications, potentially empty.
    */
-  public List<CodecHolder> getCompressionCodecs() {
+  List<CodecHolder> getCompressionCodecs() {
     List<CodecHolder> list = new ArrayList<>();
     list.addAll(codecList);
     return list;
@@ -2161,7 +2254,8 @@ public class GvrsFileSpecification {
    * @return true if the version is supported; otherwise false.
    */
   static boolean isVersionSupported(int version, int subversion){
-    return version==1 && 0<=subversion && subversion<=2;
+    // at this time, only versions 1.02 and 1.03 are supported
+    return (version==1 && subversion==2) || (version==1 && subversion==3);
   }
 
 
@@ -2239,5 +2333,15 @@ public class GvrsFileSpecification {
       }
     }
     return null;
+  }
+
+  /**
+   * Indicates that the associated file was created using the
+   * obsolete version 1.02
+   * @return true if the associated file was created using version 1.02;
+   * otherwise, false.
+   */
+  boolean isVersion102(){
+    return version102;
   }
 }

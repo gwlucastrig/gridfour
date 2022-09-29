@@ -87,10 +87,10 @@ public class GvrsFile implements Closeable, AutoCloseable {
   private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
 
   // Gives the offset to the field in the header that is used to
-  // store the file positions for the map records.
-  private final static long FILEPOS_OFFSET_TO_FREESPACE_MAP = 56;
-  private final static long FILEPOS_OFFSET_TO_METADATA_MAP = 64;
-  private final static long FILEPOS_OFFSET_TO_TILE_MAP = 80;
+  // store the file positions for the directory records.
+  private final static long FILEPOS_OFFSET_TO_FREESPACE_DIR = 56;
+  private final static long FILEPOS_OFFSET_TO_METADATA_DIR = 64;
+  private final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
 
   private final File file;
   private final GvrsFileSpecification spec;
@@ -229,13 +229,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.leWriteLong(timeModified);  // pos 32: time modified
     braf.leWriteLong(timeModified);    // pos 40: time opened
     braf.leWriteLong(0); // pos 48: offset to content, also length of the header
-    braf.leWriteLong(0); // pos 56: offset to freespace map
-    braf.leWriteLong(0); // pos 64: offset to metadata map
+    braf.leWriteLong(0); // pos 56: offset to freespace directory
+    braf.leWriteLong(0); // pos 64: offset to metadata directory
 
     braf.leWriteShort(1); // number of levels. Currently fixed at 1
     byte[] zeroes = new byte[6];
     braf.writeFully(zeroes);
-    braf.leWriteLong(0); // pos 80: offset to first (currently, only) tile map
+    braf.leWriteLong(0); // pos 80: offset to first (only) tile dierctory
 
     // write a block of two reserved longs for future use.
     braf.leWriteLong(0);
@@ -273,7 +273,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     List<CodecHolder> csList = spec.getCompressionCodecs();
     if (!csList.isEmpty()) {
       String scratch = CodecHolder.formatSpecificationString(csList);
-      GvrsMetadata codecMetadata = GvrsMnc.GvrsJavaCodecs.newInstance(0);
+      GvrsMetadata codecMetadata = GvrsMetadataNames.GvrsJavaCodecs.newInstance(0);
       codecMetadata.setString(scratch);
       codecMetadata.setDescription("Class paths for Java compressors");
       writeMetadata(codecMetadata);
@@ -284,7 +284,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
         }
         sb.append(holder.getIdentification());
       }
-      GvrsMetadata compCodecMetadata = GvrsMnc.GvrsCompressionCodecs.newInstance(0);
+      GvrsMetadata compCodecMetadata = GvrsMetadataNames.GvrsCompressionCodecs.newInstance(0);
       compCodecMetadata.setString(sb.toString());
       compCodecMetadata.setDescription("Compession codecs");
       writeMetadata(compCodecMetadata);
@@ -356,16 +356,16 @@ public class GvrsFile implements Closeable, AutoCloseable {
     filePosContent = braf.leReadLong();
     sizeOfHeaderInBytes = (int) filePosContent;
 
-    long filePosFreeSpaceMapRecord = braf.leReadLong();
-    long filePosMetadataMapRecord = braf.leReadLong();
+    long filePosFreeSpaceDirectory = braf.leReadLong();
+    long filePosMetadataDirectory = braf.leReadLong();
     int nLevels = braf.leReadShort(); // right now, always 1.
     if(nLevels!=1){
       throw new IOException("Unsupported number of levels "+nLevels);
     }
     braf.skipBytes(6);
-    // for now, there is only one tile-map record.  This may
+    // for now, there is only one tile-directory record.  This may
     // change in the future if we support raster pyramids.
-    long filePosTileMapRecord = braf.leReadLong();
+    long filePosTileDirectory = braf.leReadLong();
 
     // skip the currently reserved block of 16 bytes
     braf.skipBytes(16);
@@ -392,34 +392,34 @@ public class GvrsFile implements Closeable, AutoCloseable {
     codecMaster = new CodecMaster(spec.codecList);
     recordMan = new RecordManager(spec, codecMaster, braf, filePosContent);
     long savePos = braf.getFilePosition();
-    if (filePosFreeSpaceMapRecord > 0) {
-      recordMan.readFreespaceMapRecord(filePosFreeSpaceMapRecord);
+    if (filePosFreeSpaceDirectory > 0) {
+      recordMan.readFreespaceDirectory(filePosFreeSpaceDirectory);
       if (writingEnabled) {
         // presumably, the content is going to change and the existing
-        // map data will become obsolete.  So dispose of it and zero out
-        // the file position for the map record.
+        // directory data will become obsolete.  So dispose of it and zero out
+        // the file position for the directory record.
 
-        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_MAP);
+        braf.seek(FILEPOS_OFFSET_TO_FREESPACE_DIR);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosFreeSpaceMapRecord);
+        recordMan.fileSpaceDealloc(filePosFreeSpaceDirectory);
       }
     }
 
-    if (filePosMetadataMapRecord > 0) {
-      recordMan.readMetadataMapRecord(filePosMetadataMapRecord);
+    if (filePosMetadataDirectory > 0) {
+      recordMan.readMetadataDirectory(filePosMetadataDirectory);
       if (writingEnabled) {
-        braf.seek(FILEPOS_OFFSET_TO_METADATA_MAP);
+        braf.seek(FILEPOS_OFFSET_TO_METADATA_DIR);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosMetadataMapRecord);
+        recordMan.fileSpaceDealloc(filePosMetadataDirectory);
       }
     }
 
-    if (filePosTileMapRecord > 0) {
-      recordMan.readTileMapRecord(filePosTileMapRecord);
+    if (filePosTileDirectory > 0) {
+      recordMan.readTileDirectory(filePosTileDirectory);
       if (writingEnabled) {
-        braf.seek(FILEPOS_OFFSET_TO_TILE_MAP);
+        braf.seek(FILEPOS_OFFSET_TO_TILE_DIR);
         braf.leWriteLong(0);
-        recordMan.fileSpaceDealloc(filePosTileMapRecord);
+        recordMan.fileSpaceDealloc(filePosTileDirectory);
       }
     }
     braf.seek(savePos);
@@ -427,10 +427,12 @@ public class GvrsFile implements Closeable, AutoCloseable {
     tileCache = new RasterTileCache(spec, recordMan);
     setTileCacheSize(GvrsCacheSize.Medium);
 
-    // See if the source file specified Java codecs.
+    // See if the source file included a metadata element that specified
+    // the class paths for Java codecs. A file originating from an API
+    // written in a language probably will not.
     List<CodecSpecification> codecSpecificationList = new ArrayList<>();
     GvrsMetadata codecMetadata
-      = readMetadata(GvrsMnc.GvrsJavaCodecs.name(), 0);
+      = readMetadata(GvrsMetadataNames.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
       String codecStr = codecMetadata.getString();
       codecSpecificationList
@@ -531,19 +533,19 @@ public class GvrsFile implements Closeable, AutoCloseable {
           braf.leWriteLong(closingTime);
           braf.leWriteLong(0); // opened for writing time
 
-          long freeSpaceMapPos = recordMan.writeFreeSpaceMapRecord();
-          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_MAP);
-          braf.leWriteLong(freeSpaceMapPos);
+          long freeSpaceDirectoryPos = recordMan.writeFreeSpaceDirectory();
+          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_DIR);
+          braf.leWriteLong(freeSpaceDirectoryPos);
 
-          long metadataMapPos = recordMan.writeMetadataMapRecord();
-          braf.seek(FILEPOS_OFFSET_TO_METADATA_MAP);
-          braf.leWriteLong(metadataMapPos);
+          long metadataDirectoryPos = recordMan.writeMetadataDirectory();
+          braf.seek(FILEPOS_OFFSET_TO_METADATA_DIR);
+          braf.leWriteLong(metadataDirectoryPos);
 
-          // At present, there is only one tile map record.
+          // At present, there is only one tile directory record.
           // In the future, addition records may be added.
-          long tileMapPos = recordMan.writeTileMapRecord();
-          braf.seek(FILEPOS_OFFSET_TO_TILE_MAP);
-          braf.leWriteLong(tileMapPos);
+          long tileDirectoryPos = recordMan.writeTileDirectory();
+          braf.seek(FILEPOS_OFFSET_TO_TILE_DIR);
+          braf.leWriteLong(tileDirectoryPos);
 
           if (spec.isChecksumEnabled) {
             long checksum = tabulateChecksumFromHeader();
@@ -969,7 +971,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @return a valid, potentially empty list
    * @throws IOException in the event of an unrecoverable I/O exception.
    */
-  public List<GvrsMetadata> readMetadata(GvrsMnc gmConstant) throws IOException {
+  public List<GvrsMetadata> readMetadata(GvrsMetadataNames gmConstant) throws IOException {
         if (gmConstant == null) {
       throw new IllegalArgumentException(
         "Unable to retrieve metadata for a null enumeration specification");
@@ -1019,7 +1021,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @throws IOException in the event of an unrecoverable I/O exception
    */
   public void writeMetadata(
-    GvrsMnc gmConstant, String content) throws IOException {
+    GvrsMetadataNames gmConstant, String content) throws IOException {
     String name = gmConstant.name();
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException(

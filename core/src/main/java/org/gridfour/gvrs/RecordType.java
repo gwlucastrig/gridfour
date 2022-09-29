@@ -56,19 +56,19 @@ enum RecordType {
    */
   Tile(2),
   /**
-   * The record contains a map of free file-space records.
+   * The record contains a directory of free file-space records.
    */
-  FreespaceMap(3),
+  FreespaceDirectory(3),
 
   /**
-   * The record contains a map of metadata records.
+   * The record contains a directory of metadata records.
    */
-  MetadataMap(4),
+  MetadataDirectory(4),
 
   /**
-   * The record contains a map of tile records.
+   * The record contains a directory of tile records.
    */
-  TileMap(5);
+  TileDirectory(5);
 
   final int codeValue;
 
@@ -103,11 +103,11 @@ enum RecordType {
       case 2:
         return Tile;
       case 3:
-        return FreespaceMap;
+        return FreespaceDirectory;
       case 4:
-        return MetadataMap;
+        return MetadataDirectory;
       case 5:
-        return TileMap;
+        return TileDirectory;
       default:
         return null; // invalid type
     }

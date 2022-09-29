@@ -40,7 +40,7 @@ import java.io.IOException;
 import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
- * Provides a map configured to store file positions in the form
+ * Provides a directory configured to store file positions in the form
  * of long (8-byte) integers. This is the representation used for file
  * offsets in Java and the JVM. It far exceeds the capacity
  * of any file system currently in existence.
@@ -48,9 +48,9 @@ import org.gridfour.io.BufferedRandomAccessFile;
  * Although this format is required for files larger than 32 GB, it
  * can also be used for smaller files. The disadvantage to this approach
  * is that it requires roughly twice the memory that the compact
- * map uses for storing tile positions.
+ * directory uses for storing tile positions.
  */
-class TilePositionMapExtended implements ITilePositionMap {
+class TileDirectoryExtended implements ITileDirectory {
 
   private long[][] offsets;
   private int row0;
@@ -63,12 +63,12 @@ class TilePositionMapExtended implements ITilePositionMap {
   private final int nColsOfTiles;
 
   /**
-   * Creates an empty tile map with potential dimensions
+   * Creates an empty tile directory with potential dimensions
    * of the specifications.
    *
    * @param spec a valid instance
    */
-  TilePositionMapExtended(GvrsFileSpecification spec) {
+  TileDirectoryExtended(GvrsFileSpecification spec) {
     this.nRowsOfTiles = spec.nRowsOfTiles;
     this.nColsOfTiles = spec.nColsOfTiles;
     //  this.preAllocate = preAllocate;
@@ -84,7 +84,7 @@ class TilePositionMapExtended implements ITilePositionMap {
   /**
    * Store the specified offset at the position given by the
    * tile row and column. If necessary, the grid of file positions is resized
-   * to accommodate the specified coordinates.
+   * to accommodate the specified tile index.
    * <p>
    * File positions must be positive values and a multiple of eight.
    *
@@ -248,8 +248,8 @@ class TilePositionMapExtended implements ITilePositionMap {
   }
 
   /**
-   * Gets the amount of storage space required to store the tile map, in
-   * bytes.
+   * Gets the amount of storage space required to store the tile directory,
+   * in bytes.
    *
    * @return a positive value, in bytes.
    */

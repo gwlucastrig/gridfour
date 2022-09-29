@@ -28,7 +28,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 11/2021  G. Lucas     Created  
+ * 11/2021  G. Lucas     Created
  *
  * Notes:
  *
@@ -104,7 +104,7 @@ public class GvrsInspector {
 
   private void inspectContent(BufferedRandomAccessFile braf) throws IOException {
     int maxTileRecordSize
-      = 4 
+      = 4
       + spec.getNumberOfElements() * 4
       + spec.getStandardTileSizeInBytes()
       + RECORD_OVERHEAD_SIZE;
@@ -123,12 +123,14 @@ public class GvrsInspector {
         break;
       }
 
-      int recordTypeCode = braf.leReadInt();
+      int recordTypeCode = braf.readUnsignedByte();
+      braf.skipBytes(3); // reserved for future use
+
       RecordType recordType = RecordType.valueOf(recordTypeCode);
       if(recordType==null){
         throw new IOException("Invalid record-type code " + recordTypeCode);
       }
-      
+
       int tileIndex = 0;
       if (recordType==recordType.Tile) {
         tileIndex = braf.leReadInt();
@@ -146,7 +148,7 @@ public class GvrsInspector {
           return;
         }
       }
-      
+
       // note that checksums are not computed for free-space records.
       if (spec.isChecksumEnabled() && recordType!=RecordType.Freespace) {
         braf.seek(filePos);

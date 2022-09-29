@@ -72,6 +72,10 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
   final GvrsMetadataType dataType;
   byte[] content = new byte[0];
 
+  /**
+   * The description length is used to save the extra code needed
+   * to determine how much space is needed for a particular description string.
+   */
   int descriptionLength;
   String description;
   boolean uniqueRecordID;
@@ -220,16 +224,14 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
       braf.leWriteInt(autoID);
     }
     braf.write(dataType.getCodeValue());
-    braf.writeBoolean(content.length > 0);
-    braf.writeBoolean(descriptionLength > 0);
+    braf.write(0); // reserved for future use
+    braf.write(0);
     braf.write(0); // reserved
+    braf.leWriteInt(content.length);
     if (content.length > 0) {
-      braf.leWriteInt(content.length);
       braf.write(content);
     }
-    if (descriptionLength > 0) {
-      braf.leWriteUTF(description);
-    }
+    braf.leWriteUTF(description);
   }
 
   static GvrsMetadataReference  readMetadataRef(BufferedRandomAccessFile braf, long offset) throws IOException {
@@ -522,8 +524,14 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
 
   }
 
-   GvrsMetadata(BufferedRandomAccessFile braf) throws IOException {
-
+  /**
+   * A constructor for reading the obsolete Version 1.02 GVRS files.
+   * This constructor is only called when version 102 is true.
+   * @param braf a valid instance
+   * @param version102 value true
+   * @throws IOException in the event of an unhandled IO exception
+   */
+   GvrsMetadata(BufferedRandomAccessFile braf, boolean version102) throws IOException {
     name = braf.leReadUTF();
     recordID = braf.leReadInt();
     int codeValue = braf.readByte();
@@ -545,6 +553,33 @@ public class GvrsMetadata implements Comparable<GvrsMetadata>{
     }
     uniqueRecordID = true;
   }
+
+  /**
+   * A constructor for reading the standard version 1.03 GVRS files.
+   *
+   * @param braf a valid instance
+   * @throws IOException in the event of an unhandled IO exception
+   */
+  GvrsMetadata(BufferedRandomAccessFile braf) throws IOException {
+    name = braf.leReadUTF();
+    recordID = braf.leReadInt();
+    int codeValue = braf.readByte();
+    dataType = GvrsMetadataType.valueOf(codeValue);
+    braf.skipBytes(3); // reserved for future use
+    int contentLength = braf.leReadInt();
+    if (contentLength > 0) {
+      content = new byte[contentLength];
+      braf.readFully(content);
+    }
+
+    long offset1 = braf.getFilePosition();
+    description = braf.leReadUTF();
+    long offset2 = braf.getFilePosition();
+    descriptionLength = (int) (offset2 - offset1) - 2;
+    uniqueRecordID = true;
+  }
+
+
 
    private void clearContent(){
      content = new byte[0];

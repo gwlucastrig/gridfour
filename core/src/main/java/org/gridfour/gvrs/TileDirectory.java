@@ -40,7 +40,7 @@ import java.io.IOException;
 import org.gridfour.io.BufferedRandomAccessFile;
 
 /**
- * Provides a map configured to store file positions of up to
+ * Provides a directory configured to store file positions of up to
  * 32 gigabytes (34,359,738,368 bytes).
  * <p>
  * Internally, the file positions are stored in a 4-byte integer array.
@@ -54,7 +54,7 @@ import org.gridfour.io.BufferedRandomAccessFile;
  * values are cast to longs, they are converted to positive values
  * by applying a bit mask when.
  */
-class TilePositionMap implements ITilePositionMap{
+class TileDirectory implements ITileDirectory{
 
   private int[][] offsets;
   private int row0;
@@ -67,12 +67,12 @@ class TilePositionMap implements ITilePositionMap{
   private final int nColsOfTiles;
 
   /**
-   * Creates an empty tile map with potential dimensions
+   * Creates an empty tile directory with potential dimensions
    * of the specifications.
    *
    * @param spec a valid instance
    */
-  TilePositionMap(GvrsFileSpecification spec) {
+  TileDirectory(GvrsFileSpecification spec) {
     this.nRowsOfTiles = spec.nRowsOfTiles;
     this.nColsOfTiles = spec.nColsOfTiles;
     //  this.preAllocate = preAllocate;
@@ -87,8 +87,8 @@ class TilePositionMap implements ITilePositionMap{
 
   /**
    * Store the specified offset at the position given by the
-   * tile row and column. If necessary, the internal map (grid) is resized
-   * to accommodate the specified coordinates.
+   * tile row and column. If necessary, the internal grid of file positions
+   * is resized to accommodate the specified tile index.
    * <p>
    * File positions must be positive values and a multiple of eight.
    *
@@ -252,8 +252,8 @@ class TilePositionMap implements ITilePositionMap{
   }
 
   /**
-   * Gets the amount of storage space required to store the tile map, in
-   * bytes.
+   * Gets the amount of storage space required to store the tile directory,
+   * in bytes.
    *
    * @return a positive value, in bytes.
    */

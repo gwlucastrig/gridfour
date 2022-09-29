@@ -87,7 +87,7 @@ class RecordManager {
   private final BufferedRandomAccessFile braf;
   private final long basePosition;
   private final int standardTileDataSizeInBytes;
-  private final ITilePositionMap tilePositionMap;
+  private final ITileDirectory tileDirectory;
 
   private FreeNode freeList;
   private long expectedFileSize;
@@ -97,7 +97,7 @@ class RecordManager {
   int nTileReads;
   int nTileWrites;
 
-  final HashMap<String, GvrsMetadataReference> metadataRefMap = new HashMap<>();
+  final HashMap<String, GvrsMetadataReference> metadataDirectory = new HashMap<>();
 
   boolean writeFailure;
 
@@ -112,9 +112,9 @@ class RecordManager {
     this.basePosition = filePosBasePosition;
     //int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
     if (spec.isExtendedFileSizeEnabled()) {
-      tilePositionMap = new TilePositionMapExtended(spec);
+      tileDirectory = new TileDirectoryExtended(spec);
     } else {
-      tilePositionMap = new TilePositionMap(spec);
+      tileDirectory = new TileDirectory(spec);
     }
     standardTileDataSizeInBytes = spec.getStandardTileSizeInBytes();
     expectedFileSize = braf.getFileSize();
@@ -141,7 +141,7 @@ class RecordManager {
    * @return true if the tile exists in the tile store, otherwise false.
    */
   boolean doesTileExist(int tileIndex) {
-    return tilePositionMap.getFilePosition(tileIndex) != 0;
+    return tileDirectory.getFilePosition(tileIndex) != 0;
   }
 
   /**
@@ -161,7 +161,10 @@ class RecordManager {
 
     braf.seek(recordPos);
     braf.leWriteInt(recordSize);
-    braf.leWriteInt(recordType.getCodeValue());
+    braf.write(recordType.getCodeValue());
+    braf.write(0);
+    braf.write(0);
+    braf.write(0);
     if (recordType != RecordType.Tile && recordType != RecordType.Freespace) {
       byte[] zero = new byte[recordSize - RECORD_HEADER_SIZE];
       braf.writeFully(zero);
@@ -396,13 +399,13 @@ class RecordManager {
 
     nTileWrites++;
 
-    long initialFilePos = tilePositionMap.getFilePosition(tileIndex);
+    long initialFilePos = tileDirectory.getFilePosition(tileIndex);
     assert initialFilePos >= 0 : "Invalid file position";
 
     if (!tile.hasValidData()) {
       if (initialFilePos > 0) {
         fileSpaceDealloc(initialFilePos);
-        tilePositionMap.setFilePosition(tileIndex, 0);
+        tileDirectory.setFilePosition(tileIndex, 0);
       }
       return;
     }
@@ -417,7 +420,7 @@ class RecordManager {
       // and not worth the extra code complexity.
       if (initialFilePos > 0) {
         fileSpaceDealloc(initialFilePos);
-        tilePositionMap.setFilePosition(tileIndex, 0);
+        tileDirectory.setFilePosition(tileIndex, 0);
       }
       byte[] packing = tile.getCompressedPacking(codecMaster);
 
@@ -443,7 +446,7 @@ class RecordManager {
             writeFailure = true;
             throw new IOException(FILE_POS_TOO_BIG);
           }
-          tilePositionMap.setFilePosition(tileIndex, posToStore);
+          tileDirectory.setFilePosition(tileIndex, posToStore);
           braf.seek(posToStore);
           braf.leWriteInt(tileIndex);
           braf.writeFully(packing, 0, packing.length);
@@ -462,7 +465,7 @@ class RecordManager {
       }
       // set the position, seek the start of the record,
       // and write the header
-      tilePositionMap.setFilePosition(tileIndex, posToStore);
+      tileDirectory.setFilePosition(tileIndex, posToStore);
       braf.seek(posToStore);
       braf.leWriteInt(tileIndex);
     } else {
@@ -484,7 +487,7 @@ class RecordManager {
   void readTile(RasterTile tile) throws IOException {
     int tileIndex = tile.tileIndex;
 
-    long filePos = tilePositionMap.getFilePosition(tileIndex);
+    long filePos = tileDirectory.getFilePosition(tileIndex);
     if (filePos == 0) {
       tile.setToNullState();
       return;
@@ -510,7 +513,7 @@ class RecordManager {
   byte[][] readTilePacking(RasterTile tile) throws IOException {
     int tileIndex = tile.tileIndex;
 
-    long filePos = tilePositionMap.getFilePosition(tileIndex);
+    long filePos = tileDirectory.getFilePosition(tileIndex);
     if (filePos == 0) {
       return new byte[0][];
     }
@@ -554,7 +557,7 @@ class RecordManager {
         if (tileIndex >= maxTileIndex) {
           throw new IOException("Incorrect tile index read from file " + tileIndex);
         } else {
-          tilePositionMap.setFilePosition(tileIndex, filePos);
+          tileDirectory.setFilePosition(tileIndex, filePos);
         }
       } else if (recordType == RecordType.Freespace) {
         // add the block of file space to the free list.
@@ -570,7 +573,7 @@ class RecordManager {
         }
       } else if (recordType == RecordType.Metadata) {
         GvrsMetadataReference gmr = GvrsMetadata.readMetadataRef(braf, filePos);
-        metadataRefMap.put(gmr.getKey(), gmr);
+        metadataDirectory.put(gmr.getKey(), gmr);
       }
       filePos += recordSize;
     }
@@ -593,9 +596,9 @@ class RecordManager {
     ps.format("   Free Nodes:   %8d%n", nFreeNodes);
     ps.format("   Free Space:   %8d bytes%n", freeSpace);
 
-    ps.format("GVRS Metadata Elements:  %d%n", metadataRefMap.size());
+    ps.format("GVRS Metadata Elements:  %d%n", metadataDirectory.size());
 
-    if (!metadataRefMap.isEmpty()) {
+    if (!metadataDirectory.isEmpty()) {
       List<GvrsMetadataReference> trackerList = getMetadataReferences(false);
       Collections.sort(trackerList, new Comparator<GvrsMetadataReference>() {
         @Override
@@ -630,7 +633,7 @@ class RecordManager {
    * @return a valid, potentially empty list.
    */
   List<GvrsMetadataReference> getMetadataReferences(boolean sortByOffset) {
-    Collection<GvrsMetadataReference> values = metadataRefMap.values();
+    Collection<GvrsMetadataReference> values = metadataDirectory.values();
     List<GvrsMetadataReference> list = new ArrayList<>();
     for (GvrsMetadataReference tracker : values) {
       list.add(tracker);
@@ -650,11 +653,14 @@ class RecordManager {
 
   GvrsMetadata readMetadata(String name, int recordID) throws IOException {
     String key = GvrsMetadataReference.formatKey(name, recordID);
-    GvrsMetadataReference ref = metadataRefMap.get(key);
+    GvrsMetadataReference ref = metadataDirectory.get(key);
     if (ref == null) {
       return null;
     }
     braf.seek(ref.offset);
+    if(spec.isVersion102()){
+      return new GvrsMetadata(braf, true);
+    }
     return new GvrsMetadata(braf);
   }
 
@@ -672,15 +678,15 @@ class RecordManager {
     if (metadata.uniqueRecordID) {
       recordID = metadata.recordID;
       key = GvrsMetadataReference.formatKey(metadata.name, metadata.recordID);
-      GvrsMetadataReference tracker = metadataRefMap.get(key);
+      GvrsMetadataReference tracker = metadataDirectory.get(key);
       if (tracker != null) {
         // remove the old metadata
         fileSpaceDealloc(tracker.offset);
-        metadataRefMap.remove(key);
+        metadataDirectory.remove(key);
       }
     } else {
       int maxRecordID = Integer.MIN_VALUE;
-      Collection<GvrsMetadataReference> values = metadataRefMap.values();
+      Collection<GvrsMetadataReference> values = metadataDirectory.values();
       for (GvrsMetadataReference ref : values) {
         if (ref.name.equals(metadata.name) && ref.recordID > maxRecordID) {
             maxRecordID = ref.recordID;
@@ -702,7 +708,7 @@ class RecordManager {
     long offset = fileSpaceAlloc(nBytes, RecordType.Metadata);
     GvrsMetadataReference mRef = new GvrsMetadataReference(
       metadata.name, recordID, metadata.dataType, offset);
-    metadataRefMap.put(key, mRef);
+    metadataDirectory.put(key, mRef);
 
     braf.seek(offset);
     metadata.write(braf, recordID);
@@ -711,11 +717,11 @@ class RecordManager {
 
   void deleteMetadata(String name, int recordID) throws IOException {
       String key = GvrsMetadataReference.formatKey(name, recordID);
-      GvrsMetadataReference tracker = metadataRefMap.get(key);
+      GvrsMetadataReference tracker = metadataDirectory.get(key);
       if (tracker != null) {
         // remove the old metadata
         fileSpaceDealloc(tracker.offset);
-        metadataRefMap.remove(key);
+        metadataDirectory.remove(key);
       }
   }
 
@@ -730,7 +736,7 @@ class RecordManager {
 
     int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
     for (int tileIndex = 0; tileIndex < nTiles; tileIndex++) {
-      long filePos = tilePositionMap.getFilePosition(tileIndex);
+      long filePos = tileDirectory.getFilePosition(tileIndex);
       if (filePos == 0) {
         continue;
       }
@@ -796,7 +802,7 @@ class RecordManager {
     int k = 0;
     int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
     for (int tileIndex = 0; tileIndex < nTiles; tileIndex++) {
-      long tilePosition = tilePositionMap.getFilePosition(tileIndex);
+      long tilePosition = tileDirectory.getFilePosition(tileIndex);
       if (tilePosition != 0) {
         k++;
       }
@@ -805,11 +811,11 @@ class RecordManager {
     return k;
   }
 
-  void readMetadataMapRecord(long filePosMetadataMapRecord) throws IOException {
-    if (filePosMetadataMapRecord == 0) {
+  void readMetadataDirectory(long filePosMetadataDirectory) throws IOException {
+    if (filePosMetadataDirectory == 0) {
       return;
     }
-    braf.seek(filePosMetadataMapRecord);
+    braf.seek(filePosMetadataDirectory);
     int nMetadataRecord = braf.leReadInt();
     for (int i = 0; i < nMetadataRecord; i++) {
       long recordPos = braf.leReadLong();
@@ -818,41 +824,51 @@ class RecordManager {
       int typeCode = braf.readByte();
       GvrsMetadataType metadataType = GvrsMetadataType.valueOf(typeCode);
       GvrsMetadataReference g = new GvrsMetadataReference(name, recordID, metadataType, recordPos);
-      metadataRefMap.put(g.getKey(), g);
+      metadataDirectory.put(g.getKey(), g);
     }
 
   }
 
-  void readTileMapRecord(long filePosTileMapRecord) throws IOException {
-    // 4 bytes are reserved for future use
-    // eventually, we may have different kinds of tile maps and
+  void readTileDirectory(long filePosTileDirectory) throws IOException {
+    // 8 bytes are reserved for future use
+    // eventually, we may have different kinds of tile directories and
     // they will tell us which variation is in use.
-    braf.seek(filePosTileMapRecord + 4);
-    tilePositionMap.readTilePositions(braf);
+    braf.seek(filePosTileDirectory + 8);
+    tileDirectory.readTilePositions(braf);
   }
 
   /**
-   * Write the map record for the tile-positions, free-space, and
-   * metadata.
+   * Write the tile directory record.
    *
-   * @return the file position of the map record
+   * @return the file position of the tile directory record
    * @throws IOException in the event of an unhandled I/O exception
    */
-  long writeTileMapRecord() throws IOException {
-    int sizeTileMap = tilePositionMap.getStorageSize();
-    sizeTileMap += 4;
-    long mapPos = fileSpaceAlloc(sizeTileMap, RecordType.TileMap);
-    braf.leWriteInt(0);
-    tilePositionMap.writeTilePositions(braf);
-    fileSpaceFinishRecord(mapPos, sizeTileMap);
-    return mapPos;
+  long writeTileDirectory() throws IOException {
+    int sizeTileDirectory = tileDirectory.getStorageSize();
+    // add 4 bytes for tile directory version and any extra information
+    // we may add later. At this time, the version is always zero.
+    // In the future, we may define a new directory version for cases
+    // where a file contains a sparse grid.
+    sizeTileDirectory += 8;
+    long recordPos = fileSpaceAlloc(sizeTileDirectory, RecordType.TileDirectory);
+    braf.write(0); // tile directory version
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    tileDirectory.writeTilePositions(braf);
+    fileSpaceFinishRecord(recordPos, sizeTileDirectory);
+    return recordPos;
   }
 
-  void readFreespaceMapRecord(long filePosFreespaceMapRecord) throws IOException {
-    if(filePosFreespaceMapRecord == 0){
+  void readFreespaceDirectory(long filePosFreespaceDirectory) throws IOException {
+    if(filePosFreespaceDirectory == 0){
       return;
     }
-    braf.seek(filePosFreespaceMapRecord);
+    braf.seek(filePosFreespaceDirectory);
     int nFreeNodes = braf.leReadInt();
     FreeNode lastNode = null;
     for (int iFree = 0; iFree < nFreeNodes; iFree++) {
@@ -868,7 +884,7 @@ class RecordManager {
     }
   }
 
-  long writeFreeSpaceMapRecord() throws IOException {
+  long writeFreeSpaceDirectory() throws IOException {
     int nFreeNodes = 0;
     FreeNode node = freeList;
     while (node != null) {
@@ -879,7 +895,8 @@ class RecordManager {
       return 0;
     }
     int sizeFreeNodes = 4 + nFreeNodes * 12;  // 4 for count, 12 for data
-    long mapPos = fileSpaceAlloc(sizeFreeNodes, RecordType.FreespaceMap);
+    long fileSpaceDirectoryPos =
+      fileSpaceAlloc(sizeFreeNodes, RecordType.FreespaceDirectory);
 
     // Allocating space to store this record may have claimed free space
     // that was covered by one of the free nodes.  Thus the number of
@@ -902,11 +919,11 @@ class RecordManager {
       node = node.next;
     }
 
-    fileSpaceFinishRecord(mapPos, sizeFreeNodes);
-    return mapPos;
+    fileSpaceFinishRecord(fileSpaceDirectoryPos, sizeFreeNodes);
+    return fileSpaceDirectoryPos;
   }
 
-  long writeMetadataMapRecord() throws IOException {
+  long writeMetadataDirectory() throws IOException {
     List<GvrsMetadataReference> gmrList = this.getMetadataReferences(true);
     if (gmrList.isEmpty()) {
       return 0;
@@ -920,7 +937,8 @@ class RecordManager {
       sizeMetadata++; // size of data-type code value
     }
 
-    long mapPos = fileSpaceAlloc(sizeMetadata, RecordType.MetadataMap);
+    long metadataDirectoryPos =
+      fileSpaceAlloc(sizeMetadata, RecordType.MetadataDirectory);
     braf.leWriteInt(gmrList.size());
     for (GvrsMetadataReference gmr : gmrList) {
       braf.leWriteLong(gmr.offset);
@@ -929,8 +947,8 @@ class RecordManager {
       braf.writeByte((byte) gmr.dataType.getCodeValue());
     }
 
-    fileSpaceFinishRecord(mapPos, sizeMetadata);
-    return mapPos;
+    fileSpaceFinishRecord(metadataDirectoryPos, sizeMetadata);
+    return metadataDirectoryPos;
   }
 
 

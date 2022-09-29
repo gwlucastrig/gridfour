@@ -30,7 +30,7 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 10/2019  G. Lucas     Created  
+ * 10/2019  G. Lucas     Created
  *
  * Notes:
  *
@@ -175,13 +175,13 @@ public class BufferedRandomAccessFile
   private void prepRead(int nBytesToRead) throws IOException {
     int nBytes = nBytesToRead;
 
-    // Development note: 
+    // Development note:
     // For this to work, it is imperative that when writeDataIsInBuffer
     // is true, readDataInBuffer must be false.   Also, if the file has
     // been closed, both flags must be false.
     assert !readDataIsInBuffer || !writeDataIsInBuffer : "Read/Write conflict";
     if (readDataIsInBuffer) {
-      //sufficient read data is already in the buffer 
+      //sufficient read data is already in the buffer
       int remaining = buffer.remaining();
       if (remaining >= nBytesToRead) {
         virtualPosition += nBytesToRead;
@@ -341,7 +341,7 @@ public class BufferedRandomAccessFile
     return buffer.getFloat();
   }
 
-  
+
   public int leReadInt() throws IOException {
     prepRead(4);
     return buffer.getInt();
@@ -563,7 +563,7 @@ public class BufferedRandomAccessFile
     }
   }
 
-  
+
    /**
    * Reads an array of integers accessing them in little-endian order.
    * @param array a valid, non-zero sized array
@@ -652,7 +652,7 @@ public class BufferedRandomAccessFile
     }
   }
 
-  
+
   /**
    * Reads a series of UTF-8 characters based on the little-endian byte order
    * The first two bytes give a short integer indicating
@@ -674,7 +674,7 @@ public class BufferedRandomAccessFile
     return new String(b, StandardCharsets.UTF_8);
   }
 
-  
+
   /**
    * Writes a series of UTF-8 characters using the little-endian byte order.
    * The first two bytes give an unsigned short integer indicating
@@ -687,21 +687,22 @@ public class BufferedRandomAccessFile
    * @throws IOException in the event of an I/O error.
    */
   public void leWriteUTF(String s) throws IOException {
-    if (s == null) {
-      throw new NullPointerException("Null string passed to leWriteUTF");
+    if (s == null || s.isEmpty()) {
+      leWriteShort(0);
+    } else {
+      byte[] b = s.getBytes(StandardCharsets.UTF_8);
+      if (b.length > 65535) {
+        throw new UTFDataFormatException(
+          "String passed to leWriteUTF exceeds 65535 byte maximum");
+      }
+      leWriteShort(b.length); // this will work even when length>32767
+      writeFully(b, 0, b.length);
     }
-    byte[] b = s.getBytes(StandardCharsets.UTF_8);
-    if (b.length > 65535) {
-      throw new UTFDataFormatException(
-              "String passed to leWriteUTF exceeds 65535 byte maximum");
-    }
-    leWriteShort(b.length); // this will work even when length>32767
-    writeFully(b, 0, b.length);
   }
 
-  
-  
-  
+
+
+
   /**
    * Reads one input byte and returns true if that byte is nonzero, false if
    * that byte is zero. This method is suitable for reading the byte written by
@@ -874,7 +875,7 @@ public class BufferedRandomAccessFile
     char c;
     int nValid = 0, nRead = 0;
     while (nRead < nBytesToRead) {
-      b = readUnsignedByte();  
+      b = readUnsignedByte();
       nRead++;
       if (b == 0) {
         break;

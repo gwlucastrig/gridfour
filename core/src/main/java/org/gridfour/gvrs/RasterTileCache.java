@@ -317,7 +317,7 @@ class RasterTileCache {
       }
     }
     ps.format("Tile Cache%n");
-    ps.format("   Tiles In Map:              %12d%n", cachedTilesMap.size());
+    ps.format("   Tiles In Cache:            %12d%n", cachedTilesMap.size());
     ps.format("   Tiles Fetched:             %12d%n", nTileGets);
     ps.format("   Tiles Fetched from Cache:  %12d (%4.1f%%)%n", nTileFoundInCache, percentInCache);
     ps.format("   Repeated Fetches:          %12d (%4.1f%%)%n", nTileFirst, percentFirst);

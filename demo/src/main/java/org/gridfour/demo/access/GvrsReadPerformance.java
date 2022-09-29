@@ -45,7 +45,7 @@ import org.gridfour.gvrs.GvrsElementType;
 import org.gridfour.gvrs.GvrsFile;
 import org.gridfour.gvrs.GvrsFileSpecification;
 import org.gridfour.gvrs.GvrsMetadata;
-import org.gridfour.gvrs.GvrsMnc;
+import org.gridfour.gvrs.GvrsMetadataNames;
 
 /**
  * A simple demonstration application that reads the entire content of a Gvrs
@@ -88,7 +88,7 @@ public class GvrsReadPerformance {
       ps.println("Data compression enabled: " + spec.isDataCompressionEnabled());
       if (spec.isDataCompressionEnabled()) {
         GvrsMetadata metadata
-          = gvrs.readMetadata(GvrsMnc.GvrsCompressionCodecs.name(), 0);
+          = gvrs.readMetadata(GvrsMetadataNames.GvrsCompressionCodecs.name(), 0);
         ps.println("Compression codecs:");
         if (metadata == null) {
           ps.println("    Not specified");

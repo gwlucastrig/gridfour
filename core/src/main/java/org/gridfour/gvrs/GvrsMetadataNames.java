@@ -52,7 +52,7 @@ package org.gridfour.gvrs;
  * applications would remain free to specify custom metadata definitions
  * according to their own requirements.
  */
-public enum GvrsMnc {
+public enum GvrsMetadataNames {
   /**
    * Defines a specification for the author of a data set.
    */
@@ -71,13 +71,13 @@ public enum GvrsMnc {
   /**
    * A statement giving conditions under which the producer released the
    * associated product for use. May indicating restrictions on use,
-   * limitations of applicability, etc. For example: 
+   * limitations of applicability, etc. For example:
    * "Not intended for navigation");
    */
   TermsOfUse(GvrsMetadataType.STRING),
   /**
    * A statement disclaiming liability or clarifying limitations of
-   * applicability.. 
+   * applicability..
    */
   Disclaimers(GvrsMetadataType.STRING),
   /**
@@ -96,7 +96,10 @@ public enum GvrsMnc {
    * Defined for use by the GVRS Java implementation for tracking
    * data compression codecs. Metadata included under this specification
    * will include Java-specific information. Non-Java implementation should
-   * ignore metadata this specification.
+   * ignore this specification when reading files. In most cases,
+   * non-Java implementations should <i>not</i> populate this metdata
+   * element.
+   * .
    */
   GvrsJavaCodecs(GvrsMetadataType.ASCII, "Classpaths for codecs (Java only)"),
   /**
@@ -110,12 +113,12 @@ public enum GvrsMnc {
   private final GvrsMetadataType dataType;
   private final String description;
 
-  GvrsMnc(GvrsMetadataType dataType) {
+  GvrsMetadataNames(GvrsMetadataType dataType) {
     this.dataType = dataType;
     description = null;
   }
 
-  GvrsMnc(GvrsMetadataType dataType, String description) {
+  GvrsMetadataNames(GvrsMetadataType dataType, String description) {
     this.dataType = dataType;
     this.description = description;
   }
@@ -140,7 +143,7 @@ public enum GvrsMnc {
     }
     return description;
   }
-  
+
   /**
    * Constructs a new instance of a GvrsMetadata with the name and
    * data type specified by the enumeration.
