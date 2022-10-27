@@ -47,6 +47,17 @@ import org.gridfour.io.BufferedRandomAccessFile;
 interface ITileDirectory {
 
   /**
+   * Gets a version of the current tile directory that is configured to
+   * use extended file addresses.  If the current instance already uses
+   * extended addresses, then this method will return a reference to
+   * the current instance. If the current instance does not use extended
+   * addresses, this method copies its content int a new instance of
+   * an appropriate class.
+   * @return a valid instance configured to use extended addresses.
+   */
+  ITileDirectory getExtendedDirectory();
+
+  /**
    * Gets the file position for the specified tile.
    *
    * @param tileIndex a positive integer
@@ -70,6 +81,14 @@ interface ITileDirectory {
    * otherwise, false
    */
   boolean isFilePositionSet(int tileIndex);
+
+  /**
+   * Indicates whether the file offset used to indicate tile position
+   * are extended to 8 bytes in order to accommodate files larger
+   * than 32 gigabytes.
+   * @return true if extended file offsets are used; otherwise, false.
+   */
+  boolean usesExtendedFileOffset();
 
   /**
    * Reads the tile position data from the specified file.

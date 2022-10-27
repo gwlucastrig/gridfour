@@ -67,27 +67,31 @@ class RecordManager {
     }
   }
 
+  // The record header size is 8 bytes
+  //     4 bytes for the record size
+  //     1 byte for the record type
+  //     3 bytes reserved for future use (always zeroes)
+  // The record overhead size includes
+  //     the record header size (8 bytes)
+  //     4 bytes storage for the checksum
   static final int RECORD_HEADER_SIZE = 8;
-  static final int RECORD_OVERHEAD_SIZE = 12;  // 3 4-byte integers
+  static final int RECORD_OVERHEAD_SIZE = RECORD_HEADER_SIZE + 4;
 
   private static final int MIN_FREE_BLOCK_SIZE = 32;
 
-  // The filePosTooBig exception will be thrown when
-  // the position address returned by a file-space allocation
-  // is larger than what can be addressed with an 32+3 bit format.
-  // Note that the file itself is allowed to
-  // be larger than that, but that the addressable location must be
-  // within the limits of the max-non-extended address
+  // Ordinarily, the tile directory is constructed to use compact
+  // (four byte) file offsets.  When the position address
+  // returned by a file-space allocation is larger than what
+  // can be addressed with an compact format (35 bits, or 32 GB),
+  // Then the tile directory will be replaced by an extended file space.
   private static final long MAX_NON_EXTENDED_FILE_POS = 1L << 35;
-  private static String FILE_POS_TOO_BIG
-    = "File size exceeds 32GB limit for non-extended format";
 
   private final GvrsFileSpecification spec;
-   final CodecMaster codecMaster;
+  final CodecMaster codecMaster;
   private final BufferedRandomAccessFile braf;
   private final long basePosition;
   private final int standardTileDataSizeInBytes;
-  private final ITileDirectory tileDirectory;
+  private ITileDirectory tileDirectory;
 
   private FreeNode freeList;
   private long expectedFileSize;
@@ -111,7 +115,7 @@ class RecordManager {
     this.braf = braf;
     this.basePosition = filePosBasePosition;
     //int nTiles = spec.nRowsOfTiles * spec.nColsOfTiles;
-    if (spec.isExtendedFileSizeEnabled()) {
+    if (braf.getFileSize() > MAX_NON_EXTENDED_FILE_POS) {
       tileDirectory = new TileDirectoryExtended(spec);
     } else {
       tileDirectory = new TileDirectory(spec);
@@ -276,8 +280,8 @@ class RecordManager {
     // storage, not the size of the packing.
     braf.seek(node.filePos);
     int foundSize = braf.leReadInt();
-    assert foundSize > 0 : "alloc found negative or zero block size in file";
-    assert foundSize >= sizeToStore : "alloc found insufficient block size";
+    //assert foundSize > 0 : "alloc found negative or zero block size in file";
+    //assert foundSize >= sizeToStore : "alloc found insufficient block size";
     int surplus = foundSize - sizeToStore;
     if (surplus > 0) {
       long surplusPos = node.filePos + sizeToStore;
@@ -311,9 +315,12 @@ class RecordManager {
     // replace it with the current tile
     braf.seek(releasePos);
     int releaseSize = braf.leReadInt();
-    assert releaseSize > 0 : "read negative or zero number at tile position";
+    // assert releaseSize > 0 : "read negative or zero number at tile position";
     braf.seek(releasePos + 4);
-    braf.leWriteInt(RecordType.Freespace.getCodeValue());
+    braf.write(RecordType.Freespace.getCodeValue());
+    braf.write(0);
+    braf.write(0);
+    braf.write(0);
 
     // we will insert the file-space management information for the
     // existing record located at position filePos into the free list.
@@ -400,7 +407,6 @@ class RecordManager {
     nTileWrites++;
 
     long initialFilePos = tileDirectory.getFilePosition(tileIndex);
-    assert initialFilePos >= 0 : "Invalid file position";
 
     if (!tile.hasValidData()) {
       if (initialFilePos > 0) {
@@ -441,10 +447,8 @@ class RecordManager {
         if (compressedSize < payloadSize) {
           posToStore = fileSpaceAlloc(compressedSize, RecordType.Tile);
           if (posToStore > MAX_NON_EXTENDED_FILE_POS
-            && !spec.isExtendedFileSizeEnabled) {
-            // see explanation above
-            writeFailure = true;
-            throw new IOException(FILE_POS_TOO_BIG);
+            && !tileDirectory.usesExtendedFileOffset()) {
+            tileDirectory = tileDirectory.getExtendedDirectory();
           }
           tileDirectory.setFilePosition(tileIndex, posToStore);
           braf.seek(posToStore);
@@ -458,10 +462,9 @@ class RecordManager {
 
     if (initialFilePos == 0) {
       posToStore = fileSpaceAlloc(payloadSize, RecordType.Tile);
-      if (posToStore > MAX_NON_EXTENDED_FILE_POS && !spec.isExtendedFileSizeEnabled) {
-        // see explanation above
-        writeFailure = true;
-        throw new IOException(FILE_POS_TOO_BIG);
+      if (posToStore > MAX_NON_EXTENDED_FILE_POS
+        && !tileDirectory.usesExtendedFileOffset()) {
+        tileDirectory = tileDirectory.getExtendedDirectory();
       }
       // set the position, seek the start of the record,
       // and write the header
@@ -501,11 +504,11 @@ class RecordManager {
     for (TileElement e : tile.elements) {
       int n = braf.leReadInt();
       if (n == e.getStandardSize()) {
-          e.readStandardFormat(braf);
+        e.readStandardFormat(braf);
       } else {
-          byte[] encoding = new byte[n];
-          braf.readFully(encoding);
-          e.decode(codecMaster, encoding);
+        byte[] encoding = new byte[n];
+        braf.readFully(encoding);
+        e.decode(codecMaster, encoding);
       }
     }
   }
@@ -523,9 +526,8 @@ class RecordManager {
     braf.skipBytes(4);  // skip tileIndex, could be used for diagnostics.
     //int tileIndexFromFile = braf.leReadInt();
     //assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
-    int k=0;
-    byte [][]packing = new byte[tile.elements.length][];
-    for (TileElement e : tile.elements) {
+    byte[][] packing = new byte[tile.elements.length][];
+    for (int k = 0; k < tile.elements.length; k++) {
       int n = braf.leReadInt();
       packing[k] = new byte[n];
       braf.readFully(packing[k]);
@@ -658,7 +660,7 @@ class RecordManager {
       return null;
     }
     braf.seek(ref.offset);
-    if(spec.isVersion102()){
+    if (spec.isVersion102()) {
       return new GvrsMetadata(braf, true);
     }
     return new GvrsMetadata(braf);
@@ -689,7 +691,7 @@ class RecordManager {
       Collection<GvrsMetadataReference> values = metadataDirectory.values();
       for (GvrsMetadataReference ref : values) {
         if (ref.name.equals(metadata.name) && ref.recordID > maxRecordID) {
-            maxRecordID = ref.recordID;
+          maxRecordID = ref.recordID;
         }
       }
       if (maxRecordID == Integer.MAX_VALUE) {
@@ -705,27 +707,25 @@ class RecordManager {
       key = GvrsMetadataReference.formatKey(metadata.name, recordID);
     }
     int nBytes = metadata.getStorageSize();
-    long offset = fileSpaceAlloc(nBytes, RecordType.Metadata);
+    long posToStore = fileSpaceAlloc(nBytes, RecordType.Metadata);
     GvrsMetadataReference mRef = new GvrsMetadataReference(
-      metadata.name, recordID, metadata.dataType, offset);
+      metadata.name, recordID, metadata.dataType, posToStore);
     metadataDirectory.put(key, mRef);
 
-    braf.seek(offset);
+    braf.seek(posToStore);
     metadata.write(braf, recordID);
-    fileSpaceFinishRecord(offset, nBytes);
+    fileSpaceFinishRecord(posToStore, nBytes);
   }
 
   void deleteMetadata(String name, int recordID) throws IOException {
-      String key = GvrsMetadataReference.formatKey(name, recordID);
-      GvrsMetadataReference tracker = metadataDirectory.get(key);
-      if (tracker != null) {
-        // remove the old metadata
-        fileSpaceDealloc(tracker.offset);
-        metadataDirectory.remove(key);
-      }
+    String key = GvrsMetadataReference.formatKey(name, recordID);
+    GvrsMetadataReference tracker = metadataDirectory.get(key);
+    if (tracker != null) {
+      // remove the old metadata
+      fileSpaceDealloc(tracker.offset);
+      metadataDirectory.remove(key);
+    }
   }
-
-
 
   void analyzeAndReport(PrintStream ps) throws IOException {
 
@@ -740,9 +740,11 @@ class RecordManager {
       if (filePos == 0) {
         continue;
       }
-      braf.seek(filePos);
-      int tileIndexFromFile = braf.leReadInt();
-      assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
+      braf.seek(filePos + 4); // skip the tileIndexFromFile element
+      // the following would be used if the assertion was in place.
+      // braf.seek(filePos);
+      //int tileIndexFromFile = braf.leReadInt();
+      //assert tileIndexFromFile == tileIndex : "incorrect tile index on file";
 
       boolean compressed = false;
       for (int iElement = 0; iElement < spec.getNumberOfElements(); iElement++) {
@@ -755,7 +757,7 @@ class RecordManager {
           braf.skipBytes(n);
         } else {
           compressed = true;
-          compressedBytes+=n;
+          compressedBytes += n;
           byte[] packing = new byte[n];
           braf.readFully(packing);
           codecMaster.analyze(spec.nRowsInTile, spec.nColsInTile, packing);
@@ -769,11 +771,11 @@ class RecordManager {
     }
     int populatedTiles = nCompressedTiles + nNonCompressedTiles;
     codecMaster.reportAndClearAnalysisData(ps, populatedTiles);
-    if(nCompressedTiles>0){
-      long nCompressedSamples =
-        (long)nCompressedTiles*(long)spec.getNumberOfCellsInTile();
-      double bitsPerCompressedSample =
-        (double)(compressedBytes*8L)/(double)nCompressedSamples;
+    if (nCompressedTiles > 0) {
+      long nCompressedSamples
+        = (long) nCompressedTiles * (long) spec.getNumberOfCellsInTile();
+      double bitsPerCompressedSample
+        = (double) (compressedBytes * 8L) / (double) nCompressedSamples;
       ps.format(
         "%nBits per compressed sample (excluding file overhead) %8.4f%n",
         bitsPerCompressedSample);
@@ -834,11 +836,21 @@ class RecordManager {
     // For versions 1.03 and beyond, 8 bytes are reserved for future use.
     // In future work, we may have different kinds of tile directories.
     // The first byte will tell us which variation is in use.
-    if(spec.isVersion102()){
-       braf.seek(filePosTileDirectory + 4);
-    }else{
-       braf.seek(filePosTileDirectory + 8); // ensures byte alignment with longs
+    if (spec.isVersion102()) {
+      braf.seek(filePosTileDirectory + 4);
+    } else {
+      // the first element in the tile directory is a set of 8 bytes:
+      //    0:        directory format, currently always set to zero
+      //    1:        boolean indicating if extended file offsets are used
+      //    2 to 7:   Reservd for future use
+      braf.seek(filePosTileDirectory + 1);
+      boolean useExtendedOffsets = braf.readBoolean();
+      braf.skipBytes(6);
+      if (useExtendedOffsets) {
+        tileDirectory = tileDirectory.getExtendedDirectory();
+      }
     }
+
     tileDirectory.readTilePositions(braf);
   }
 
@@ -855,9 +867,9 @@ class RecordManager {
     // In the future, we may define a new directory version for cases
     // where a file contains a sparse grid.
     sizeTileDirectory += 8;
-    long recordPos = fileSpaceAlloc(sizeTileDirectory, RecordType.TileDirectory);
+    long posToStore = fileSpaceAlloc(sizeTileDirectory, RecordType.TileDirectory);
     braf.write(0); // tile directory version
-    braf.write(0); // reserved
+    braf.writeBoolean(tileDirectory.usesExtendedFileOffset());
     braf.write(0); // reserved
     braf.write(0); // reserved
     braf.write(0); // reserved
@@ -865,12 +877,12 @@ class RecordManager {
     braf.write(0); // reserved
     braf.write(0); // reserved
     tileDirectory.writeTilePositions(braf);
-    fileSpaceFinishRecord(recordPos, sizeTileDirectory);
-    return recordPos;
+    fileSpaceFinishRecord(posToStore, sizeTileDirectory);
+    return posToStore;
   }
 
   void readFreespaceDirectory(long filePosFreespaceDirectory) throws IOException {
-    if(filePosFreespaceDirectory == 0){
+    if (filePosFreespaceDirectory == 0) {
       return;
     }
     braf.seek(filePosFreespaceDirectory);
@@ -896,12 +908,13 @@ class RecordManager {
       nFreeNodes++;
       node = node.next;
     }
-    if(nFreeNodes == 0){
+    if (nFreeNodes == 0) {
       return 0;
     }
+
     int sizeFreeNodes = 4 + nFreeNodes * 12;  // 4 for count, 12 for data
-    long fileSpaceDirectoryPos =
-      fileSpaceAlloc(sizeFreeNodes, RecordType.FreespaceDirectory);
+    long fileSpaceDirectoryPos
+      = fileSpaceAlloc(sizeFreeNodes, RecordType.FreespaceDirectory);
 
     // Allocating space to store this record may have claimed free space
     // that was covered by one of the free nodes.  Thus the number of
@@ -925,6 +938,40 @@ class RecordManager {
     }
 
     fileSpaceFinishRecord(fileSpaceDirectoryPos, sizeFreeNodes);
+
+    // zero-out the open free-space nodes, compute checksum if appropriate
+    // The API defers these operations until the end because the content
+    // of a free-space record may change several times in the course of
+    // an application authoring a GVRS file.
+    node = freeList;
+    while (node != null) {
+      long filePos = node.filePos;
+      int recordSize = node.blockSize;
+      if (spec.isChecksumEnabled) {
+        // in the case of a free-space record, the checksum
+        // is computed based on just the record header (since the
+        // content is undefined).  This implementation stores zeroes
+        // in the content, but that's just a good housekeeping measure.
+        braf.seek(filePos);
+        byte[] b = new byte[8];
+        braf.readFully(b);
+        GridfourCRC32C crc32 = new GridfourCRC32C();
+        crc32.update(b);
+
+        b = new byte[recordSize - 12];
+        braf.writeFully(b);
+
+        braf.leWriteInt((int) crc32.getValue());
+      } else {
+        // since checksums are not enable, we need to ensure
+        // that a zero is written to the checksum location.
+        // all other bytes are also set to zero.
+        byte[] b = new byte[recordSize - 8];
+        braf.writeFully(b);
+      }
+      node = node.next;
+    }
+
     return fileSpaceDirectoryPos;
   }
 
@@ -942,8 +989,8 @@ class RecordManager {
       sizeMetadata++; // size of data-type code value
     }
 
-    long metadataDirectoryPos =
-      fileSpaceAlloc(sizeMetadata, RecordType.MetadataDirectory);
+    long metadataDirectoryPos
+      = fileSpaceAlloc(sizeMetadata, RecordType.MetadataDirectory);
     braf.leWriteInt(gmrList.size());
     for (GvrsMetadataReference gmr : gmrList) {
       braf.leWriteLong(gmr.offset);
@@ -955,7 +1002,6 @@ class RecordManager {
     fileSpaceFinishRecord(metadataDirectoryPos, sizeMetadata);
     return metadataDirectoryPos;
   }
-
 
   long getExpectedFileSize() {
     return expectedFileSize;
@@ -990,5 +1036,15 @@ class RecordManager {
       filePos += recordSize;
     }
     return new RecordManagerStats(sizeFreeSpace, sizeAllocatedSpace);
+  }
+
+  /**
+   * Gets the tile directory. Intended for internal use by the GVRS API
+   * and should not be exposed outside of this package
+   *
+   * @return if the file is opened properly, a valid instance.
+   */
+  ITileDirectory getTileDirectory() {
+    return tileDirectory;
   }
 }

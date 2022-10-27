@@ -74,7 +74,7 @@ public class GvrsFileSpecification {
    * The sub-version identifier to be used by all raster-file and related
    * implementations in this package.
    */
-  static final byte SUB_VERSION = 3;
+  static final byte SUB_VERSION = 4;
 
   /**
    * Major version for this instance (set by constructor or when read from a file)
@@ -181,12 +181,9 @@ public class GvrsFileSpecification {
   boolean geoWrapsLongitude;
   boolean geoBracketsLongitude;
 
-  // the non-extended file size option works by compressing file positions
-  // so that they can be stored as a 4-byte unsigned integer.  This limits
-  // the size of the file to 32 GB.  At this time, we have not implemented
-  // the extended file size option.
-  boolean isExtendedFileSizeEnabled = false;
-
+  /**
+   * Indicates whether checksums are to be computed for each record in a file.
+   */
   boolean isChecksumEnabled = false;
 
   /**
@@ -516,7 +513,6 @@ public class GvrsFileSpecification {
     modelToRaster = s.modelToRaster;
     rasterToModel = s.rasterToModel;
 
-    isExtendedFileSizeEnabled = s.isExtendedFileSizeEnabled;
     isChecksumEnabled = s.isChecksumEnabled;
     rasterSpace = s.rasterSpace;
     dataCompressionEnabled = s.dataCompressionEnabled;
@@ -868,12 +864,15 @@ public class GvrsFileSpecification {
 
 
     // Skip the space reserved for future variations of the tile map
-    braf.skipBytes(5*4);
-
+    if(version102){
+      braf.skipBytes(20);
+      braf.skipBytes(1);
+    }else{
+      braf.skipBytes(8);
+    }
     nRowsOfTiles = (nRowsInRaster + nRowsInTile - 1) / nRowsInTile;
     nColsOfTiles = (nColsInRaster + nColsInTile - 1) / nColsInTile;
 
-    isExtendedFileSizeEnabled = braf.readBoolean();
     isChecksumEnabled = braf.readBoolean();
     int rasterSpaceCode = braf.readUnsignedByte();
     rasterSpace = RasterSpaceType.valueOf(rasterSpaceCode);
@@ -885,6 +884,9 @@ public class GvrsFileSpecification {
       isGeographicCoordinateSystemSet = true;
     }
 
+    if(!version102){
+         braf.skipBytes(5); // reserved for future use
+    }
     x0 = braf.leReadDouble();
     y0 = braf.leReadDouble();
     x1 = braf.leReadDouble();
@@ -917,9 +919,26 @@ public class GvrsFileSpecification {
       checkGeographicCoverage();
     }
 
+    // Tile data element specifications -------------------
+    if(version102){
+      readCompressionSpecifications(braf);
+      readElementSpecifications102(braf);
+    }else{
+      readElementSpecifications(braf);
+      readCompressionSpecifications(braf);
+    }
 
 
 
+
+
+
+
+    productLabel = braf.leReadUTF();
+  }
+
+  final void readCompressionSpecifications(BufferedRandomAccessFile braf) throws IOException {
+    // Data compression specifications -------------------
     // The source file may supply keys for compression encoder types.
     // Some keys are part of the GVRS specification, but others may
     // have been created by other applications.  If these applications
@@ -936,31 +955,23 @@ public class GvrsFileSpecification {
         codecIdentificationList.add(codecID);
       }
     }
-
-    readElementSpecifications(braf);
-    productLabel = braf.leReadUTF();
   }
 
-
   final void readElementSpecifications(BufferedRandomAccessFile braf) throws IOException {
-    if(version102){
-       readElementSpecifications102(braf);
-       return;
-    }
     int nElements = braf.leReadInt();
     for (int iElement = 0; iElement < nElements; iElement++) {
       int dataTypeCode = braf.readByte();
       boolean isContinuous = braf.readBoolean();
       braf.skipBytes(6); // reserved for future use
-
+      String name = braf.leReadUTF();
       if (dataTypeCode < 0 || dataTypeCode > 3) {
         throw new IOException(
           "Unsupported value for data-type code: " + dataTypeCode);
       }
       GvrsElementType dataType = GvrsElementType.valueOf(dataTypeCode);
 
+      skipToMultipleOf4(braf);
       GvrsElementSpecification spec;
-      String name = braf.leReadUTF();
       switch (dataType) {
         case SHORT:
           short sMinValue = braf.leReadShort();
@@ -987,9 +998,9 @@ public class GvrsFileSpecification {
           float fFillValue = braf.leReadFloat();
           float scale = braf.leReadFloat();
           float offset = braf.leReadFloat();
-          int iMinValue = braf.leReadInt();  // NO PMD diagnostic
-          int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
-          int iFillValue = braf.leReadInt(); // NO PMD diagnostic
+          int iMinValue = braf.leReadInt();
+          int iMaxValue = braf.leReadInt();
+          int iFillValue = braf.leReadInt();
           GvrsElementSpecificationIntCodedFloat icfSpec
             = new GvrsElementSpecificationIntCodedFloat(
               name, scale, offset,
@@ -1002,9 +1013,9 @@ public class GvrsFileSpecification {
 
         case INTEGER:
         default:
-          int iMinValue = braf.leReadInt();  // NO PMD diagnostic
-          int iMaxValue = braf.leReadInt(); // NO PMD diagnostic
-          int iFillValue = braf.leReadInt(); // NO PMD diagnostic
+          int iMinValue = braf.leReadInt();
+          int iMaxValue = braf.leReadInt();
+          int iFillValue = braf.leReadInt();
           GvrsElementSpecificationInt iSpec
             = new GvrsElementSpecificationInt(name, iMinValue, iMaxValue, iFillValue);
           elementSpecifications.add(iSpec);
@@ -1017,9 +1028,10 @@ public class GvrsFileSpecification {
       // we can do so.  In future development, perhaps we should extend
       // the element specification constructors to accept it as an argument
       spec.setContinuous(isContinuous);
+      spec.setLabel(braf.leReadUTF());
       spec.setDescription(braf.leReadUTF());
       spec.setUnitOfMeasure(braf.leReadUTF());
-      spec.setLabel(braf.leReadUTF());
+      skipToMultipleOf4(braf);
     }
 
   }
@@ -1116,6 +1128,21 @@ public class GvrsFileSpecification {
 
   }
 
+  private void padMultipleOf4(BufferedRandomAccessFile braf) throws IOException {
+    long filePos = braf.getFilePosition();
+    int n = (int)((-filePos)&0x03L);
+    for(int i=0; i<n; i++){
+      braf.write(0);
+    }
+  }
+
+    private void skipToMultipleOf4(BufferedRandomAccessFile braf) throws IOException {
+    long filePos = braf.getFilePosition();
+    int n = (int)((-filePos)&0x03L);
+    if(n>0){
+      braf.skipBytes(n);
+    }
+  }
 
 
   /**
@@ -1131,13 +1158,9 @@ public class GvrsFileSpecification {
     braf.leWriteInt(nColsInRaster);
     braf.leWriteInt(nRowsInTile);
     braf.leWriteInt(nColsInTile);
-    braf.leWriteInt(0); // specify type of tile directory (for future use)
     braf.leWriteInt(0); // reserved for future use
     braf.leWriteInt(0);
-    braf.leWriteInt(0);
-    braf.leWriteInt(0);
 
-    braf.writeBoolean(isExtendedFileSizeEnabled);
     braf.writeBoolean(isChecksumEnabled);
     braf.writeByte(rasterSpace.getCodeValue());
 
@@ -1148,6 +1171,11 @@ public class GvrsFileSpecification {
       coordinateSystem = 2;
     }
     braf.writeByte(coordinateSystem);
+    braf.write(0);
+    braf.write(0);
+    braf.write(0);
+    braf.write(0);
+    braf.write(0);
 
     braf.leWriteDouble(x0);
     braf.leWriteDouble(y0);
@@ -1177,16 +1205,7 @@ public class GvrsFileSpecification {
     braf.leWriteDouble(r2m11);
     braf.leWriteDouble(r2m12);
 
-    if (isDataCompressionEnabled()) {
-      List<CodecHolder> sList = getCompressionCodecs();
-      braf.leWriteInt(sList.size());
-      for (CodecHolder srcs : sList) {
-        braf.leWriteUTF(srcs.getIdentification());
-      }
-    } else {
-      braf.leWriteInt(0);
-    }
-
+    // Tile data element specifications
     braf.leWriteInt(elementSpecifications.size());
     for (GvrsElementSpecification e : elementSpecifications) {
       GvrsElementType dataType = e.dataType;
@@ -1196,6 +1215,7 @@ public class GvrsFileSpecification {
       byte []zeroes = new byte[6]; // reserved for future use
       braf.writeFully(zeroes);
       braf.leWriteUTF(e.name);
+      padMultipleOf4(braf);
       switch (dataType) {
         case SHORT:
           GvrsElementSpecificationShort sSpec = (GvrsElementSpecificationShort) e;
@@ -1229,9 +1249,21 @@ public class GvrsFileSpecification {
           break;
       }
 
-        braf.leWriteUTF(e.description);
-        braf.leWriteUTF(e.unitOfMeasure);
-        braf.leWriteUTF(e.label);
+      braf.leWriteUTF(e.label);
+      braf.leWriteUTF(e.description);
+      braf.leWriteUTF(e.unitOfMeasure);
+      padMultipleOf4(braf);
+    }
+
+    // Data compression specifications
+     if (isDataCompressionEnabled()) {
+      List<CodecHolder> sList = getCompressionCodecs();
+      braf.leWriteInt(sList.size());
+      for (CodecHolder srcs : sList) {
+        braf.leWriteUTF(srcs.getIdentification());
+      }
+    } else {
+      braf.leWriteInt(0);
     }
 
     braf.leWriteUTF(productLabel);
@@ -1323,32 +1355,6 @@ public class GvrsFileSpecification {
    */
   public int getNumberOfElements() {
     return this.elementSpecifications.size();
-  }
-
-  /**
-   * Indicates whether the extended file size option is enabled. If the
-   * extended
-   * file size option is not enabled, the maximum size of a file is 32
-   * gigabytes. Larger files may be specified using this option, but doing so
-   * will increase the amount of internal memory used to process the files.
-   *
-   * @return true if extended file sizes are enabled; otherwise false.
-   */
-  public boolean isExtendedFileSizeEnabled() {
-    return isExtendedFileSizeEnabled;
-  }
-
-  /**
-   * Indicates whether the extended file size option is enabled. If the
-   * extended file size option is not enabled, the maximum size of a file is 32
-   * gigabytes. Larger files may be specified using this option, but doing so
-   * will increase the amount of internal memory used to process the files.
-   *
-   * @param extendedFileSizeEnabled true if extended file sizes are enabled;
-   * otherwise false.
-   */
-  public void setExtendedFileSizeEnabled(boolean extendedFileSizeEnabled) {
-    this.isExtendedFileSizeEnabled = extendedFileSizeEnabled;
   }
 
   /**
@@ -2255,7 +2261,7 @@ public class GvrsFileSpecification {
    */
   static boolean isVersionSupported(int version, int subversion){
     // at this time, only versions 1.02 and 1.03 are supported
-    return (version==1 && subversion==2) || (version==1 && subversion==3);
+    return (version==1 && 2 <= subversion && subversion<=4);
   }
 
 

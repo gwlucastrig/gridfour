@@ -71,15 +71,42 @@ class TileDirectoryExtended implements ITileDirectory {
   TileDirectoryExtended(GvrsFileSpecification spec) {
     this.nRowsOfTiles = spec.nRowsOfTiles;
     this.nColsOfTiles = spec.nColsOfTiles;
-    //  this.preAllocate = preAllocate;
-    //  if (preAllocate) {
-    //    offsets = new long[nRowsOfTiles][nColsOfTiles];
-    //    row1 = nRowsOfTiles - 1;
-    //    col1 = nColsOfTiles - 1;
-    //    nRows = nRowsOfTiles;
-    //    nCols = nColsOfTiles;
-    //  }
   }
+
+
+  TileDirectoryExtended(
+    int nRowsOfTiles,
+    int nColsOfTiles,
+    int row0,
+    int col0,
+    int row1,
+    int col1,
+    int nRows,
+    int nCols,
+    long  [][]offsets){
+
+    this.nRowsOfTiles = nRowsOfTiles;
+    this.nColsOfTiles = nColsOfTiles;
+    this.row0 = row0;
+    this.col0 = col0;
+    this.row1 = row1;
+    this.col1 = col1;
+    this.nRows = nRows;
+    this.nCols = nCols;
+    this.offsets = offsets;
+   }
+
+  @Override
+  public boolean usesExtendedFileOffset() {
+    return true;
+  }
+
+  @Override
+  public ITileDirectory getExtendedDirectory() {
+    return this;
+  }
+
+
 
   /**
    * Store the specified offset at the position given by the
@@ -95,6 +122,10 @@ class TileDirectoryExtended implements ITileDirectory {
   public void setFilePosition(int tileIndex, long offset) {
     int row = tileIndex / nColsOfTiles;
     int col = tileIndex - row * nColsOfTiles;
+    if (row < 0 || row >= nRowsOfTiles) {
+      throw new IllegalArgumentException(
+        "Tile index is out of bounds " + tileIndex);
+    }
 
     // to simplify re-allocation (if any), we process the
     // columns first.

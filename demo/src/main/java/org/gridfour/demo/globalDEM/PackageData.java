@@ -272,8 +272,6 @@ public class PackageData {
     spec.setDataCompressionEnabled(compressionEnabled);
     boolean checksumsEnalbed = options.isChecksumComputationEnabled();
     spec.setChecksumEnabled(checksumsEnalbed);
-    boolean bigAddressSpaceEnabled = options.isBigAddressSpaceEnabled();
-    spec.setExtendedFileSizeEnabled(bigAddressSpaceEnabled);
 
     double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
 

@@ -60,7 +60,6 @@ public class TestOptions {
     "-tileSize",
     "-compress",
     "-verify",
-    "-big",
     "-zScale",
     "-zOffset",
     "-showProgress",
@@ -74,7 +73,6 @@ public class TestOptions {
   boolean compress;
   boolean checksums;
   boolean verify;
-  boolean bigAddressSpace;
   boolean isZScaleSet = false;
   double zScale = 1;
   double zOffset = 0;
@@ -446,8 +444,6 @@ public class TestOptions {
       outputFile = new File(outputFileName);
     }
 
-    bigAddressSpace
-      = scanBooleanOption(args, "-big", matched, bigAddressSpace);
     verify
       = scanBooleanOption(args, "-verify", matched, verify);
     compress
@@ -554,16 +550,7 @@ public class TestOptions {
       }
     }
   }
-
-  /**
-   * Indicates whether the big-address space option is enabled.
-   *
-   * @return true if big-address space is enabled; otherwise, false
-   */
-  public boolean isBigAddressSpaceEnabled() {
-    return bigAddressSpace;
-  }
-
+ 
   /**
    * Indicates whether data compression is enabled
    *

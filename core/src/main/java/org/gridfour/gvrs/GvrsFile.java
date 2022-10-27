@@ -77,20 +77,43 @@ import org.gridfour.util.GridfourCRC32C;
  */
 public class GvrsFile implements Closeable, AutoCloseable {
 
-  private final static long FILEPOS_MODIFICATION_TIME = 32;
-  private final static long FILEPOS_OPEN_FOR_WRITING_TIME = 40;
+  /**
+   * Gives the offset to the start of the header records.
+   * As with all other records, the first thing stored in the
+   * records is is length, followed by the record type (1 byte)
+   * and three reserved bytes (all zeroes).
+   *    The content records will be stored immediately after the
+   * file header.  This position is computed as 16 plus the size of
+   * the header record.
+   */
+ final static long FILEPOS_OFFSET_TO_HEADER_RECORD = 16;
 
-  // Gives the offset to the field in the header that is used to
-  // store the file position for the storage of content.
-  // The value in stored at this file position is also the size
-  // of the file header, in bytes.
-  private final static long FILEPOS_OFFSET_TO_CONTENT = 48;
+  /**
+   * The file position where the last-modified time is stored
+   */
+ final static long FILEPOS_MODIFICATION_TIME = 40;
 
-  // Gives the offset to the field in the header that is used to
-  // store the file positions for the directory records.
-  private final static long FILEPOS_OFFSET_TO_FREESPACE_DIR = 56;
-  private final static long FILEPOS_OFFSET_TO_METADATA_DIR = 64;
-  private final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
+
+
+  /**
+   * The file position where file's opened-for-writing time is
+   * writing is stored.  This value is set to a non-zero value when the
+   * file is opened for writing and the set to zero when the file is closed.
+   */
+  final static long FILEPOS_OPEN_FOR_WRITING_TIME = 48;
+
+
+final static long FILEPOS_OPEN_FOR_WRITING_TIME_PRE104 = 40;
+final static long FILEPOS_OFFSET_TO_CONTENT_PRE104 = 48;
+final static long FILEPOS_OPEN_FOR_WRITING_PRE104 = 40;
+final static long FILEPOS_OFFSET_TO_TILE_DIR_PRE104 = 80;
+
+final static long FILEPOS_OFFSET_TO_FREESPACE_DIR = 56;
+final static long FILEPOS_OFFSET_TO_METADATA_DIR = 64;
+final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
+
+
+
 
   private final File file;
   private final GvrsFileSpecification spec;
@@ -222,20 +245,25 @@ public class GvrsFile implements Closeable, AutoCloseable {
     braf.writeByte(0); // reserved
     braf.writeByte(0); // reserved
 
+    braf.leWriteInt(0); // size of record, to be filled in later
+    braf.write(RecordType.FileHeader.codeValue);
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+    braf.write(0); // reserved
+
     uuid = UUID.randomUUID();
     braf.leWriteLong(uuid.getLeastSignificantBits());
     braf.leWriteLong(uuid.getMostSignificantBits());
 
-    braf.leWriteLong(timeModified);  // pos 32: time modified
-    braf.leWriteLong(timeModified);    // pos 40: time opened
-    braf.leWriteLong(0); // pos 48: offset to content, also length of the header
+    braf.leWriteLong(timeModified);  // pos 40: time modified
+    braf.leWriteLong(timeModified);  // pos 48: time opened
     braf.leWriteLong(0); // pos 56: offset to freespace directory
     braf.leWriteLong(0); // pos 64: offset to metadata directory
 
     braf.leWriteShort(1); // number of levels. Currently fixed at 1
     byte[] zeroes = new byte[6];
     braf.writeFully(zeroes);
-    braf.leWriteLong(0); // pos 80: offset to first (only) tile dierctory
+    braf.leWriteLong(0); // pos 80: offset to first (only) tile directory
 
     // write a block of two reserved longs for future use.
     braf.leWriteLong(0);
@@ -256,15 +284,16 @@ public class GvrsFile implements Closeable, AutoCloseable {
     // and then pad out the record.
     long filePos = braf.getFilePosition();
     filePosContent = (filePos + 4 + 7) & 0xfffffff8;
-    sizeOfHeaderInBytes = (int) filePosContent;
+    sizeOfHeaderInBytes = (int)(filePosContent-FILEPOS_OFFSET_TO_HEADER_RECORD);
     int padding = (int) (filePosContent - filePos);
     for (int i = 0; i < padding; i++) {
       braf.writeByte(0);
     }
 
-    braf.seek(FILEPOS_OFFSET_TO_CONTENT);
-    braf.leWriteLong(filePosContent);
+    braf.seek(FILEPOS_OFFSET_TO_HEADER_RECORD);
+    braf.leWriteInt(sizeOfHeaderInBytes);
     braf.flush();
+    braf.seek(filePosContent);
 
     recordMan = new RecordManager(spec, codecMaster, braf, filePosContent);
     tileCache = new RasterTileCache(spec, recordMan);
@@ -322,6 +351,8 @@ public class GvrsFile implements Closeable, AutoCloseable {
       throw new IOException("File not found " + file.getPath());
     }
 
+    boolean writingEnabled = access.toLowerCase().contains("w");
+
     this.file = file;
     braf = new BufferedRandomAccessFile(file, access);
 
@@ -340,21 +371,50 @@ public class GvrsFile implements Closeable, AutoCloseable {
         + GvrsFileSpecification.SUB_VERSION);
     }
 
-    long uuidLow = braf.leReadLong();
-    long uuidHigh = braf.leReadLong();
-    uuid = new UUID(uuidHigh, uuidLow);
+    int versionCode = version*100+subversion;
+    if (versionCode<=103) {
+      if(openedForWriting){
+        throw new IOException(
+          "The input file version is pre-1.04; write access not supported");
+      }
+      long uuidLow = braf.leReadLong();
+      long uuidHigh = braf.leReadLong();
+      uuid = new UUID(uuidHigh, uuidLow);
 
-    timeModified = braf.leReadLong(); // time modified from old file
-    long timeOpenedForWriting = braf.leReadLong();
-    if (timeOpenedForWriting != 0) {
-      throw new IOException(
-        "Attempt to access a file currently opened for writing"
-        + " or not properly closed by previous application: "
-        + file.getPath());
+      timeModified = braf.leReadLong(); // time modified from old file
+      long timeOpenedForWriting = braf.leReadLong();
+      if (timeOpenedForWriting != 0) {
+        throw new IOException(
+          "Attempt to access a file currently opened for writing"
+          + " or not properly closed by previous application: "
+          + file.getPath());
+      }
+
+      filePosContent = braf.leReadLong();
+      sizeOfHeaderInBytes = (int) filePosContent;
+    } else {
+      sizeOfHeaderInBytes = braf.leReadInt(); // includes record header and checksum
+      filePosContent = sizeOfHeaderInBytes+FILEPOS_OFFSET_TO_HEADER_RECORD;
+      // the first byte should give a record-type of "file header"
+      // it is followed by 3 reserved bytes.  As a diagnostic, a developer
+      // could use the following lines rather than skipping 4 bytes.
+      //  int iRecordType = braf.readUnsignedByte();
+      //  braf.skipBytes(3);
+      braf.skipBytes(4);
+
+      long uuidLow = braf.leReadLong();
+      long uuidHigh = braf.leReadLong();
+      uuid = new UUID(uuidHigh, uuidLow);
+
+      timeModified = braf.leReadLong(); // time modified from old file
+      long timeOpenedForWriting = braf.leReadLong();
+      if (timeOpenedForWriting != 0) {
+        throw new IOException(
+          "Attempt to access a file currently opened for writing"
+          + " or not properly closed by previous application: "
+          + file.getPath());
+      }
     }
-
-    filePosContent = braf.leReadLong();
-    sizeOfHeaderInBytes = (int) filePosContent;
 
     long filePosFreeSpaceDirectory = braf.leReadLong();
     long filePosMetadataDirectory = braf.leReadLong();
@@ -372,7 +432,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     spec = new GvrsFileSpecification(braf, version, subversion);
 
     if (spec.isChecksumEnabled) {
-      braf.seek(sizeOfHeaderInBytes - 4);
+      braf.seek(filePosContent - 4);
       long checksum0 = braf.leReadInt() & 0xffffffffL;
       long checksum1 = tabulateChecksumFromHeader();
       if (checksum0 != checksum1) {
@@ -381,7 +441,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
       }
     }
 
-    boolean writingEnabled = access.toLowerCase().contains("w");
     if (writingEnabled) {
       braf.seek(FILEPOS_OPEN_FOR_WRITING_TIME);
       braf.leWriteLong(System.currentTimeMillis());
@@ -533,9 +592,6 @@ public class GvrsFile implements Closeable, AutoCloseable {
           braf.leWriteLong(closingTime);
           braf.leWriteLong(0); // opened for writing time
 
-          long freeSpaceDirectoryPos = recordMan.writeFreeSpaceDirectory();
-          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_DIR);
-          braf.leWriteLong(freeSpaceDirectoryPos);
 
           long metadataDirectoryPos = recordMan.writeMetadataDirectory();
           braf.seek(FILEPOS_OFFSET_TO_METADATA_DIR);
@@ -546,6 +602,13 @@ public class GvrsFile implements Closeable, AutoCloseable {
           long tileDirectoryPos = recordMan.writeTileDirectory();
           braf.seek(FILEPOS_OFFSET_TO_TILE_DIR);
           braf.leWriteLong(tileDirectoryPos);
+
+          // The free-space directory must be the last directory we write
+          // because in the course of writing the metadata and tile directories
+          // the allocation of free space may have changed.
+             long freeSpaceDirectoryPos = recordMan.writeFreeSpaceDirectory();
+          braf.seek(FILEPOS_OFFSET_TO_FREESPACE_DIR);
+          braf.leWriteLong(freeSpaceDirectoryPos);
 
           if (spec.isChecksumEnabled) {
             long checksum = tabulateChecksumFromHeader();
@@ -601,7 +664,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    */
   private long tabulateChecksumFromHeader() throws IOException {
     byte[] bytes = new byte[sizeOfHeaderInBytes - 4];
-    braf.seek(0);
+    braf.seek(FILEPOS_OFFSET_TO_HEADER_RECORD);
     braf.readFully(bytes);
     GridfourCRC32C crc32 = new GridfourCRC32C();
     crc32.update(bytes);
@@ -709,7 +772,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
    * @param cacheSize a valid instance
    * @throws IOException in the event of a non-recoverable I/P exception.
    */
-  public void setTileCacheSize(GvrsCacheSize cacheSize) throws IOException {
+  public final void setTileCacheSize(GvrsCacheSize cacheSize) throws IOException {
     if(cacheSize==null){
       throw new IllegalArgumentException("Null cache size not allowed");
     }
@@ -1118,13 +1181,29 @@ public class GvrsFile implements Closeable, AutoCloseable {
   }
 
   /**
-   * Gets the size of the file header, in bytes. This value is
-   * also the offset to the start of the file body (content).
+   * Gets the offset to the first record of content.
+   * Intended for use by the code inspector
    *
    * @return a positive value greater than zero.
    */
-  int getSizeOfHeader() {
-    return sizeOfHeaderInBytes;
+  long getFilePositionOfContent() {
+    return filePosContent;
+  }
+
+
+  /**
+   * Gets the open random-access file object used by this instance
+   * to access the associated GVRS file.
+   * <p>
+   * Note: This method is intended for internal use by the GVRS API
+   * and should not be exposed outside of this package.
+   * @return if the file is open, a valid instance; otherwise, a null.
+   */
+  BufferedRandomAccessFile getOpenFile(){
+    if(isClosed){
+      return null;
+    }
+    return braf;
   }
 
   /**
@@ -1344,7 +1423,7 @@ public class GvrsFile implements Closeable, AutoCloseable {
     if(this.isClosed()){
       return 0;
     }
-    return this.recordMan.getCountOfPopulatedTiles();
+    return recordMan.getCountOfPopulatedTiles();
   }
 
   /**

@@ -43,8 +43,12 @@ package org.gridfour.gvrs;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import static org.gridfour.gvrs.RecordManager.RECORD_OVERHEAD_SIZE;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.GridfourCRC32C;
@@ -59,49 +63,151 @@ import org.gridfour.util.GridfourCRC32C;
  */
 public class GvrsInspector {
 
+  final File file;
+  final int version;
+  final int subversion;
+  final int combinedVersion;
+
+  boolean headerIsBad;
+  boolean headerFailedChecksum;
+
+  boolean tileDirectoryPassedChecksum;
+  boolean tileDirectoryLocated;
+
   boolean inspectionFailed;
+  boolean inspectionPassed;
   boolean inspectionComplete;
-  boolean badHeader;
+
   boolean invalidRecordSize;
   boolean badTileIndex;
   long terminationPosition;
+  long fileSize;
+
   List<Integer> badTiles = new ArrayList<>();
 
   private GvrsFileSpecification spec;
   private long offsetToContent;
-  private int sizeOfHeaderInBytes;
+  private long offsetToTileDirectory;
+
+  static final int RECORD_HEADER_SIZE = 8;
 
   /**
-   * Reads the GVRS file and checks for problematic elements including
-   * checksums (if enabled) that would indicate a corrupt file.
+   * Reads a file for inspection
    *
    * @param file a valid file reference
    * @throws IOException in the event of a unrecoverable I/O exception.
    */
   public GvrsInspector(File file) throws IOException {
-    // if checksums are enabled, reading a file with a bad header
-    // will throw a checksum error.
-    try ( GvrsFile gvrsFile = new GvrsFile(file, "r")) {
-      spec = gvrsFile.getSpecification();
-      sizeOfHeaderInBytes = gvrsFile.getSizeOfHeader();
-      offsetToContent = sizeOfHeaderInBytes;
-    } catch (IOException ioex) {
-      String s = ioex.getMessage().toLowerCase();
-      if (s.contains("checksum")) {
-        inspectionFailed = true;
-        badHeader = true;
-      }else{
-        throw ioex;
-      }
-      return;
+    if (file == null) {
+      throw new NullPointerException("Null file reference not supported");
     }
 
+    // The constructor does a pre-test, opening the file and checking
+    // the header to see if it will pass checksum (if checksums are activated).
+    this.file = file;
+    this.fileSize = file.length();
+    terminationPosition = 16; // beginning of the header
+
     try ( BufferedRandomAccessFile braf = new BufferedRandomAccessFile(file, "r")) {
+      String identification = braf.readASCII(12);
+      if (!RasterFileType.GvrsRaster.getIdentifier().equals(identification)) {
+        throw new IOException("Incompatible file type " + identification);
+      }
+      version = braf.readUnsignedByte();
+      subversion = braf.readUnsignedByte();
+      combinedVersion = version * 100 + subversion;
+      braf.skipBytes(2); // unused, reserved bytes
+      if (!GvrsFileSpecification.isVersionSupported(version, subversion)) {
+        throw new IOException("Incompatible version " + version + "." + subversion
+          + ".  Latest version is "
+          + GvrsFileSpecification.VERSION
+          + "."
+          + GvrsFileSpecification.SUB_VERSION);
+      }
+
+      // test the header for checksum
+      long headerPos0, headerPos1;
+      if (combinedVersion < 104) {
+        headerPos0 = 0;
+        braf.seek(GvrsFile.FILEPOS_OFFSET_TO_CONTENT_PRE104);
+        headerPos1 = braf.leReadLong();
+        braf.seek(GvrsFile.FILEPOS_OFFSET_TO_TILE_DIR_PRE104);
+        offsetToTileDirectory = braf.leReadLong();
+      } else {
+        headerPos0 = 16;
+        braf.seek(16);
+        int sizeOfHeaderInBytes = braf.leReadInt();
+        headerPos1 = headerPos0 + sizeOfHeaderInBytes;
+        braf.seek(GvrsFile.FILEPOS_OFFSET_TO_TILE_DIR_PRE104);
+        offsetToTileDirectory = braf.leReadLong();
+      }
+
+      // The header will never be especially large, so we allow a one megabyte
+      // cut-off.
+      long n = headerPos1 - headerPos0;
+      if (n <= 4 || n > 1000000 || headerPos1 > braf.getFileSize()) {
+        headerIsBad = true;
+        return;
+      }
+      byte[] scratch = new byte[(int) n - 4];
+      braf.seek(headerPos0);
+      braf.readFully(scratch);
+      long checkSum = braf.leReadInt() & 0xffffffffL;
+      if (checkSum != 0) {
+        GridfourCRC32C crc32 = new GridfourCRC32C();
+        crc32.update(scratch);
+        long test = crc32.getValue();
+        if (checkSum != test) {
+          headerIsBad = true;
+          headerFailedChecksum = true;
+          terminationPosition = braf.getFilePosition();
+        }
+      }
+    }
+
+    if (headerIsBad) {
+      inspectionFailed = true;
+    } else {
+      // there is no recovery from a bad header
+      inspect();
+    }
+
+  }
+
+  /**
+   * Inspects the content of the file. If the inspection is successful
+   * (no errors are detected), this method returns true.
+   *
+   * @return true if the file passed inspection; otherwise, false
+   * @throws IOException in the event of an unrecoverable I/O error.
+   */
+  private boolean inspect() throws IOException {
+    if (inspectionComplete) {
+      // the may have called this multiple times.
+      return !inspectionFailed;
+    }
+    if (headerIsBad) {
+      return false;
+    }
+    // if checksums are enabled, reading a file with a bad header
+    // will throw a checksum error.
+    boolean headerReadSuccessfully = false;
+    try ( GvrsFile gvrsFile = new GvrsFile(file, "r")) {
+      headerReadSuccessfully = true;
+      spec = gvrsFile.getSpecification();
+      offsetToContent = gvrsFile.getFilePositionOfContent();
+      BufferedRandomAccessFile braf = gvrsFile.getOpenFile();
       inspectContent(braf);
     } catch (IOException ioex) {
+      if (!headerReadSuccessfully) {
+        headerIsBad = true;
+      }
       inspectionFailed = true;
-      throw ioex;
     }
+
+    inspectionPassed = inspectionFailed;
+    return inspectionPassed;
+
   }
 
   private void inspectContent(BufferedRandomAccessFile braf) throws IOException {
@@ -110,12 +216,19 @@ public class GvrsInspector {
       + spec.getNumberOfElements() * 4
       + spec.getStandardTileSizeInBytes()
       + RECORD_OVERHEAD_SIZE;
-    maxTileRecordSize = (maxTileRecordSize+7)&0x7ffffff8;
+    maxTileRecordSize = (maxTileRecordSize + 7) & 0x7ffffff8;
     braf.seek(offsetToContent);
 
     int maxTileIndex = spec.nRowsOfTiles * spec.nColsOfTiles;
     long fileSize = braf.getFileSize();
     long filePos = offsetToContent;
+
+    if (offsetToTileDirectory != 0) {
+      // see if the tile directory passes checksum
+      tileDirectoryLocated = true;
+      tileDirectoryPassedChecksum
+        = testRecordChecksum(braf, offsetToTileDirectory);
+    }
 
     boolean previousCheckPassed = true; // at the start, we know that the header passed.
     while (filePos < fileSize - RECORD_OVERHEAD_SIZE) {
@@ -129,14 +242,14 @@ public class GvrsInspector {
       braf.skipBytes(3); // reserved for future use
 
       RecordType recordType = RecordType.valueOf(recordTypeCode);
-      if(recordType==null){
+      if (recordType == null) {
         throw new IOException("Invalid record-type code " + recordTypeCode);
       }
 
       int tileIndex = 0;
-      if (recordType==recordType.Tile) {
+      if (recordType == recordType.Tile) {
         tileIndex = braf.leReadInt();
-        if (tileIndex<0 || tileIndex >= maxTileIndex) {
+        if (tileIndex < 0 || tileIndex >= maxTileIndex) {
           badTileIndex = true;
           inspectionFailed = true;
           terminationPosition = filePos;
@@ -151,18 +264,27 @@ public class GvrsInspector {
         }
       }
 
-      // note that checksums are not computed for free-space records.
-      if (spec.isChecksumEnabled() && recordType!=RecordType.Freespace) {
-        braf.seek(filePos);
-        byte[] bytes = new byte[recordSize - 4];
-        braf.readFully(bytes);
+      if (spec.isChecksumEnabled()) {
         GridfourCRC32C crc32 = new GridfourCRC32C();
-        crc32.update(bytes);
+        if (recordType == RecordType.Freespace) {
+          // because the content of a free-space record does not
+          // matter, the checksum is computed from just the record header
+          braf.seek(filePos);
+          byte[] bytes = new byte[8];
+          braf.readFully(bytes);
+          crc32.update(bytes);
+          braf.seek(filePos + recordSize - 4);
+        } else {
+          braf.seek(filePos);
+          byte[] bytes = new byte[recordSize - 4];
+          braf.readFully(bytes);
+          crc32.update(bytes);
+        }
         long checksum0 = crc32.getValue();
         long checksum1 = braf.leReadInt() & 0xffffffffL;
         if (checksum0 != checksum1) {
-          if(recordType==RecordType.Tile){
-              badTiles.add(tileIndex);
+          if (recordType == RecordType.Tile) {
+            badTiles.add(tileIndex);
           }
           inspectionFailed = true;
           // if we've seen two checksum failures in a row,
@@ -175,6 +297,9 @@ public class GvrsInspector {
           previousCheckPassed = false;
         } else {
           previousCheckPassed = true;
+          if (recordType == RecordType.TileDirectory) {
+            tileDirectoryPassedChecksum = true;
+          }
         }
       }
 
@@ -184,6 +309,31 @@ public class GvrsInspector {
     inspectionComplete = true;
     terminationPosition = filePos;
 
+  }
+
+  boolean testRecordChecksum(BufferedRandomAccessFile braf, long offsetToRecordContent) throws IOException {
+    long offsetToRecord = offsetToRecordContent - RECORD_HEADER_SIZE;
+    braf.seek(offsetToRecord);
+
+    int recordSize = braf.leReadInt();
+    int recordType = braf.readUnsignedByte();
+    if (recordType > 6) {
+      return false;   // invalid record type
+    }
+    if (offsetToRecord + recordSize > braf.getFileSize()) {
+      return false;
+    }
+
+    // TO DO: The number of bytes in a record could be quite large.
+    // Perhaps we should read through the record in blocks of 8K.
+    braf.seek(offsetToRecord);
+    byte[] b = new byte[recordSize - 4];
+    braf.readFully(b);
+    GridfourCRC32C crc32 = new GridfourCRC32C();
+    crc32.update(b);
+    long checksum0 = crc32.getValue();
+    long checksum1 = braf.leReadInt() & 0xffffffffL;
+    return checksum0 == checksum1;
   }
 
   /**
@@ -202,7 +352,7 @@ public class GvrsInspector {
    * @return true if the inspection detected a failure in the header.
    */
   public boolean didFileHeaderFailInspction() {
-    return badHeader;
+    return headerIsBad;
   }
 
   /**
@@ -237,6 +387,29 @@ public class GvrsInspector {
     List<Integer> list = new ArrayList<>();
     list.addAll(this.badTiles);
     return list;
+  }
+
+  public void summarize(PrintStream ps) {
+    ps.println("Inspection results for " + file.getName());
+    Locale locale = Locale.getDefault();
+    Date date = new Date();
+    SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
+    ps.format("Date of Inspection: %s%n", sdFormat.format(date));
+    ps.format("Inspected entire file: %s%n", Boolean.toString(inspectionComplete));
+    ps.format("Inspection passed:     %s%n", Boolean.toString(!inspectionFailed));
+    ps.println("");
+    ps.format("Tile directory located: %s%n",
+      Boolean.toString(tileDirectoryLocated));
+    ps.format("Tile directory passed checksum: %s%n",
+      Boolean.toString(tileDirectoryPassedChecksum));
+    int nBadTiles = badTiles.size();
+    if (nBadTiles > 0) {
+      ps.format("Number of bad tiles:            %d%n", nBadTiles);
+    }
+    if (terminationPosition > 0 && terminationPosition < fileSize) {
+      ps.format("Errors prevented survey of entire file, terminated at offset %s%n",
+        terminationPosition);
+    }
   }
 
 }

@@ -68,7 +68,12 @@ enum RecordType {
   /**
    * The record contains a directory of tile records.
    */
-  TileDirectory(5);
+  TileDirectory(5),
+
+  /**
+   * The record contains the unique, mandatory file header
+   */
+  FileHeader(6);
 
   final int codeValue;
 
