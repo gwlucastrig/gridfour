@@ -344,6 +344,10 @@ class RasterTileCache {
     // is included in the list, then it will be stored at the head of
     // the linked-list of tiles maintained by the cache.
 
+    if(!recordManager.doesTileExist(targetIndex)){
+      return null;
+    }
+
     RasterTile targetTile = null;
     List<RasterTile> tList = tileDecompAssistant.getTilesWithWaitForIndex(targetIndex);
     for (RasterTile t : tList) {
