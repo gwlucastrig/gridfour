@@ -49,7 +49,6 @@ import org.gridfour.compress.CodecHuffman;
 import org.gridfour.compress.CodecFloat;
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.ICompressionEncoder;
-import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.PrintStream;
 import static java.lang.Double.isFinite;
@@ -774,8 +773,10 @@ public class GvrsFileSpecification {
    * in the first row and first column of the raster.
    * @param y0 the Y coordinate of the center point in the cell
    * in the first row and first column of the raster.
-   * @param cellWidth  the width of each cell in Cartesian coordinates
-   * @param cellHeight the height of each cell in Cartesian coordinates
+   * @param cellWidth  the width of each cell in Cartesian coordinates;
+   * both positive and negative values are allowed.
+   * @param cellHeight the height of each cell in Cartesian coordinates;
+   * both positive and negative values are allowed.
    */
   final public void setCartesianModel(double x0, double y0,
     double cellWidth, double cellHeight) {
@@ -1801,10 +1802,41 @@ public class GvrsFileSpecification {
   /**
    * Gets the bounds for the coordinate system associated with the grid.
    *
-   * @return a valid instance of Rectangle2D giving the bounds
+   * @return a valid instance giving the computed bounds for the
+   * raster model associated with this instance.
    */
-  public Rectangle2D getBounds() {
-    return new Rectangle2D.Double(x0, y0, x1 - x0, y1 - y0);
+  public GvrsModelBounds getBounds() {
+    double xMin = Double.POSITIVE_INFINITY;
+    double yMin = Double.POSITIVE_INFINITY;
+    double xMax = Double.NEGATIVE_INFINITY;
+    double yMax = Double.NEGATIVE_INFINITY;
+    // For the excended model bounds, we look at the outer edges
+    // of the four grid corner cells.  These start at row/col -0.5, -0.5
+    // and extend to row.col  nRow-0.5, -nCol-0.5
+    for (int iRow = 0; iRow < 2; iRow ++) {
+      double r = iRow*nRowsInRaster-0.5;
+      for (int iCol = 0; iCol < 2; iCol++) {
+        double c = iCol*nColsInRaster-0.5;
+        ModelPoint m = mapGridToModelPoint(r, c);
+        double x = m.getX();
+        if (x < xMin) {
+          xMin = x;
+        }
+        if (x > xMax) {
+          xMax = x;
+        }
+        double y = m.getY();
+        if (y < yMin) {
+          yMin = y;
+        }
+        if (y > yMax) {
+          yMax = y;
+        }
+      }
+    }
+
+
+    return new GvrsModelBounds(x0, y0, x1, y1, xMin, yMin, xMax, yMax);
   }
 
   /**
@@ -1983,9 +2015,12 @@ public class GvrsFileSpecification {
 
 
   /**
-   * Gets the minimum X coordinate in the model-coordinate-system
-   * (a Cartesian coordinate system, or longitude for a geographic coordinate
-   * system).
+   * Gets the X coordinate in the model coordinate system
+   * for the first cell in the grid (the first row and
+   * first column in the grid).  Note that this value is not necessarily
+   * the minimum X coordinate in the domain of the model coordinate
+   * system. Its value will depend on how the application code
+   * overlaid the model coordinates onto the grid.
    * @return a finite floating-point value.
    */
   public double getX0(){
@@ -1994,9 +2029,12 @@ public class GvrsFileSpecification {
 
 
   /**
-   * Gets the minimum Y coordinate in the model-coordinate-system
-   * (a Cartesian coordinate system, or latitude for a geographic coordinate
-   * system).
+   * Gets the Y coordinate in the model coordinate system
+   * for the first cell in the grid (the first row and
+   * first column in the grid).  Note that this value is not necessarily
+   * the minimum Y coordinate in the domain of the model coordinate
+   * system. Its value will depend on how the application code
+   * overlaid the model coordinates onto the grid.
    * @return a finite floating-point value.
    */
   public double getY0(){
@@ -2005,9 +2043,12 @@ public class GvrsFileSpecification {
 
 
   /**
-   * Gets the maximum X coordinate in the model-coordinate-system
-   * (a Cartesian coordinate system, or longitude for a geographic coordinate
-   * system).
+   * Gets the X coordinate in the model coordinate system
+   * for the last cell in the grid (the last row and
+   * last column in the grid).  Note that this value is not necessarily
+   * the maximum X coordinate in the domain of the model coordinate
+   * system. Its value will depend on how the application code
+   * overlaid the model coordinates onto the grid.
    * @return a finite floating-point value.
    */
   public double getX1(){
@@ -2016,9 +2057,12 @@ public class GvrsFileSpecification {
 
 
   /**
-   * Gets the maximum Y coordinate in the model-coordinate-system
-   * (a Cartesian coordinate system, or latitude for a geographic coordinate
-   * system).
+   * Gets the Y coordinate in the model coordinate system
+   * for the last cell in the grid (the last row and
+   * last column in the grid).  Note that this value is not necessarily
+   * the maximum Y coordinate in the domain of the model coordinate
+   * system. Its value will depend on how the application code
+   * overlaid the model coordinates onto the grid.
    * @return a finite floating-point value.
    */
   public double getY1(){
