@@ -6,8 +6,6 @@ pmd_results.html
 nb*.xml
 test*.png
 test*.jpg;
-*.gvrs
-*.gvrx
 nbproject
 target
 analysis/doc
@@ -16,10 +14,6 @@ core/doc
 core/javadoc
 demo/doc
 demo/javadoc
-gis/doc
-gis/javadoc
-svm/doc
-svm/javadoc
 pom.xml.versionsBackup
 
 # Package Files -- at this time, all of these are included in the distribution #
