@@ -1,17 +1,25 @@
 This directory includes sample files intended to exercise the various
 features and data formats supported by GVRS.
 
-For samples 0 through 12, data values are computed based on the grid index,
-starting with 0 at grid row=0, column=0, 1 at grid position row=1, column=1, etc.
+For sample  files 0 through 12, data values are computed based on the grid index,
+starting with -1 at grid row=0, column=0, 1 at grid position row=1, column=1, etc.
+Thus the grid cells include both negative and positive values. The table
+below illustrates the values in a 3 row by 5 column grid.
+
+               col 0
+    row  0       -1    0    1    2    3
+    row  1        4    5    6    7    8
+	row  2        9   10   11   12   13
+
 Data is stored using elements specified as types Short, Integer, Float, 
 or Integer-Coded Float.
-
+	
 Some cases features a tile size that does not evenly divide the grid size.
 In these cases, the last rows and columns of tiles will contain cells that
 are not valid grid cells.  These tile cells are populated with null data values.
 
 
-Samples 13 and 14 assign model coordinates in the range 0 to 1 to each grid cell.
+Sample files 13 and 14 assign model coordinates in the range 0 to 1 to each grid cell.
 Data is stored in Float or Integer-Coded Float elements.   The value of each cell
 is computed from model coordinates using the following formula:
      
