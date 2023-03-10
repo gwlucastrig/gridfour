@@ -205,7 +205,7 @@ public class GvrsInspector {
       inspectionFailed = true;
     }
 
-    inspectionPassed = inspectionFailed;
+    inspectionPassed = !inspectionFailed;
     return inspectionPassed;
 
   }

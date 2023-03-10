@@ -939,10 +939,15 @@ class RecordManager {
 
     fileSpaceFinishRecord(fileSpaceDirectoryPos, sizeFreeNodes);
 
+    // For information assurance reasons, we want to make sure that
+    // all free space records contain zeroes (overwriting any junk bytes).
+    // if checksums are enabled, we compute checksums for just the first
+    // eight bytes (the record size and record length fields)
     // zero-out the open free-space nodes, compute checksum if appropriate
     // The API defers these operations until the end because the content
     // of a free-space record may change several times in the course of
-    // an application authoring a GVRS file.
+    // an application authoring a GVRS file.  So we do not wish to spend
+    // resources writing them.
     node = freeList;
     while (node != null) {
       long filePos = node.filePos;
@@ -958,14 +963,21 @@ class RecordManager {
         GridfourCRC32C crc32 = new GridfourCRC32C();
         crc32.update(b);
 
+        // Fill the body of the free space with zeroes. So far, we've
+        // read eight bytes for the Record Length and Record Type
+        // and used them to compute Checksum.  So we need enough zeroes
+        // to fill everything except the final checksum.
+        //     recordSize - (8 + 4)
         b = new byte[recordSize - 12];
         braf.writeFully(b);
-
         braf.leWriteInt((int) crc32.getValue());
       } else {
-        // since checksums are not enable, we need to ensure
-        // that a zero is written to the checksum location.
+        // since checksums are not enabled, we need to ensure
+        // that a zero is written to the checksum location as well
+        // as the body of the record.
+        // jump past the header and write zeroes.
         // all other bytes are also set to zero.
+        braf.seek(filePos+8);
         byte[] b = new byte[recordSize - 8];
         braf.writeFully(b);
       }
