@@ -1,0 +1,12 @@
+# This example is taken from 'CPT Designer' by Tim Makins and MapAbility.Com
+# in the article "Under the CPT-File Hood" at https://www.mapability.com/cptd/help/hs70.htm
+# It includes a "categorical" (discrete valued) color palette with labels
+# associated with each entry.
+#
+# COLOR_MODEL = RGB
+  1 064/000/192 2 064/000/192 ;Shrubland
+  2 000/064/255 3 000/064/255 ;Savanna
+  3 000/128/255 4 000/128/255 ;Grassland
+B	0 0 0 
+F	255 255 255
+N	128 128 128

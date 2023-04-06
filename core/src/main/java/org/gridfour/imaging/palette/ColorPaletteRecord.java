@@ -68,7 +68,7 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
       throw new IllegalArgumentException("Range of values given out-of-order");
     }
   }
-  
+
   abstract ColorPaletteRecord copyWithModifiedRange(
     double minRangeSpec, double maxRangeSpec);
 
@@ -108,16 +108,16 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
    * @return a valid Color instance.
    */
   public abstract Color getBaseColor();
-  
+
     /**
    * Gets the color for the maximum value in the range specified
-   * by this record.  
+   * by this record.
    * @return a valid Color instance.
    */
   public abstract Color getTopColor();
-  
-  
-  
+
+
+
   /**
    * Indicates whether the specified value z is within the
    * range of values covered by this instance.
@@ -153,7 +153,7 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
     }
     return test;
   }
-  
+
   /**
    * Sets an arbitrary label string for the record
    * @param label a valid string, or a null if not specified.
@@ -164,7 +164,7 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
     }
     this.label = label;
   }
-  
+
   /**
    * Gets a label for the record.  If the record does not have a label,
    * returns an empty string.
@@ -175,5 +175,23 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
       return "";
     }
     return label;
+  }
+
+  /**
+   * Get the maximum for the range of values specified by this record.
+   *
+   * @return a valid floating point value.
+   */
+  public double getRangeMax() {
+    return range1;
+  }
+
+  /**
+   * Get the minimum for the range of values specified by this record.
+   *
+   * @return a valid floating point value.
+   */
+  public double getRangeMin() {
+    return range0;
   }
 }

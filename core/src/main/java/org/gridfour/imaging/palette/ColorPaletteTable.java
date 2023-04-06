@@ -61,7 +61,7 @@ public class ColorPaletteTable {
   private final double rangeMin;
   private final double rangeMax;
   private final boolean allRecordsHaveSingleValue;
-  
+
   Color background;
   Color foreground;
   Color colorForNull;
@@ -87,7 +87,7 @@ public class ColorPaletteTable {
     normalized = false;
     normalizedRangeMin = 0;
     normalizedRangeMax = 0;
-    
+
     if (recordsList == null || recordsList.isEmpty()) {
       throw new IllegalArgumentException("Null or empty records list");
     }
@@ -138,8 +138,8 @@ public class ColorPaletteTable {
       }
     }
     allRecordsHaveSingleValue = !nonZeroRange;
-    
-    
+
+
     rangeMin = records[0].range0;
     rangeMax = records[records.length - 1].range1;
   }
@@ -169,7 +169,7 @@ public class ColorPaletteTable {
     boolean normalized,
     double normalizedRangeMin,
     double normalizedRangeMax ) {
-    
+
     this.hinge = hingeFlag;
     this.hingeValue = hingeValue;
     this.normalized = normalized;
@@ -230,10 +230,10 @@ public class ColorPaletteTable {
       }
       allRecordsHaveSingleValue = !nonZeroRange;
     }
-    
+
     rangeMin = records[0].range0;
     rangeMax = records[records.length - 1].range1;
-    
+
     int tempHingeIndex = -1;
     if(hinge){
       for(int i=0; i<records.length; i++){
@@ -246,12 +246,12 @@ public class ColorPaletteTable {
         throw new IllegalArgumentException(
           "Unable to match hinge value "
           +hingeValue+" to palette range");
-          
+
       }
     }
     hingeIndex = tempHingeIndex;
   }
-  
+
   /**
    * Copy the table and modify the range of values to match the specified
    * parameters. This method is intended to support cases where the range
@@ -291,7 +291,7 @@ public class ColorPaletteTable {
       throw new IllegalArgumentException(
         "Range modification for a categorical palette is not currently supported");
     }
-    
+
     List<ColorPaletteRecord> list = new ArrayList<>();
     if (this.isNormalized()) {
       list.addAll(Arrays.asList(records));
@@ -308,7 +308,7 @@ public class ColorPaletteTable {
          list.add(rNorm);
       }
     }
-    
+
       return new ColorPaletteTable(
         list,
         background,
@@ -322,7 +322,7 @@ public class ColorPaletteTable {
       );
 
   }
-  
+
   /**
    * Gets the application-defined background color.
    *
@@ -377,10 +377,10 @@ public class ColorPaletteTable {
     return rangeMax;
   }
 
-  
-  
-  
-  
+
+
+
+
   /**
    * Gets an ARGB value for the specified parameter, if available.
    * If the color table does not define a color value for the specified
@@ -418,8 +418,8 @@ public class ColorPaletteTable {
         z = t*(records[records.length-1].range1-records[0].range0)+records[0].range0;
       }
     }
-   
-    
+
+
     int index = Arrays.binarySearch(keys, z);
     if (index >= 0) {
       // an exact match for the lower range value of this color record
@@ -454,7 +454,7 @@ public class ColorPaletteTable {
 
     return argbForNull;
   }
-  
+
     /**
    * Gets an ARGB value for the specified parameter, if available.
    * If the target value is outside the range supported by this
@@ -476,9 +476,9 @@ public class ColorPaletteTable {
     }
     return getArgb(zTarget);
   }
-  
-  
-  
+
+
+
   /**
    * Gets the color associated with the parameter z; if no color is
    * defined for z, the null-data color will be returned.
@@ -505,7 +505,7 @@ public class ColorPaletteTable {
   public boolean isCovered(double z) {
     if (normalized) {
       return normalizedRangeMin <= z && z <= normalizedRangeMax;
-    } 
+    }
 
     // The search logic for this method is identical to that of getArgb.
     // Please see that method for more details.
@@ -527,14 +527,14 @@ public class ColorPaletteTable {
    * value rather than a range of values. This configuration would
    * occur in palettes used to color code category-based (e.g. "categorical")
    * data sets rather than real-valued data sets.
-   * 
+   *
    * @return true if the palette is designed for categorical data sets;
    * otherwise, false.
    */
   public boolean isCategoricalPalette(){
     return this.allRecordsHaveSingleValue;
   }
-  
+
   /**
    * Indicates whether the palette is based on a normalization
    * scheme in which the color levels run from either 0 to 1 or
@@ -544,8 +544,8 @@ public class ColorPaletteTable {
   public boolean isNormalized(){
    return this.normalized;
   }
-  
-  
+
+
   /**
    * Indicates whether the palette includes a "hinge".
    * The hinge feature allows a palette to specify a split palette
@@ -557,7 +557,7 @@ public class ColorPaletteTable {
   public boolean isHinged(){
     return hinge;
   }
-  
+
   /**
    * For hinged palettes, this method returns the value at which the
    * color scheme switches from the lower-range palette to the
@@ -568,7 +568,7 @@ public class ColorPaletteTable {
   public double getHingeValue(){
     return hingeValue;
   }
-  
+
   /**
    * For hinged palettes, this method returns the color record index
    * at which the color scheme switches from the lower-range palette
@@ -579,13 +579,63 @@ public class ColorPaletteTable {
   public int getHingeIndex(){
     return hingeIndex;
   }
-  
-  
+
+
   /**
    * Gets an in-order list of the records in this palette.
-   * @return a valid list.
+   * <p>
+   * <strong>Special handling for normalized palettes </strong> can be applied
+   * in cases where a palette is normalized but includes a range-of-values
+   * specification. If the adjustNormalizedValues flag is specified the
+   * range of values for for the records returned from this method will be
+   * adjusted to reflect their equivalent values. If the palette is
+   * not normalized, this option has no effect.
+   * @param adjustNormalizedValues if the palette is normalized, adjust
+   * the values for each record according to the overall range of values
+   * for the palette.
+   * @return a safe list of records constructed from the specifications
+   * in the associated palette.
    */
-  public List<ColorPaletteRecord>getRecords(){
-    return Arrays.asList(records);
+  public List<ColorPaletteRecord> getRecords(boolean adjustNormalizedValues) {
+    if (!adjustNormalizedValues || !isNormalized()) {
+      return getRecords();
+    }
+
+    List<ColorPaletteRecord> list = new ArrayList<>();
+    if (hinge) {
+      for (int i = 0; i < hingeIndex; i++) {
+        ColorPaletteRecord r = records[i];
+        double delta = hingeValue - normalizedRangeMin;
+        double v0 = (r.range0 + 1.0) * delta + normalizedRangeMin;
+        double v1 = (r.range1 + 1.0) * delta + normalizedRangeMin;
+        list.add(r.copyWithModifiedRange(v0, v1));
+      }
+      for (int i = hingeIndex; i < records.length; i++) {
+        ColorPaletteRecord r = records[i];
+        double delta = normalizedRangeMax - hingeValue;
+        double v0 = r.range0 * delta + hingeValue;
+        double v1 = r.range1 * delta + hingeValue;
+        list.add(r.copyWithModifiedRange(v0, v1));
+      }
+    } else {
+      for (ColorPaletteRecord r : records) {
+        double delta = normalizedRangeMax - normalizedRangeMin;
+        double v0 = r.range0 * delta + normalizedRangeMin;
+        double v1 = r.range1 * delta + normalizedRangeMin;
+        list.add(r.copyWithModifiedRange(v0, v1));
+      }
+    }
+    return list;
   }
+
+   /**
+   * Gets an in-order list of the records in this palette.
+   * @return a safe list of records constructed from the specifications
+   * in the associated palette.
+   */
+  public List<ColorPaletteRecord>getRecords( ){
+      return Arrays.asList(records);
+  }
+
+
 }

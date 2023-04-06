@@ -129,7 +129,7 @@ public class ColorPaletteTableReader {
       try (FileInputStream fins = new FileInputStream(file);
          Reader in = new InputStreamReader(fins, StandardCharsets.ISO_8859_1);
          BufferedReader reader = new BufferedReader(in)){
-      return read(reader);
+         return read(reader);
     }
   }
 

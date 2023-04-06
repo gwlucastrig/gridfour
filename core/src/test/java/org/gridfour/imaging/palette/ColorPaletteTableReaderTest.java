@@ -25,6 +25,7 @@ package org.gridfour.imaging.palette;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +56,33 @@ public class ColorPaletteTableReaderTest {
       int argb = cpt.getArgb(0);
       assertEquals(argb, 0xffc0c0c0, "Bad mapping for zero");
     } catch (IOException ioex) {
-      fail("Internal error reading rgb.txt " + ioex.getMessage());
+      fail("Internal error reading ColorPaletteTable " + ioex.getMessage());
     }
   }
+  
+  
+  final static String[] names = {
+    "Shrubland",
+    "Savanna",
+    "Grassland"
+  };
+
+  
+  @Test
+  public void testCategoricalWithNames() {
+    ColorPaletteTableReader reader = new ColorPaletteTableReader();
+    try ( InputStream ins = getClass().getResourceAsStream("CategoricalPaletteWithNames.cpt")) {
+      ColorPaletteTable cpt = reader.read(ins);
+      List<ColorPaletteRecord> records = cpt.getRecords();
+      for (int i = 0; i < records.size(); i++) {
+        ColorPaletteRecord record = records.get(i);
+        String s = record.getLabel();
+	    assertEquals(names[i], s, "Record label does not match");
+      }
+    } catch (IOException ioex) {
+      fail("Internal error reading ColorPaletteTable" + ioex.getMessage());
+    }
+  }
+  
+  
 }
