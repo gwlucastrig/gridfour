@@ -86,6 +86,33 @@ public abstract class ColorPaletteRecord implements Comparable<ColorPaletteRecor
    */
   public abstract int getArgb(double z);
 
+   /**
+   * Gets an ARGB value for the specified parameters, if available.
+   * Implementations of this method generally expect that the value
+   * for z will be in the range of values that was specified to their
+   * constructor. The behavior of this method when supplied values out
+   * of range is undefined, though in many cases classes will simply
+   * constrain the input value to the supported range.
+   * <p>
+   * The shade value is intended to support applications that vary the
+   * intensity of the color based on a shade value.  It value is expected
+   * to be in the range 0 (dark) to 1.0 (fully illuminated).  When the
+   * shade value is set to 1.0, the results from this method are identical
+   * to those from the standard getArgb.   Note that the behavior of this
+   * method is undefined for cases where it receives an out-of-range shade value.
+   * For reasons of efficiency, some implementations may elect to not
+   * add extra operations for range-checking.  Thus the onus is on the
+   * calling application to always pass in valid shade values.
+   *
+   * @param z a valid floating point value
+   * @param shade a value in the range 0 to 1
+   * @return if a color is defined for z, its associated ARGB value;
+   * otherwise the null-value code.
+   */
+  public abstract int getArgbWithShade(double z, double shade);
+
+
+
   /**
    * Gets a Color instance for the specified parameter, if available.
    * Implementations of this method generally expect that the value

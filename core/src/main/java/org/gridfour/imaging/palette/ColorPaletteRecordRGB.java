@@ -91,7 +91,7 @@ public class ColorPaletteRecordRGB extends ColorPaletteRecord {
        record.setLabel(label);
        return  record;
   }
-  
+
   @Override
   public int getArgb(double z) {
     double t = (z - range0) / (range1 - range0);
@@ -100,11 +100,26 @@ public class ColorPaletteRecordRGB extends ColorPaletteRecord {
     } else if (t > 1) {
       t = 1;
     }
-    int r = (int) (deltaR * t + 0.5) + r0;
-    int g = (int) (deltaG * t + 0.5) + g0;
-    int b = (int) (deltaB * t + 0.5) + b0;
+    int r = (int) (deltaR * t + r0 + 0.5);
+    int g = (int) (deltaG * t + g0 + 0.5);
+    int b = (int) (deltaB * t + b0 + 0.5);
     return 0xff000000 | (r << 16) | (g << 8) | b;
   }
+
+  @Override
+  public int getArgbWithShade(double z, double shade) {
+    double t = (z - range0) / (range1 - range0);
+    if (t < 0) {
+      t = 0;
+    } else if (t > 1) {
+      t = 1;
+    }
+    int r = (int) (shade * (deltaR * t + r0) + 0.5);
+    int g = (int) (shade * (deltaG * t + g0) + 0.5);
+    int b = (int) (shade * (deltaB * t + b0) + 0.5);
+    return 0xff000000 | (r << 16) | (g << 8) | b;
+  }
+
 
   @Override
   public Color getColor(double z) {

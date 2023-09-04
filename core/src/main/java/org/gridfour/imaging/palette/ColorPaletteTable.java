@@ -455,7 +455,93 @@ public class ColorPaletteTable {
     return argbForNull;
   }
 
-    /**
+
+  /**
+   * Gets an ARGB value for the specified parameters, if available.
+   * If the color table does not define a color value for the specified
+   * parameter, this method will return the ARGB code for a null value.
+   * If the value is outside the specified range of values for the
+   * palette, this method will return the ARGB code for a null value.
+   * <p>
+   * The shade value is intended to support applications that vary the
+   * intensity of the color based on a shade value.  It value is expected
+   * to be in the range 0 (dark) to 1.0 (fully illuminated).  When the
+   * shade value is set to 1.0, the results from this method are identical
+   * to those from the standard getArgb.   Note that the behavior of this
+   * method is undefined for cases where it receives an out-of-range shade value.
+   * For reasons of efficiency, some implementations may elect to not
+   * add extra operations for range-checking.  Thus the onus is on the
+   * calling application to always pass in valid shade values.
+   *
+   * @param zTarget a valid floating point value
+   * @param shade a value in the range 0 to 1.0, inclusive
+   * @return if a color is defined for z, its associated ARGB value;
+   * otherwise the null-value code.
+   */
+  public int getArgbWithShade(double zTarget, double shade) {
+    // It is expected that this method will be called for every pixel in
+    // a data field.  Since the number of pixels can be quite large,
+    // this method is heavily optimized for speed.  Note also, that we
+    // always start with a binary search.  No special coding is implemented
+    // for range checks or for small key lists since we assume:
+    //     1)  The majority palettes will have at least four or five entries
+    //     2)  Most of the time, the z values will be in range, otherwise
+    //         we wouldn't be likely to be using the palette in the first place.
+    double z = zTarget;
+    if(normalized){
+      if(hinge){
+         if(z<hingeValue){
+           double t = (z-normalizedRangeMin)/(hingeValue-normalizedRangeMin);
+           z = t*(records[hingeIndex-1].range1-records[0].range0)+records[0].range0;
+         }else{
+           double t = (z-hingeValue)/(normalizedRangeMax-hingeValue);
+           int i0 = hingeIndex;
+           int i1 = records.length-1;
+           z = t*(records[i1].range1-records[i0].range0)+records[i0].range0;
+         }
+      }else{
+        double t = (z-normalizedRangeMin)/(normalizedRangeMax-normalizedRangeMin);
+        z = t*(records[records.length-1].range1-records[0].range0)+records[0].range0;
+      }
+    }
+
+
+    int index = Arrays.binarySearch(keys, z);
+    if (index >= 0) {
+      // an exact match for the lower range value of this color record
+      // TO DO: no interpolation is needed. perhaps we could expedite this.
+      return records[index].getArgbWithShade(z, shade);
+    }
+    if (index == -1) {
+      // the target value is less than the minimum supported value
+      return argbForNull;
+    }
+
+    // The Java binary search operated on the range0 value of each record.
+    // It returned a negative index, indicating
+    // the the value would be inserted into the key list at array position
+    // -(index+1). This means that the record at -(index+1)-1 has a range0
+    // value less than z.  But we don't know if the range1 value is greater
+    // than z.  So we have to check.  Note that the maximum value of
+    // this adjusted index value is always between zero and keys.length-1.
+    // So we don't need to check whether it is in range.
+    index = -(index + 1) - 1;
+
+    // the binary search already established that the value z is
+    // greater than the range0 value of the record. but we don't
+    // know if it is less than or equal to the range1.  Incidentally
+    // if range1 equals the range0 of the next record, the binary search
+    // would have found the next record.  So we don't need to test
+    // for a termination condition.
+    ColorPaletteRecord record = records[index];
+    if (record.range1 >= z) {
+      return record.getArgbWithShade(z, shade);
+    }
+    return argbForNull;
+  }
+
+
+  /**
    * Gets an ARGB value for the specified parameter, if available.
    * If the target value is outside the range supported by this
    * palette, the return value will be the ARGB associated with
@@ -463,6 +549,16 @@ public class ColorPaletteTable {
    * If the palette features gaps in its coverage, it is still possible
    * that a target value map fall within one of the gaps.
    * But no limit is imposed for the range of supported values.
+   * <p>
+   * The shade value is intended to support applications that vary the
+   * intensity of the color based on a shade value.  It value is expected
+   * to be in the range 0 (dark) to 1.0 (fully illuminated).  When the
+   * shade value is set to 1.0, the results from this method are identical
+   * to those from the standard getArgb.   Note that the behavior of this
+   * method is undefined for cases where it receives an out-of-range shade value.
+   * For reasons of efficiency, some implementations may elect to not
+   * add extra operations for range-checking.  Thus the onus is on the
+   * calling application to always pass in valid shade values.
    *
    * @param zTarget a valid floating point value
    * @return if a color is defined for z, its associated ARGB value;
@@ -475,6 +571,30 @@ public class ColorPaletteTable {
       return getArgb(rangeMax);
     }
     return getArgb(zTarget);
+  }
+
+
+  /**
+   * Gets an ARGB value for the specified parameter,
+   * if available.If the target value is outside the range supported by this
+   * palette, the return value will be the ARGB associated with
+   * either the minimum or maximum values supported by the palette.
+   * If the palette features gaps in its coverage, it is still possible
+   * that a target value map fall within one of the gaps.
+   * But no limit is imposed for the range of supported values.
+   *
+   * @param zTarget a valid floating point value
+   * @param shade a value in the range 0 to 1, inclusive.
+   * @return if a color is defined for z, its associated ARGB value;
+   * otherwise the null-value code.
+   */
+  public int getArgbUnlimitedRangeWithShade(double zTarget, double shade) {
+    if(zTarget<rangeMin){
+      return getArgbWithShade(rangeMin, shade);
+    }else if(zTarget>rangeMax){
+      return getArgbWithShade(rangeMax, shade);
+    }
+    return getArgbWithShade(zTarget, shade);
   }
 
 

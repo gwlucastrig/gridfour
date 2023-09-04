@@ -50,7 +50,7 @@
  * A discussion of the CPT file format can be found at the
  * "CPT Designer" web page in an article by Tim Makins and MapAbility.com
  * https://www.mapability.com/cptd/help/hs70.htm
- *  
+ *
  * -----------------------------------------------------------------------
  */
 package org.gridfour.demo.utils.palette;

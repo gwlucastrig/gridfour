@@ -167,6 +167,34 @@ public class ColorPaletteRecordHSV extends ColorPaletteRecord {
     return Color.HSBtoRGB(h, s, v);
   }
 
+
+  @Override
+  public int getArgbWithShade(double z, double shade) {
+    double t = (z - range0) / (range1 - range0);
+    if (t < 0) {
+      t = 0;
+    } else if (t > 1) {
+      t = 1;
+    }
+
+    double a = deltaH * t + h0;
+    // check for wrap-around cases
+    if (wrapAround) {
+      if (a < 0.0) {
+        a += 360.0;
+      } else if (a > 360.0) {
+        a -= 360.0;
+      }
+    }
+
+    float s = (float) (deltaS * t + s0);
+    float v = (float) ((deltaV * t + v0)*shade);
+    float h = (float) (a / 360.0);
+    return Color.HSBtoRGB(h, s, v);
+  }
+
+
+
   @Override
   public Color getColor(double v) {
     return new Color(getArgb(v));
