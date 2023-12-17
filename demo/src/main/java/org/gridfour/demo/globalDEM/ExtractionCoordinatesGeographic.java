@@ -49,7 +49,7 @@ import ucar.nc2.Variable;
  * files for ETOPO1 and GEBCO_2019 global-scale elevation and bathymetry data
  * sets.
  */
-class ExtractionCoordinates {
+class ExtractionCoordinatesGeographic implements IExtractionCoordinates {
 
   // Specify the radius of the earth in kilometers.  Because
   // this constant will be used for surface area computations,
@@ -74,7 +74,7 @@ class ExtractionCoordinates {
   final private double[] cLat;
   final private double[] cLon;
 
-  ExtractionCoordinates(Variable latitude, Variable longitude) throws IOException {
+  ExtractionCoordinatesGeographic(Variable latitude, Variable longitude) throws IOException {
     // both the latitude and longitude Variable instances should
     // define their respective coordinates as an one-dimensional array. In both
     // GEBCO_2019 and ETOP01, the angular spacing for these coordinates
@@ -139,7 +139,8 @@ class ExtractionCoordinates {
    * @param iRow the row of interest
    * @return the surface area of each cell in the row, in square meters.
    */
-  double getAreaOfEachCellInRow(int iRow) {
+  @Override
+  public double getAreaOfEachCellInRow(int iRow) {
     double lat1 = latRowMin + iRow * latSpacingDeg;
     double lat0 = latRowMin + (iRow + 1) * latSpacingDeg;
     double phi1 = Math.toRadians(lat1);
@@ -155,7 +156,8 @@ class ExtractionCoordinates {
    *
    * @param ps a valid print stream.
    */
-  void summarizeCoordinates(PrintStream ps) {
+  @Override
+  public void summarizeCoordinates(PrintStream ps) {
     coord(ps, "latitude", latVariableName, latRowMin, latRowMax, latSpacingDeg);
     coord(ps, "longitude", lonVariableName, lonColMin, lonColMax, lonSpacingDeg);
   }
@@ -201,7 +203,8 @@ class ExtractionCoordinates {
    * @param ps a valid print stream
    * @param spec a valid specification populated using this instance.
    */
-  void checkSpecificationTransform(PrintStream ps, GvrsFileSpecification spec) {
+    @Override
+    public void checkSpecificationTransform(PrintStream ps, GvrsFileSpecification spec) {
     for (int i = 0; i < cLat.length; i++) {
      GridPoint g = spec.mapGeographicToGridPoint(cLat[i], lonColMin);
       double absDelta = Math.abs(g.getRow() - i);
@@ -214,7 +217,7 @@ class ExtractionCoordinates {
       GeoPoint  g = spec.mapGridToGeoPoint(i, 0);
       double absDelta = Math.abs(cLat[i] - g.getLatitude());
       if (absDelta > Math.abs(latSpacingDeg) / 1.0e+4) {
-        ps.format("Error grid to latitude conversion, lat %f, row %d%, computed %f%n", 
+        ps.format("Error grid to latitude conversion, lat %f, row %d%, computed %f%n",
           cLat[i], i, g.getLatitude());
         return;
       }
@@ -253,4 +256,14 @@ class ExtractionCoordinates {
 
     ps.println("Grid to geographic coordinate mapping test completed successfully");
   }
+
+    @Override
+    public double[] getCoordinateBounds() {
+        return getGeographicCoordinateBounds();
+    }
+
+    @Override
+    public boolean isGeographicCoordinateSystem() {
+        return true;
+    }
 }

@@ -61,6 +61,9 @@ class CodecHolder {
     String encoderClassName;
     String decoderClassName;
 
+    private int encodingCount; // number of times encoded
+    private long encodingTimeUsec;  // encoding time in microseconds
+
     /**
      * A private constructor to deter application code from creating
      * instances of this class.
@@ -357,4 +360,36 @@ class CodecHolder {
         return false;
     }
 
+    synchronized void tabulateEncodingTime(long timeInUsec){
+      encodingCount++;
+      encodingTimeUsec += timeInUsec;
+    }
+
+    /**
+     * Gets the number of times the encoder was called.
+     * @return a positive integer (may be zero)
+     */
+    synchronized int getEncodingCount(){
+      return encodingCount;
+    }
+
+    /**
+     * Gets the average time required to encode data, in microseconds.
+     * @return a valid value (zero if no date was encoded).
+     */
+    synchronized double getAverageEncodingTimeUsec(){
+      if(encodingCount==0){
+        return 0;
+      }else{
+        return (double)encodingTimeUsec/encodingCount;
+      }
+    }
+
+    /**
+     * Gets the total time used by the compressor, in microseconds.
+     * @return a valid time in microseconds.
+     */
+    synchronized long getTotalEncodingTimeUsec(){
+       return encodingTimeUsec;
+    }
 }

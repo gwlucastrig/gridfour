@@ -133,28 +133,29 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
       double avgBytesPerSample = sTotal.getAvgCount() / nCellsInTile;
 
       ps.println("Gridfour_Float");
+      ps.format("   Times Used: %d%n", sSignBit.nSum);
       ps.format("   Average bytes per tile, by element        (Reduction)%n");
       ps.format("     Sign bits           %12.2f        (%7.4f%%)%n",
         sSignBit.getAvgCount(),
         100*sSignBit.getAvgCount() / (nCellsInTile * 8));
       ps.format("     Exponent            %12.2f        (%7.4f%%)%n",
-        sExp.getAvgCount(), 
+        sExp.getAvgCount(),
         100*sExp.getAvgCount() / nCellsInTile);
 
       // The mantissa 1 only contains 7 bits, not 8.  So we adjust.
       ps.format("     Mantissa-1 delta    %12.2f        (%7.4f%%)%n",
-        sM1Delta.getAvgCount(), 
+        sM1Delta.getAvgCount(),
         100*sM1Delta.getAvgCount() / (7 * nCellsInTile / 8));
 
       ps.format("     Mantissa-2 delta    %12.2f        (%7.4f%%)%n",
-        sM2Delta.getAvgCount(), 
+        sM2Delta.getAvgCount(),
         100*sM2Delta.getAvgCount() / nCellsInTile);
       ps.format("     Mantissa-3 delta    %12.2f        (%7.4f%%)%n",
-        sM3Delta.getAvgCount(), 
+        sM3Delta.getAvgCount(),
         100*sM3Delta.getAvgCount() / nCellsInTile);
       ps.println();
       ps.format("   Average Bytes/Tile    %12.2f        (%7.4f%%)%n",
-        sTotal.getAvgCount(), 
+        sTotal.getAvgCount(),
         100*sTotal.getAvgCount() / (nCellsInTile * 4));
       ps.format("   Average Bytes/Sample  %12.2f        (%7.4f%%)%n",
         avgBytesPerSample,
@@ -200,9 +201,9 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
   }
 
   private byte[] doDeflate(byte[] input, SimpleStats stats) {
-    // we always reset the deflater after oepration to ensure
+    // we always reset the deflater after operation to ensure
     // that it does not retain any objects generated during the compression.
-    Deflater deflater = new Deflater(6);
+    Deflater deflater = new Deflater(9);
     deflater.setInput(input);
     deflater.finish();
     byte[] resultB = new byte[input.length + 128];

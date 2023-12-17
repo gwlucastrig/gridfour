@@ -63,7 +63,8 @@ public class TestOptions {
     "-zScale",
     "-zOffset",
     "-showProgress",
-    "-checksums"
+    "-checksums",
+    "-cartesian"
   };
 
   File inputFile;
@@ -77,6 +78,10 @@ public class TestOptions {
   double zScale = 1;
   double zOffset = 0;
   boolean showProgress = true;
+  boolean cartesian;
+  boolean geographic;
+  boolean isCartesianSpecified = false;
+  boolean isGeographicSpecified = false;
 
   /**
    * Indicates whether the specified string matches the pattern of a
@@ -444,12 +449,15 @@ public class TestOptions {
       outputFile = new File(outputFileName);
     }
 
-    verify
-      = scanBooleanOption(args, "-verify", matched, verify);
-    compress
-      = scanBooleanOption(args, "-compress", matched, compress);
-    checksums
-      = scanBooleanOption(args, "-checksums", matched, checksums);
+    verify  = scanBooleanOption(args, "-verify", matched, verify);
+    compress = scanBooleanOption(args, "-compress", matched, compress);
+    checksums = scanBooleanOption(args, "-checksums", matched, checksums);
+    cartesian = scanBooleanOption(args, "-cartesian", matched, cartesian);
+    geographic = scanBooleanOption(args, "-geographic", matched, geographic);
+    isCartesianSpecified = isOptionSpecified(args, "-cartesian");
+    isGeographicSpecified = isOptionSpecified(args, "-geographic");
+
+
 
     isZScaleSet = isOptionSpecified(args, "-zScale");
     zScale = scanDoubleOption(args, "-zScale", matched, zScale);
@@ -550,7 +558,7 @@ public class TestOptions {
       }
     }
   }
- 
+
   /**
    * Indicates whether data compression is enabled
    *
@@ -568,6 +576,25 @@ public class TestOptions {
   public boolean isChecksumComputationEnabled() {
     return checksums;
   }
+
+  /**
+   * Indicates that the coordinates in the source data are to be treated
+   * as Cartesian coordinates.
+   * @return true if coordinates are to be treated as Cartesian.
+   */
+  public boolean isCartesianCoordinateSystemSet(){
+      return cartesian;
+  }
+
+    /**
+   * Indicates that the coordinates in the source data are to be treated
+   * as geographic coordinates.
+   * @return true if coordinates are to be treated as Cartesian.
+   */
+  public boolean isGeographicCoordinateSystemSet(){
+      return geographic;
+  }
+
 
   /**
    * Indicates whether data verification should be at the end of the process.
@@ -635,4 +662,25 @@ public class TestOptions {
   public boolean isZScaleSpecified() {
     return isZScaleSet;
   }
+
+
+  /**
+   * Indicates whether the Cartesian coordinate setting was explicitly
+   * specified (note that the specified setting may be true or false).
+   * @return true if a setting for Cartesian coordinates was explicitly specified.
+   */
+  public boolean isCartesianOptionSpecified(){
+      return isCartesianSpecified;
+  }
+
+
+  /**
+   * Indicates whether the Geographic coordinate setting was explicitly
+   * specified (note that the specified setting may be true or false).
+   * @return true if a setting for Cartesian coordinates was explicitly specified.
+   */
+  public boolean isGeographicOptionSpecified(){
+      return isGeographicSpecified;
+  }
+
 }

@@ -67,14 +67,14 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 /**
- * A simple demonstration application showing how to create a Gvrs file from the
+ * A simple demonstration application showing how to create a GVRS file from the
  * ETOPO1 and GEBCO global elevation/bathymetry data sets. These data sets are
  * distributed in the NetCDF file format.
  */
 public class PackageData {
 
   private static String[] usage = {
-    "PackageData  -- create a Gvrs file from from ETOPO1 or GEBCO_2019 Global DEM files",
+    "PackageData  -- create a GVRS file from from ETOPO1 or GEBCO_2019 Global DEM files",
     "Arguments:",
     "   -in     <input_file_path>",
     "   -out    <output_file_path>",
@@ -87,10 +87,20 @@ public class PackageData {
     "   -lsop (-nolsop)                Enable LS encoder when compressing data (default:false)",
     "   -multithread (-nomultithread)  Enable multple threads to expedite data compression (default: true)",
     "",
-    "Note: the zScale option instructs the packager to use the",
-    "      integer-scaled-float data type when storing values.",
-    "      If it is not specified, the data type will be selected",
-    "      based on the data-type specification of the original data",};
+    "   -geographic (-nogeographic)    Specifies that horizontal coordinates are geographic (latitude,longitude)",
+    "   -cartesian (-nocartesian)      Specifies that horizontal coordinates are Cartesian (x,y)",
+    "",
+    "Notes: ",
+    "  The zScale option instructs the packager to use the",
+    "  integer-scaled-float data type when storing values.",
+    "  If it is not specified, the data type will be selected",
+    "  based on the data-type specification of the original data.",
+    "",
+    "  Unless explictly set, the determination of whether horizontal coordinates",
+    "  are geographic or Cartesian is based on the names of the horizontal variables",
+    "  in the source data. If the names are \"latitude\" and \"longitude\",",
+    "  (or partial matches thereof), the coordinates are assumed geographic.",
+    };
 
   private final static short LIMIT_DEPTH = -11000;   // Challenger deep, 10,929 wikipedia
   private final static short LIMIT_ELEVATION = 8848; // Everest, wikipedia
@@ -126,7 +136,7 @@ public class PackageData {
   void process(PrintStream ps, TestOptions options, String[] args)
     throws IOException {
 
-    // The packaging of data in a Gvrs file can be thought of in terms of
+    // The packaging of data in a GVRS file can be thought of in terms of
     // the steps shown below.
     //
     //    0.  Obtain descriptive parameters about source data.  In this
@@ -142,15 +152,16 @@ public class PackageData {
     //        Adjust any run-time parameters (such as the tile-cache size)
     //        according to the needs of the application.
     //
-    //    3.  Extract the data from its source and store in the Gvrs file.
+    //    3.  Extract the data from its source and store in the GVRS file.
     //
-    ps.format("%nGvrs Packaging Application for NetCDF-format Global DEM files%n");
+    ps.format("%nGVRS Packaging Application for NetCDF-format Global DEM files%n");
     Locale locale = Locale.getDefault();
     Date date = new Date();
     SimpleDateFormat sdFormat = new SimpleDateFormat("dd MMM yyyy HH:mm z", locale);
     ps.format("Date of Execution: %s%n", sdFormat.format(date));
 
     String inputPath = options.getInputFile().getPath();
+    File inputFile = new File(inputPath);
     File outputFile = options.getOutputFile();
     if (outputFile == null) {
       ps.format("Missing specification for output file%n");
@@ -160,51 +171,84 @@ public class PackageData {
     ps.format("Input file:  %s%n", inputPath);
     ps.format("Output file: %s%n", outputFile.getPath());
     boolean[] matched = new boolean[args.length];
+
+    // Some options are not captured by TestOptions and are specific
+    // to this application
     boolean useLsop = options.scanBooleanOption(args, "-lsop", matched, false);
-    boolean enableMultiThreading =
-      options.scanBooleanOption(args, "-multithread", matched, true);
+    boolean enableMultiThreading
+      = options.scanBooleanOption(args, "-multithread", matched, true);
 
     // Open the NetCDF file -----------------------------------
     ps.println("Opening NetCDF input file");
     NetcdfFile ncfile = NetcdfFile.open(inputPath);
 
     // Identify which Variable instances carry information about the
-    // geographic (latitude/longitude) coordinate system and also which
+    // geographic or Cartesian (latitude/longitude) coordinate system and also which
     // carry information for elevation and bathymetry.
-    Variable lat;   // the Variable that carries row-latitude information
-    Variable lon;   // the Variable that carries column-longitude information
+    Variable rowCoordinate;   // the Variable that carries row-latitude information
+    Variable colCoordinate;   // the Variable that carries column-longitude information
     Variable z;     // the variable that carries elevation and bathymetry
 
-    lat = ncfile.findVariable("lat");
-    lon = ncfile.findVariable("lon");
     z = ncfile.findVariable("elevation");
-    int[] tileSize;
-
-    // Use the input file name to format a product label
-    File inputFile = new File(inputPath);
-    String productLabel = inputFile.getName();
-    if(productLabel.toLowerCase().endsWith(".nc")){
-      productLabel = productLabel.substring(0, productLabel.length()-3);
-    }
-
-
-    if (lat == null) {
-      // ETOPO1 specification
-      tileSize = options.getTileSize(90, 120);
-      lat = ncfile.findVariable("y");
-      lon = ncfile.findVariable("x");
+    if (z == null) {
       z = ncfile.findVariable("z");
-    } else {
-      tileSize = options.getTileSize(90, 120);
     }
-    if (lat == null || lon == null || z == null) {
+    if (z == null) {
       throw new IllegalArgumentException(
-        "Input does not contain valid lat,lon, and elevation Variables");
+        "Input file does not contain recognized vertical coordinate variable (must be either z or elevation)");
+    }
+
+    rowCoordinate = ncfile.findVariable("lat");
+    colCoordinate = ncfile.findVariable("lon");
+    if (rowCoordinate == null) {
+      rowCoordinate = ncfile.findVariable("latitude");
+    }
+    if (colCoordinate == null) {
+      colCoordinate = ncfile.findVariable("longitude");
+    }
+
+    boolean geographicCoordinates = options.isGeographicCoordinateSystemSet();
+    if (inputFile.getName().toUpperCase().contains("ETOP")) {
+      // special rule: ETOPO1 gives latitde and longitude as variables
+      // x and y.  If the command-line arguments don't explictly indicate
+      // geographic or cartesian, default to geographic... we do this
+      // just in case the user forgot.
+      if (!options.isCartesianOptionSpecified() && !options.isGeographicOptionSpecified()) {
+        geographicCoordinates = true;
+      }
+    }
+
+    IExtractionCoordinates extractionCoords = null;
+    if (rowCoordinate != null && colCoordinate != null) {
+      // geographic coordinates are in place
+      // no matter what the command-line arguments specified
+      // because the horizontal coordinates are geographic (latitude, longitude),
+      // the row coordinate is passed in first.
+      geographicCoordinates = true;
+      extractionCoords = new ExtractionCoordinatesGeographic(rowCoordinate, colCoordinate);
+    } else {
+      // some products, such as ETOPO1 use geographic coordinate,
+      // but give them in using the variables x,y
+      rowCoordinate = ncfile.findVariable("y");
+      colCoordinate = ncfile.findVariable("x");
+      if (rowCoordinate == null || colCoordinate == null) {
+        throw new IllegalArgumentException(
+          "Input file does not contain recognized horizontal coordinate variables (must be either lat,lon or x,y)");
+      }
+
+      if (geographicCoordinates) {
+        // the horizontal coordinates are geographic (latitude, longitude)
+        // so the row coordinate is passed in first.
+        extractionCoords = new ExtractionCoordinatesGeographic(rowCoordinate, colCoordinate);
+      } else {
+        // the horizontal coordinates are cartesian, so the column corresponds
+        // to x coordinates and the row to y coordinates.
+        extractionCoords = new ExtractionCoordinatesCartesian(colCoordinate, rowCoordinate);
+      }
     }
 
     // using the variables from above, extract coordinate system
     // information for the product and print it to the output.
-    ExtractionCoordinates extractionCoords = new ExtractionCoordinates(lat, lon);
     extractionCoords.summarizeCoordinates(ps);
 
     // Get the dimensions of the raster (grid) elevation/bathymetry data.
@@ -215,13 +259,42 @@ public class PackageData {
     int nCols = shape[1];
     ps.format("Rows:      %8d%n", nRows);
     ps.format("Columns:   %8d%n", nCols);
+
+    int[] tileSize = options.getTileSize(90, 120);
     int nRowsInTile = tileSize[0];
     int nColsInTile = tileSize[1];
 
-    // Initialize the specification used to initialize the Gvrs file -------
+    // Use the input file name to format a product label
+    String productLabel = inputFile.getName();
+    if (productLabel.toLowerCase().endsWith(".nc")) {
+      productLabel = productLabel.substring(0, productLabel.length() - 3);
+    }
+
+    // Initialize the specification used to initialize the GVRS file -------
     GvrsFileSpecification spec
       = new GvrsFileSpecification(nRows, nCols, nRowsInTile, nColsInTile);
     spec.setLabel(productLabel);
+
+    // Finish adding information related to coordinate transforms
+    double[] coordinateBounds = extractionCoords.getCoordinateBounds();
+    if (geographicCoordinates) {
+      spec.setGeographicCoordinates(
+        coordinateBounds[0],
+        coordinateBounds[1],
+        coordinateBounds[2],
+        coordinateBounds[3]);
+    } else {
+      spec.setCartesianCoordinates(
+        coordinateBounds[0],
+        coordinateBounds[1],
+        coordinateBounds[2],
+        coordinateBounds[3]);
+    }
+    // Check to verify that the geographic coordinates and grid coordinate
+    // are correctly implemented. This test is not truly part of the packaging
+    // process (since it should always work), but is included here as a
+    // diagnostic to verify that this code is properly implemented.
+    extractionCoords.checkSpecificationTransform(ps, spec);
 
     // Initialize the data type.  If a zScale option was specified,
     // use integer-coded floats.  Otherwise, pick the data type
@@ -235,8 +308,8 @@ public class PackageData {
     GvrsElementType gvrsDataType;
     if (isZScaleSpecified) {
       // the options define our data type
-      int encodedLimitDepth =  (int)((LIMIT_DEPTH-zOffset)*zScale);
-      int encodedLimitElev  =  (int)((LIMIT_ELEVATION-zOffset)*zScale);
+      int encodedLimitDepth = (int) ((LIMIT_DEPTH - zOffset) * zScale);
+      int encodedLimitElev = (int) ((LIMIT_ELEVATION - zOffset) * zScale);
 
       elementSpec = new GvrsElementSpecificationIntCodedFloat(
         "z", zScale, zOffset,
@@ -250,42 +323,28 @@ public class PackageData {
       gvrsDataType = GvrsElementType.SHORT;
     } else {
       elementSpec = new GvrsElementSpecificationFloat("z",
-      LIMIT_DEPTH, LIMIT_ELEVATION, Float.NaN);
+        LIMIT_DEPTH, LIMIT_ELEVATION, Float.NaN);
       spec.addElementSpecification(elementSpec);
       gvrsDataType = GvrsElementType.FLOAT;
     }
     elementSpec.setDescription("Elevation (positive values) or depth (negative), in meters");
     elementSpec.setUnitOfMeasure("m");
-    elementSpec.setLabel("die H\u00f6henlage"); // Example with special character
+    elementSpec.setLabel("Elevation"); // Example with special character
     elementSpec.setContinuous(true);
 
     ps.println("Source date type " + sourceDataType + ", stored as " + gvrsDataType);
     ps.println("");
-    ps.println("Multi-threading enabled: "+enableMultiThreading);
-    if(enableMultiThreading){
+    ps.println("Multi-threading enabled: " + enableMultiThreading);
+    if (enableMultiThreading) {
       ps.println("Available processors:    "
-        +Runtime.getRuntime().availableProcessors());
+        + Runtime.getRuntime().availableProcessors());
     }
 
     // Determine whether data compression is used -------------------
     boolean compressionEnabled = options.isCompressionEnabled();
     spec.setDataCompressionEnabled(compressionEnabled);
-    boolean checksumsEnalbed = options.isChecksumComputationEnabled();
-    spec.setChecksumEnabled(checksumsEnalbed);
-
-    double[] geoCoords = extractionCoords.getGeographicCoordinateBounds();
-
-    spec.setGeographicCoordinates(
-      geoCoords[0],
-      geoCoords[1],
-      geoCoords[2],
-      geoCoords[3]);
-
-    // Check to verify that the geographic coordinates and grid coordinate
-    // are correctly implemented. This test is not truly part of the packaging
-    // process (since it should always work), but is included here as a
-    // diagnostic.
-    extractionCoords.checkSpecificationTransform(ps, spec);
+    boolean checksumsEnabled = options.isChecksumComputationEnabled();
+    spec.setChecksumEnabled(checksumsEnabled);
 
     // Add the LSOP optimal predictor codec to the specification.
     // This enhanced compression technique will be used only if compression
@@ -315,9 +374,9 @@ public class PackageData {
       gvrs.setTileCacheSize(GvrsCacheSize.Large);
 
       gvrs.writeMetadata(GvrsMetadataNames.Copyright,
-         "This data is in the public domain and may be used free of charge");
+        "This data is in the public domain and may be used free of charge");
       gvrs.writeMetadata(GvrsMetadataNames.TermsOfUse,
-         "This data should not be used for navigation");
+        "This data should not be used for navigation");
       storeGeoreferencingInformation(gvrs);
 
       // Initialize data-statistics collection ---------------------------
@@ -361,7 +420,7 @@ public class PackageData {
         try {
           Array array = z.read(readOrigin, readShape);
           // Loop on each column, obtain the data from the NetCDF file
-          // and store it in the Gvrs file.
+          // and store it in the GVRS file.
           switch (gvrsDataType) {
             case INTEGER:
             case SHORT:
@@ -410,8 +469,7 @@ public class PackageData {
       long outputSize = outputFile.length();
       long nCells = (long) nRows * (long) nCols;
       double bitsPerSymbol = 8.0 * (double) outputSize / (double) nCells;
-      ps.format("Storage used (including overhead) %6.4f bits/sample%n",
-        bitsPerSymbol);
+      ps.format("Storage used (including overhead) %6.4f bits/sample%n", bitsPerSymbol);
 
       ps.format("%nSummary of file content and packaging actions------------%n");
       gvrs.summarize(ps, true);
@@ -439,11 +497,11 @@ public class PackageData {
         gvrs.setTileCacheSize(GvrsCacheSize.Large);
         GvrsFileSpecification testSpec = gvrs.getSpecification();
         String testLabel = testSpec.getLabel();
-        ps.println("Label:     "+testLabel);
+        ps.println("Label:     " + testLabel);
         GvrsMetadata m = gvrs.readMetadata("Copyright", 0);
         if (m != null) {
 
-        ps.println("Copyright: " + m.getString());
+          ps.println("Copyright: " + m.getString());
         }
         GvrsElement zElement = gvrs.getElement("z");
         ps.println("Element:   " + zElement.getName() + ", " + zElement.getDescription());
@@ -484,7 +542,7 @@ public class PackageData {
               case INT_CODED_FLOAT:
                 for (int iCol = 0; iCol < nCols; iCol++) {
                   double sample = array.getDouble(iCol);
-                  int iSample = (int)Math.floor ((sample - zOffset) * zScale + 0.5);
+                  int iSample = (int) Math.floor((sample - zOffset) * zScale + 0.5);
                   float fSample = iSample / zScale + zOffset;
                   float test = zElement.readValue(iRow, iCol);
                   double delta = Math.abs(fSample - test);
@@ -519,7 +577,6 @@ public class PackageData {
     }
 
     ncfile.close();
-
   }
 
   /**

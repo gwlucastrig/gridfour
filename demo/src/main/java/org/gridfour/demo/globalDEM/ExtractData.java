@@ -172,7 +172,7 @@ public class ExtractData {
         // information for the product and print it to the output.
         // we will use this data below for computing the volume of the
         // world's oceans.
-        ExtractionCoordinates coords = new ExtractionCoordinates(lat, lon);
+        ExtractionCoordinatesGeographic coords = new ExtractionCoordinatesGeographic(lat, lon);
         coords.summarizeCoordinates(ps);
 
         // Get the dimensions of the raster (grid) elevation/bathymetry data.

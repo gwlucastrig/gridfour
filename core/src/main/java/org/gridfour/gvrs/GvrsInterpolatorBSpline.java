@@ -166,6 +166,10 @@ public class GvrsInterpolatorBSpline {
     public double z(double x, double y) throws IOException {
         GridPoint g;
         if (geoCoordinates) {
+            if(Math.abs(y)>90.0001){
+              throw new IllegalArgumentException(
+                "Latitude "+y+" out of range. Are arguments in correct order (x,y)?");
+            }
             g = gvrs.mapGeographicToGridPoint(y, x);
         } else {
             g = gvrs.mapModelToGridPoint(x, y);
@@ -299,7 +303,7 @@ public class GvrsInterpolatorBSpline {
           InterpolationTarget.FirstDerivatives, null);
     }
 
- 
+
     private int blockLimit(int i, int n) {
         if (i < 0) {
             return 0;

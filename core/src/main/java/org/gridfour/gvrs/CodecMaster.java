@@ -72,6 +72,7 @@ class CodecMaster {
   }
 
     private static class CompressorRunnable implements Runnable {
+      final CodecHolder holder;
       final CompressorResults compressorResults;
       final ICompressionEncoder compressor;
       final int codecIndex;
@@ -79,8 +80,12 @@ class CodecMaster {
       final int nCols;
       final int []values;
       CompressorRunnable(
-        CompressorResults compressorResults, ICompressionEncoder compressor, int codecIndex, int nRows, int nCols, int[]values){
-         this.compressorResults = compressorResults;
+        CodecHolder holder,
+        CompressorResults compressorResults,
+        ICompressionEncoder compressor,
+        int codecIndex, int nRows, int nCols, int[]values){
+        this.holder = holder;
+        this.compressorResults = compressorResults;
         this.compressor = compressor;
         this.codecIndex = codecIndex;
         this.nRows = nRows;
@@ -90,7 +95,10 @@ class CodecMaster {
 
       @Override
       public void run(){
+        long time0 = System.nanoTime();
         byte []results = compressor.encode(codecIndex, nRows, nCols, values);
+        long time1 = System.nanoTime();
+        holder.tabulateEncodingTime((time1-time0)/1000L);
         compressorResults.registerResults(results);
       }
     }
@@ -146,7 +154,10 @@ class CodecMaster {
         for (CodecHolder codec : codecList) {
             if (codec.implementsIntegerEncoding()) {
                 ICompressionEncoder compressor = codec.getEncoderInstance();
+                long time0 = System.nanoTime();
                 byte[] test = compressor.encode(k, nRows, nCols, values);
+                long time1 = System.nanoTime();
+                codec.tabulateEncodingTime((time1 - time0) / 1000L);
                 if (test != null && test.length < resultLength) {
                     result = test;
                     resultLength = test.length;
@@ -169,7 +180,10 @@ class CodecMaster {
             if (codec.implementsIntegerEncoding()) {
                 ICompressionEncoder compressor = codec.getEncoderInstance();
                 CompressorRunnable r = new CompressorRunnable(
-                  compressorResults, compressor, k, nRows, nCols,values );
+                  codec,
+                  compressorResults,
+                  compressor,
+                  k, nRows, nCols,values );
                 tgExecutor.groupExecute(r);
             }
             k++;
@@ -199,13 +213,39 @@ class CodecMaster {
     }
 
     void reportAndClearAnalysisData(PrintStream ps, int nTilesInRaster) {
-        for (CodecHolder codec : codecList) {
-            ps.println("");
-            ICompressionDecoder decompressor = codec.getDecoderInstance();
-            decompressor.reportAnalysisData(ps, nTilesInRaster);
-            decompressor.clearAnalysisData();
-        }
+    for (CodecHolder codec : codecList) {
+      ps.println("");
+      ICompressionDecoder decompressor = codec.getDecoderInstance();
+      decompressor.reportAnalysisData(ps, nTilesInRaster);
+      decompressor.clearAnalysisData();
     }
+
+    int nEncoded = 0;
+    int maxLen = 0;
+    for (CodecHolder codec : codecList) {
+      nEncoded += codec.getEncodingCount();
+      String s = codec.getIdentification();
+      if (s.length() > maxLen) {
+        maxLen = s.length();
+      }
+    }
+    if (nEncoded > 0) {
+      ps.println("");
+      ps.println("Time required for compression (in milliseconds)");
+      ps.println("                        count       avg        total");
+      for (CodecHolder codec : codecList) {
+        int n = codec.getEncodingCount();
+        if (n > 0) {
+          ps.format("%-20.20s %8d %10.4f %14.4f%n",
+            codec.getIdentification(),
+            n,
+            codec.getAverageEncodingTimeUsec() / 1000.0,
+            codec.getTotalEncodingTimeUsec() / 1000.0);
+        }
+      }
+    }
+
+  }
 
     /**
      * Encodes the specified tile data in a compressed form.
@@ -225,7 +265,10 @@ class CodecMaster {
         for (CodecHolder codec : codecList) {
             if (codec.implementsFloatingPointEncoding()) {
                 ICompressionEncoder encoder = codec.getEncoderInstance();
+                long time0 = System.nanoTime();
                 byte[] test = encoder.encodeFloats(k, nRows, nCols, values);
+                long time1 = System.nanoTime();
+                codec.tabulateEncodingTime((time1-time0)/1000L);
                 if (test != null && test.length < resultLength) {
                     result = test;
                     resultLength = test.length;
