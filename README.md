@@ -105,4 +105,4 @@ _ETOPO1 Global Relief Model_. Accessed December 2019 from [https://www.ngdc.noaa
 
 ## Notes
 <a name="note1">&#91;1&#93;</a>Point count estimated using survey-resolution table given in 
-[Seabed 2030, FAQ](https://seabed2030.org/faq/#q5). 
+[Seabed 2030](https://seabed2030.org/our-mission/). 

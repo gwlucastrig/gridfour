@@ -9,7 +9,7 @@
 
   <groupId>org.gridfour</groupId>
   <artifactId>Gridfour</artifactId>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
   <packaging>pom</packaging>
   
   <name>Gridfour</name>
@@ -100,12 +100,12 @@
         
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.3.2</version>
         </plugin>
         
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.12.1</version>
         </plugin>
         
         <plugin>
@@ -120,38 +120,45 @@
         
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
-          <version>2.5.2</version>
-        </plugin>
-        
-        <plugin>
-          <artifactId>maven-jar-plugin</artifactId>
           <version>3.1.1</version>
         </plugin>
         
         <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.3.0</version>
+        </plugin>
+        
+        <plugin>
           <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.5.0</version>
         </plugin>
         
         <plugin>
           <artifactId>maven-release-plugin</artifactId>
-          <version>2.5.3</version>
+          <version>3.0.1</version>
         </plugin>
         
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.3.1</version>
         </plugin>
         
         <plugin>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.7.1</version>
+          <version>4.0.0-M13</version>
         </plugin>
         
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.1</version>
+          <version>3.2.5</version>
         </plugin>
+		
+		        
+        <plugin>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <version>3.21.2</version>
+        </plugin>
+		
       </plugins>
     </pluginManagement>
   </build>
@@ -176,7 +183,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.6.3</version>
             <executions>
               <execution>
                 <id>attach-javadocs</id>
