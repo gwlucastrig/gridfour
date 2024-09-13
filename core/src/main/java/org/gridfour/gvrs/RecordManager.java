@@ -489,7 +489,6 @@ class RecordManager {
 
   void readTile(RasterTile tile) throws IOException {
     int tileIndex = tile.tileIndex;
-
     long filePos = tileDirectory.getFilePosition(tileIndex);
     if (filePos == 0) {
       tile.setToNullState();

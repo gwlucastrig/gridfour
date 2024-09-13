@@ -496,10 +496,10 @@ final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
       String codecStr = codecMetadata.getString();
       codecSpecificationList
         = CodecSpecification.specificationStringParse(codecStr);
-    }
-    spec.integrateCodecSpecificationsFromFile(codecSpecificationList);
-    codecMaster.setCodecs(spec.codecList);
 
+      spec.integrateCodecSpecificationsFromFile(codecSpecificationList);
+      codecMaster.setCodecs(spec.codecList);
+    }
     for (GvrsElementSpecification eSpec : spec.elementSpecifications) {
       GvrsElement e = eSpec.makeElement(this);
       elements.add(e);

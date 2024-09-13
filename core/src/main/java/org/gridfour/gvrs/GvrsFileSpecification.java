@@ -38,24 +38,24 @@
  */
 package org.gridfour.gvrs;
 
-import org.gridfour.coordinates.RasterSpaceType;
-import org.gridfour.coordinates.GeoPoint;
-import org.gridfour.coordinates.GridPoint;
-import org.gridfour.coordinates.ModelPoint;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
-import org.gridfour.compress.CodecDeflate;
-import org.gridfour.compress.CodecHuffman;
-import org.gridfour.compress.CodecFloat;
-import org.gridfour.compress.ICompressionDecoder;
-import org.gridfour.compress.ICompressionEncoder;
 import java.io.IOException;
 import java.io.PrintStream;
 import static java.lang.Double.isFinite;
 import java.util.ArrayList;
 import java.util.List;
+import org.gridfour.compress.CodecDeflate;
+import org.gridfour.compress.CodecFloat;
+import org.gridfour.compress.CodecHuffman;
+import org.gridfour.compress.ICompressionDecoder;
+import org.gridfour.compress.ICompressionEncoder;
+import org.gridfour.coordinates.GeoPoint;
+import org.gridfour.coordinates.GridPoint;
 import org.gridfour.coordinates.IGeoPoint;
 import org.gridfour.coordinates.IModelPoint;
+import org.gridfour.coordinates.ModelPoint;
+import org.gridfour.coordinates.RasterSpaceType;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.Angle;
 
@@ -275,7 +275,12 @@ public class GvrsFileSpecification {
     for (String s : codecIdentificationList) {
       CodecHolder holder = getCodecHolderFromList(s); // a candidate
       CodecSpecification spec = this.getCodecSpecificationFromList(specList, s);
-      if (spec != null) {
+      if(spec == null){
+        if(holder!=null){
+          resultList.add(holder);
+        }
+      }else {
+        // spec is null
         // there are two cases to consider:
         //    1.  if the holder is null, it means that the standard codecs
         //        do not define a codec that matches the identification string
