@@ -172,10 +172,11 @@ public class CodecHuffman implements ICompressionEncoder, ICompressionDecoder {
     public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
         if (codecStats == null) {
             PredictorModelType[] pcArray = PredictorModelType.values();
-            codecStats = new CodecStats[pcArray.length];
+            codecStats = new CodecStats[pcArray.length+1];
             for (int i = 0; i < pcArray.length; i++) {
                 codecStats[i] = new CodecStats(pcArray[i]);
             }
+            codecStats[pcArray.length] = new CodecStats("All Predictors");
         }
 
         int nM32 = (packing[6] & 0xff)
@@ -192,7 +193,9 @@ public class CodecHuffman implements ICompressionEncoder, ICompressionDecoder {
         int nValues = nRows * nColumns;
         stats.addToCounts(packing.length - 10, nValues, decoder.getBitsInTreeCount());
         stats.addCountsForM32(nM32, codeM32s);
-
+        CodecStats total = codecStats[codecStats.length-1];
+        total.addToCounts(packing.length - 10, nValues, decoder.getBitsInTreeCount());
+        total.addCountsForM32(nM32, codeM32s);
     }
 
     @Override

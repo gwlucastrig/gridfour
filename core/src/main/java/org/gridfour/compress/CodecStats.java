@@ -49,6 +49,7 @@ package org.gridfour.compress;
 public class CodecStats {
 
     final PredictorModelType pcType;
+    final String name;
     long nTilesCounted;
     long nBytesTotal;
     long nSymbolsTotal;
@@ -59,6 +60,9 @@ public class CodecStats {
     long sumObservedM32;
     double sumEntropyM32;
 
+    long []sA= new long[256];
+    long []sB = new long[65536];
+
     /**
      * Construct a statistics object for the specified predictor model.
      *
@@ -66,6 +70,12 @@ public class CodecStats {
      */
     public CodecStats(PredictorModelType pcType) {
         this.pcType = pcType;
+        name = pcType.name();
+    }
+
+    public CodecStats(String name){
+      this.name = name;
+      pcType = PredictorModelType.None;
     }
 
     /**
@@ -74,7 +84,7 @@ public class CodecStats {
      * @return a valid string
      */
     public String getLabel() {
-        return pcType.name();
+        return name;
     }
 
     /**
@@ -130,7 +140,51 @@ public class CodecStats {
             }
         }
         this.sumEntropyM32 -= s;
+
+        if(nM32<2){
+          return;
+        }
+
+        int prior = m32[0]&0xff;
+        for(int i=1; i<nM32; i++){
+          int value = m32[i]&0xff;
+          sA[value]++;
+          sB[(prior<<8)|value]++;
+          prior = value;
+        }
     }
+
+    public double getH2(){
+      long k=0;
+      for(int i=0; i<256; i++){
+        k+=sA[i];
+      }
+
+      if(k==0){
+        return 0;
+      }
+    double h2 = 0;
+    for (int i = 0; i < 256; i++) {
+      if (sA[i] > 0) {
+        double pI = (double) sA[i] / (double) k;
+        long n = 0;
+        int j0 = i * 256;
+        int j1 = j0 + 256;
+        for (int j = j0; j < j1; j++) {
+          n += sB[j];
+        }
+        double sumJ = 0;
+        for (int j = j0; j < j1; j++) {
+          if(sB[j]>0){
+          double pJ = (double) sB[j] / (double) n;
+          sumJ += pJ * Math.log(pJ);
+        }
+        }
+        h2 += pI * sumJ;
+      }
+    }
+    return -h2;
+  }
 
     /**
      * Get the entropy for the data. In information theory, the term

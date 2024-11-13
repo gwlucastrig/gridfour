@@ -72,16 +72,18 @@ public class CodecDeflate implements ICompressionEncoder, ICompressionDecoder {
 
         if (codecStats == null) {
             PredictorModelType[] pcArray = PredictorModelType.values();
-            codecStats = new CodecStats[pcArray.length];
+            codecStats = new CodecStats[pcArray.length+1];
             for (int i = 0; i < pcArray.length; i++) {
                 codecStats[i] = new CodecStats(pcArray[i]);
             }
+            codecStats[pcArray.length] = new CodecStats("All Predictors");
         }
 
         CodecStats stats = codecStats[packing[1] & 0xff];
+        CodecStats total = codecStats[codecStats.length-1];
         int nValues = nRows * nColumns;
         stats.addToCounts(packing.length - 10, nValues, 0);
-
+        total.addToCounts(packing.length - 10, nValues, 0);
         int nM32 = (packing[6] & 0xff)
             | ((packing[7] & 0xff) << 8)
             | ((packing[8] & 0xff) << 16)
@@ -95,6 +97,7 @@ public class CodecDeflate implements ICompressionEncoder, ICompressionDecoder {
             inflater.end();
             if (test > 0) {
                 stats.addCountsForM32(nM32, codeM32s);
+                total.addCountsForM32(nM32, codeM32s);
             }
         } catch (DataFormatException dfe) {
             throw new IOException(dfe.getMessage(), dfe);
