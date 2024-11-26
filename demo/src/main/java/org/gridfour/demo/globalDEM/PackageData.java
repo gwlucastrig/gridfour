@@ -198,6 +198,18 @@ public class PackageData {
         "Input file does not contain recognized vertical coordinate variable (must be either z or elevation)");
     }
 
+    // NetCDF specifies a "chunk size" that is conceptually similar to
+    // the GVRS tile size.  If the chunk size does not cover an entire
+    // row, then reading the source data by looping across rows of grid cells
+    // would normally be inefficient and SLOW.  However, the NetCDF API does
+    // allow an application set a cache which, again, is similar in concept
+    // to the GVRS tile cache.
+    //    The NetCDF version 5.2.0 API (the cdm-core jar file) did not
+    // provide an accessor for finding the chunk size. So the original
+    // PackageData implementation did not feature logic for inspecting chunk size.
+    // Thus, NetCDF caching is always turned on.
+    z.setCaching(true);
+
     rowCoordinate = ncfile.findVariable("lat");
     colCoordinate = ncfile.findVariable("lon");
     if (rowCoordinate == null) {

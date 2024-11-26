@@ -57,9 +57,31 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
     int nSum;
     long sum;
 
+    double eSum;
+
     void addCount(int counts) {
       sum += counts;
       nSum++;
+    }
+
+    void surveyPacking(int n, int offset, byte[]packing){
+      if(n==0){
+        return;
+      }
+      int []count = new int[256];
+      for(int i=0; i<n; i++){
+        count[packing[i+offset]&0xff]++;
+      }
+
+      double e = 0;
+      for(int i=0; i<256; i++){
+        if(count[i]>0){
+          double p = (double)count[i]/(double)n;
+          e+=p*Math.log(p);
+        }
+      }
+
+      eSum+= -e/Math.log(2.0);
     }
 
     double getAvgCount() {
@@ -72,8 +94,12 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
     void clear() {
       nSum = 0;
       sum = 0;
+      eSum = 0;
     }
 
+    double getAvgEntropy(){
+      return eSum/nSum;
+    }
   }
 
   int nCellsInTile;
@@ -105,21 +131,26 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
     int offset = 2;
     int n = unpackInteger(packing, offset);
     sSignBit.addCount(n);
+    sSignBit.surveyPacking(n, offset+4, packing);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
     sExp.addCount(n);
+    sExp.surveyPacking(n, offset+4, packing);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
     sM1Delta.addCount(n);
+    sM1Delta.surveyPacking(n, offset+4, packing);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
     sM2Delta.addCount(n);
+    sM2Delta.surveyPacking(n, offset+4, packing);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
+    sM3Delta.surveyPacking(n, offset+4, packing);
     sM3Delta.addCount(n);
 
     sTotal.addCount(packing.length);
@@ -128,31 +159,57 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
 
   @Override
   public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
+    if(nCellsInTile==0){
+      // no statistics were gathered, do nothing
+      return;
+    }
     if (wasDataEncoded) {
       double avgBitsPerSample = sTotal.getAvgCount() * 8.0 / nCellsInTile;
       double avgBytesPerSample = sTotal.getAvgCount() / nCellsInTile;
 
       ps.println("Gridfour_Float");
       ps.format("   Times Used: %d%n", sSignBit.nSum);
-      ps.format("   Average bytes per tile, by element        (Reduction)%n");
-      ps.format("     Sign bits           %12.2f        (%7.4f%%)%n",
+      ps.format("   Average bytes per tile, by element%n");
+      ps.format("     Element             Input      Compressed     (Reduction)    Entropy   Bits/Symbol%n");
+      // To get an accurate count of the input, we need to make
+      // special adjustments.   The sign bits are packed into bytes,
+      // so they require 1/8th as many bytes as other values.
+      // The high-mantissa includes only 7 bits per cell.
+      int kSignBit = (nCellsInTile+7)/8;
+      int kM1 = (nCellsInTile*7)/8;
+      ps.format("     Sign bits        %8d   %12.2f       (%7.4f%%)     %5.2f    %5.2f%n",
+        kSignBit,
         sSignBit.getAvgCount(),
-        100*sSignBit.getAvgCount() / (nCellsInTile * 8));
-      ps.format("     Exponent            %12.2f        (%7.4f%%)%n",
+        100*sSignBit.getAvgCount() / (double)kSignBit,
+        sSignBit.getAvgEntropy(),
+        sSignBit.getAvgCount()/(double)kSignBit);
+      ps.format("     Exponent         %8d   %12.2f       (%7.4f%%)     %5.2f    %5.2f%n",
+        nCellsInTile,
         sExp.getAvgCount(),
-        100*sExp.getAvgCount() / nCellsInTile);
+        100*sExp.getAvgCount() / nCellsInTile,
+        sExp.getAvgEntropy(),
+        8*sExp.getAvgCount()/nCellsInTile);
 
       // The mantissa 1 only contains 7 bits, not 8.  So we adjust.
-      ps.format("     Mantissa-1 delta    %12.2f        (%7.4f%%)%n",
+      ps.format("     Mantissa-1 delta %8d   %12.2f       (%7.4f%%)     %5.2f    %5.2f%n",
+        kM1,
         sM1Delta.getAvgCount(),
-        100*sM1Delta.getAvgCount() / (7 * nCellsInTile / 8));
+        100*sM1Delta.getAvgCount() / (double)kM1,
+        sM1Delta.getAvgEntropy(),
+        8*sM1Delta.getAvgCount()/nCellsInTile);
 
-      ps.format("     Mantissa-2 delta    %12.2f        (%7.4f%%)%n",
+      ps.format("     Mantissa-2 delta %8d   %12.2f       (%7.4f%%)     %5.2f    %5.2f%n",
+        nCellsInTile,
         sM2Delta.getAvgCount(),
-        100*sM2Delta.getAvgCount() / nCellsInTile);
-      ps.format("     Mantissa-3 delta    %12.2f        (%7.4f%%)%n",
+        100*sM2Delta.getAvgCount() / nCellsInTile,
+        sM2Delta.getAvgEntropy(),
+        8*sM2Delta.getAvgCount()/nCellsInTile);
+      ps.format("     Mantissa-3 delta %8d   %12.2f       (%7.4f%%)     %5.2f    %5.2f%n",
+        nCellsInTile,
         sM3Delta.getAvgCount(),
-        100*sM3Delta.getAvgCount() / nCellsInTile);
+        100*sM3Delta.getAvgCount() / nCellsInTile,
+        sM3Delta.getAvgEntropy(),
+        8*sM3Delta.getAvgCount()/nCellsInTile);
       ps.println();
       ps.format("   Average Bytes/Tile    %12.2f        (%7.4f%%)%n",
         sTotal.getAvgCount(),
