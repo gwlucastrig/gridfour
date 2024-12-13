@@ -24,6 +24,25 @@ at analyzing and understanding data stored in raster form.
 The Gridfour API for this project page is written in Java.  A C-language API is being developed
 at the [GridfourC API project](https://github.com/gwlucastrig/GridfourC).
 
+## What is GVRS?
+One of the main components of our API is the Gridfour Virtual Raster Store, or "GVRS"(pronounced "givers").
+GVRS is a file-backed system that provides memory-efficient access to large and very large raster (grid) data sets.
+GVRS was created with three main purposes in mind:
+
+**1. Authoring Data:** For applications that produce data sets, GVRS provides a high-performance
+virtual management system for handling content. Applications may store their final results
+in persisent GVRS files, or transcribe them to conventional formats (NetCDF, HDF5, TIFF and GeoTIFF, etc.).
+
+**2. Experiments in Data Compression:**  GVRS provides a convenient testbed for developers
+who are exploring new ways of performing data compression for raster data sources.
+
+**3. Distribution:**  GVRS provides a light-weight API and data format suitable for distributing
+data to other systems. GVRS was originally conceived as a way of providing environment data for small systems, 
+single-board computers, and platforms such as Autonomous Underwater Vehicles. But it is a feasible
+solution for many other use cases.
+
+
+
 ## Our Inspiration
 Recently, there has been a lot of news about the [Seabed 2030 Project](https://seabed2030.org/) . That ambitious
 undertaking aims to map 100 percent of the ocean floor by 2030.  To put that in perspective,
