@@ -28,6 +28,7 @@
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
  * 09/2019  G. Lucas     Created
+ * 12/2024  G. Lucas     Updated to use newer version of NetCDF API
  *
  * Notes:
  *
@@ -141,13 +142,13 @@ class ExtractionCoordinatesGeographic implements IExtractionCoordinates {
    */
   @Override
   public double getAreaOfEachCellInRow(int iRow) {
-    double lat1 = latRowMin + iRow * latSpacingDeg;
-    double lat0 = latRowMin + (iRow + 1) * latSpacingDeg;
+    double lat0 = latRowMin + iRow * latSpacingDeg;
+    double lat1 = latRowMin + (iRow + 1) * latSpacingDeg;
     double phi1 = Math.toRadians(lat1);
     double phi0 = Math.toRadians(lat0);
-    double cos1 = Math.cos(Math.PI / 2 - phi1);
-    double cos0 = Math.cos(Math.PI / 2 - phi0);
-    double a = rEarth2 * Math.toRadians(lonSpacingDeg) * (cos1 - cos0);
+    double sin0 = Math.sin(phi0);
+    double sin1 = Math.sin(phi1);
+    double a = rEarth2 * Math.toRadians(lonSpacingDeg) * (sin1 - sin0);
     return Math.abs(a);
   }
 

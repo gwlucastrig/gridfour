@@ -13,21 +13,23 @@
     <version>1.0.5</version>
   </parent>
 
-	<artifactId>GridfourDemo</artifactId>
-	<name>Demo</name>
-	<description>Demonstration classes, examples, and performance testing tools</description>
+    <artifactId>GridfourDemo</artifactId>
+    <name>Demo</name>
+    <description>Demonstration classes, examples, and performance testing tools</description>
  
-	<repositories>
-		<repository>
-			<id>unidata-all</id>
-			<name>Unidata All</name>
-			<url>https://artifacts.unidata.ucar.edu/repository/unidata-all/</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <!-- The NetCDF Jar files are no longer being updated at Maven Central Repository.
+             So, in addition, we need to access the UCAR/Unidata repository -->
+        <repository>
+            <id>unidata-all</id>
+            <name>Unidata All</name>
+            <url>https://artifacts.unidata.ucar.edu/repository/unidata-all/</url>
+        </repository>
+    </repositories>
  
-	
+    
   <dependencies>
-	<dependency>
+    <dependency>
       <groupId>org.gridfour</groupId>
       <artifactId>GridfourCore</artifactId>
     </dependency>
@@ -36,45 +38,87 @@
       <artifactId>commons-math3</artifactId>
       <version>3.6.1</version>
     </dependency>
-	<dependency>
-		<groupId>org.apache.commons</groupId>
-		<artifactId>commons-imaging</artifactId>
-		<version>1.0-alpha3</version>
-	</dependency>
-	<dependency>
-		<groupId>org.tinfour</groupId>
-		<artifactId>TinfourGis</artifactId>
-		<version>2.1.4</version>
-	</dependency>
-	<dependency>
-		<groupId>org.tinfour</groupId>
-		<artifactId>TinfourCore</artifactId>
-		<version>2.1.4</version>
-	</dependency>
-	
-	<dependency>
-		<groupId>edu.ucar</groupId>
-		<artifactId>cdm-core</artifactId>
-		<version>5.2.0</version>
-		<!-- <scope>compile</scope>  -->
-	</dependency>
-
-	<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
-	<dependency>
-		<groupId>org.slf4j</groupId>
-		<artifactId>slf4j-simple</artifactId>
-		<version>1.7.28</version>
-		<scope>test</scope>
-	</dependency>
-
+    <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-imaging</artifactId>
+        <version>1.0-alpha3</version>
+    </dependency>
+    <dependency>
+        <groupId>org.tinfour</groupId>
+        <artifactId>TinfourGis</artifactId>
+        <version>2.1.4</version>
+    </dependency>
+    <dependency>
+        <groupId>org.tinfour</groupId>
+        <artifactId>TinfourCore</artifactId>
+        <version>2.1.4</version>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>5.7.2</version>
       <scope>test</scope>
     </dependency>
-  </dependencies>
 
+
+    
+
+<!--  Dependencies for reading a NetCDF file...
+      The following dependencies were obtained from the
+      build.gradle file from Github for netcdf-java[...]/cdm/core
+      We experimented reading NetCDF file in an effort to reduce
+      the dependencies to a minimum.  At this time, we have not
+      investigated writing NetCDF files, only reading them.
+      As far as we know, there is no authoritative list of
+      dependencies for building with cmd-core using maven.  -->
+
+    
+    <dependency>
+      <groupId>edu.ucar</groupId>
+      <artifactId>cdm-core</artifactId>
+      <version>5.6.0</version>
+      <scope>compile</scope>
+    </dependency>
+     
+    <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+    <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>33.3.1-jre</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.google.re2j/re2j -->
+    <dependency>
+        <groupId>com.google.re2j</groupId>
+        <artifactId>re2j</artifactId>
+        <version>1.7</version>
+        <scope>runtime</scope>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
+    <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>2.13.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>2.0.16</version>
+    </dependency>
+    
+    <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>2.0.16</version>
+    </dependency>
+
+  </dependencies>
+  
+  
   <build>
     <plugins>
       <plugin>
@@ -89,13 +133,13 @@
           </archive>
         </configuration>
       </plugin>
-	 
+     
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <archive>
             <manifest>
-          	<mainClass>org.gridfour.demo.access.ReadGvrs</mainClass>
+              <mainClass>org.gridfour.demo.access.ReadGvrs</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>
@@ -105,9 +149,9 @@
         <executions>
           <execution>
             <id>make-assembly</id> <!-- this is used for inheritance merges -->
-			<phase>package</phase> <!-- bind to the packaging phase -->
+            <phase>package</phase> <!-- bind to the packaging phase -->
             <goals>
-          	  <goal>single</goal>
+                <goal>single</goal>
             </goals>
           </execution>
         </executions>
