@@ -78,7 +78,7 @@ Sample data primitives were written using the following Java code
       braf.leWriteUTF("Test data for GVRS");
 	  
 	  braf.leWriteLong(0x01020304_05060708L);
-      braf.leWriteLong(0xff010203_04050607L);
+      braf.leWriteLong(0xff020304_05060708L);
     }
 
 --------------------------------------------------------------------------------------
