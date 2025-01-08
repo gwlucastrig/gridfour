@@ -127,34 +127,42 @@ public class CodecFloat implements ICompressionEncoder, ICompressionDecoder {
   @Override
   public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
     nCellsInTile = nRows * nColumns;
+    int nBytesForSignBits = (nCellsInTile + 7) / 8;
+    byte[] scratch = new byte[nCellsInTile];
+
     wasDataEncoded = true;
     int offset = 2;
     int n = unpackInteger(packing, offset);
     sSignBit.addCount(n);
-    sSignBit.surveyPacking(n, offset+4, packing);
+    doInflate(packing, offset + 4, n, scratch, nBytesForSignBits);
+    sSignBit.surveyPacking(nBytesForSignBits, 0, scratch);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
     sExp.addCount(n);
-    sExp.surveyPacking(n, offset+4, packing);
+    doInflate(packing, offset + 4, n, scratch, nCellsInTile);
+    sExp.surveyPacking(nCellsInTile, 0, scratch);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
     sM1Delta.addCount(n);
-    sM1Delta.surveyPacking(n, offset+4, packing);
+    doInflate(packing, offset + 4, n, scratch, nCellsInTile);
+    sM1Delta.surveyPacking(nCellsInTile, 0, scratch);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
     sM2Delta.addCount(n);
-    sM2Delta.surveyPacking(n, offset+4, packing);
+    doInflate(packing, offset + 4, n, scratch, nCellsInTile);
+    sM2Delta.surveyPacking(nCellsInTile, 0, scratch);
     offset += (4 + n);
 
     n = unpackInteger(packing, offset);
-    sM3Delta.surveyPacking(n, offset+4, packing);
     sM3Delta.addCount(n);
+    doInflate(packing, offset + 4, n, scratch, nCellsInTile);
+    sM3Delta.surveyPacking(nCellsInTile, 0, scratch);
+    offset += (4 + n);
 
-    sTotal.addCount(packing.length);
-
+    sTotal.addCount(offset);
   }
 
   @Override
