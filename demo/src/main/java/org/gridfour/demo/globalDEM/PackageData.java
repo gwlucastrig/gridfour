@@ -199,6 +199,26 @@ public class PackageData {
           "Input file does not contain recognized vertical coordinate variable (must be either z or elevation)");
       }
 
+      // Get the dimensions of the raster (grid) elevation/bathymetry data.
+      ps.format("Using NetCDF variable: \"%s\"\n", z.getFullName());
+      int rank = z.getRank(); // should be 1.
+      int[] shape = z.getShape();
+      int nRows = shape[0];
+      int nCols = shape[1];
+      ps.format("   Rows:          %8d%n", nRows);
+      ps.format("   Columns:       %8d%n", nCols);
+
+      int[] chunkShape = null;
+      Attribute a = z.findAttribute("_ChunkSizes");
+      if (a != null) {
+        Array chunkSizes = a.getValues();
+        chunkShape = new int[2];
+        chunkShape[0] = chunkSizes.getInt(0);
+        chunkShape[1] = chunkSizes.getInt(1);
+        ps.format("   Chunk Rows:    %8d%n", chunkShape[0]);
+        ps.format("   Chunk Columns: %8d%n", chunkShape[1]);
+      }
+
       // NetCDF specifies a "chunk size" that is conceptually similar to
       // the GVRS tile size.  If the chunk size does not cover an entire
       // row, then reading the source data by looping across rows of grid cells
@@ -214,9 +234,10 @@ public class PackageData {
       // setCaching() method is deprecated and we were unable to find an
       // alternate way of activating the cache. So we will have to watch
       // this feature to see if it changes in the future.
-
-      z.setCaching(true);
-
+      if (chunkShape != null && (chunkShape[0] != 1 || chunkShape[1] != nCols)) {
+        ps.format("Applying cache on input variable%n");
+        z.setCaching(true);
+      }
 
       rowCoordinate = ncfile.findVariable("lat");
       colCoordinate = ncfile.findVariable("lon");
@@ -285,15 +306,6 @@ public class PackageData {
           wkt = att.getStringValue();
         }
       }
-
-      // Get the dimensions of the raster (grid) elevation/bathymetry data.
-      int rank = z.getRank(); // should be 1.
-      int[] shape = z.getShape();
-
-      int nRows = shape[0];
-      int nCols = shape[1];
-      ps.format("Rows:      %8d%n", nRows);
-      ps.format("Columns:   %8d%n", nCols);
 
       int[] tileSize = options.getTileSize(90, 120);
       int nRowsInTile = tileSize[0];
