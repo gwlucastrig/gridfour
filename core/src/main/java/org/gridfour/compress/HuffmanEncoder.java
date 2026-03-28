@@ -304,4 +304,21 @@ public class HuffmanEncoder {
     return bitpath;
   }
 
+  /**
+   * Gets the number of bits used for the Huffman tree representing the
+   * most recently encoded text.
+   * @return a positive integer value (zero if not available).
+   */
+  public int getBitsInTreeCount(){
+    return nBitsInTree;
+  }
+
+    /**
+   * Gets the number of bits used for the Huffman code for the
+   * most recently encoded text (excluding the overhead for the tree).
+   * @return a positive integer value (zero if not available).
+   */
+  public int getBitsInTextCount(){
+    return nBitsInText;
+  }
 }
