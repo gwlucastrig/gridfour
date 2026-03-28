@@ -38,9 +38,6 @@
  */
 package org.gridfour.gvrs;
 
-import org.gridfour.coordinates.GeoPoint;
-import org.gridfour.coordinates.GridPoint;
-import org.gridfour.coordinates.ModelPoint;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -57,9 +54,11 @@ import java.util.SimpleTimeZone;
 import java.util.UUID;
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.ICompressionEncoder;
+import org.gridfour.coordinates.GeoPoint;
+import org.gridfour.coordinates.GridPoint;
 import org.gridfour.coordinates.IGeoPoint;
 import org.gridfour.coordinates.IModelPoint;
-
+import org.gridfour.coordinates.ModelPoint;
 import org.gridfour.io.BufferedRandomAccessFile;
 import org.gridfour.util.GridfourCRC32C;
 
@@ -1461,5 +1460,17 @@ final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
    */
   public void deleteOnClose(){
     this.deleteOnClose = true;
+  }
+
+  /**
+   * Gets the file offset for a tile within the GVRS file. Intended for
+   * diagnostic purposes.
+   *
+   * @param tileIndex a valid tile index
+   * @return if found, a long integer greater than zero; otherwise, zero.
+   */
+  public long getTilePosition(int tileIndex) {
+    ITileDirectory dir = recordMan.getTileDirectory();
+    return dir.getFilePosition(tileIndex);
   }
 }
