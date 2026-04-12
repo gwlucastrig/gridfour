@@ -520,10 +520,13 @@ public class GvrsFileSpecification {
     isChecksumEnabled = s.isChecksumEnabled;
     rasterSpace = s.rasterSpace;
     dataCompressionEnabled = s.dataCompressionEnabled;
-    for (CodecHolder holder : s.codecList) {
-      codecList.add(new CodecHolder(holder));
-    }
-
+    if(s.codecList.isEmpty()){
+      initDefaultCodecList();
+    }else{
+      for (CodecHolder holder : s.codecList) {
+        codecList.add(new CodecHolder(holder));
+      }
+    }							  
   }
 
   /**

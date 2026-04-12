@@ -143,6 +143,87 @@ public class PredictorModelLinear implements IPredictorModel {
   }
 
   @Override
+  public int encodeInt(
+    int nRows,
+    int nColumns,
+    int[] values,
+    int[] encoding) {
+    encodedSeed = values[0];
+
+    long delta, test;
+    long prior = values[0];
+    delta = (long) values[1] - prior;
+    int kEncoding = 0;
+    encoding[kEncoding++] = (int) delta;
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      test = values[index];
+      delta = test - prior;
+      encoding[kEncoding++] = (int) delta;
+      prior = test;
+
+      test = values[index + 1];
+      delta = test - prior;
+      encoding[kEncoding++] = (int) delta;
+    }
+
+    for (int iRow = 0; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      long a = values[index];
+      long b = values[index + 1];
+      //accumulate second differences starting at column 2
+      for (int iCol = 2; iCol < nColumns; iCol++) {
+        int c = values[index + iCol];
+        int prediction = (int) (2L * b - a);
+        int residual = c - prediction;
+        encoding[kEncoding++] = residual;
+        a = b;
+        b = c;
+      }
+    }
+    return kEncoding;
+  }
+
+  @Override
+  public void decodeInt(
+    int seed,
+    int nRows,
+    int nColumns,
+    int[] encoding,
+    int offset,
+    int length,
+    int[] output) {
+    int kEncoding = 0;
+    long prior = seed;
+    output[0] = seed;
+    output[1] = (int) (encoding[kEncoding++] + prior);
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      long test = (encoding[kEncoding++] + prior);
+      output[index] = (int) test;
+      prior = test;
+      output[index + 1] = (int) (encoding[kEncoding++] + test);
+    }
+
+    for (int iRow = 0; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      long a = output[index];
+      long b = output[index + 1];
+
+      //accumulate second differences starting at column 2 for row
+      for (int iCol = 2; iCol < nColumns; iCol++) {
+        int residual = encoding[kEncoding++];
+        int prediction = (int) (2L * b - a);
+        int c = prediction + residual;
+        a = b;
+        b = c;
+        output[index + iCol] = c;
+      }
+    }
+  }
+
+
+  @Override
   public boolean isNullDataSupported() {
     return false;
   }

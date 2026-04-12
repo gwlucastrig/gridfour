@@ -144,6 +144,79 @@ public class PredictorModelTriangle implements IPredictorModel {
         return mCodec.getEncodedLength();
     }
 
+  @Override
+  public int encodeInt(int nRows, int nColumns, int[] values, int[] encoding) {
+    if (nRows < 2 || nColumns < 2) {
+      return -1;
+    }
+
+    int kEncoding = 0;
+    // The zeroeth row and column are populated using simple differences.
+    // All other grid cells are populated using the triangle-predictor
+    encodedSeed = values[0];
+    long prior = encodedSeed;
+    for (int i = 1; i < nColumns; i++) {
+      long test = values[i];
+      encoding[kEncoding++] = (int) (test - prior);
+      prior = test;
+    }
+
+    prior = encodedSeed;
+    for (int i = 1; i < nRows; i++) {
+      long test = values[i * nColumns];
+      encoding[kEncoding++] = (int) (test - prior);
+      prior = test;
+    }
+
+    // populate the rest of the grid using the triangle-predictor model
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int k1 = iRow * nColumns;
+      int k0 = k1 - nColumns;
+      for (int i = 1; i < nColumns; i++) {
+        long za = values[k0++];
+        long zb = values[k1++];
+        long zc = values[k0];
+        int prediction = (int) (zc + zb - za);
+        int residual = values[k1] - prediction;
+        encoding[kEncoding++] = residual;
+      }
+    }
+
+    return kEncoding;
+  }
+
+  @Override
+  public void decodeInt(int seed, int nRows, int nColumns, int[] encoding, int offset, int length, int[] output) {
+
+    // The zeroeth row and column are populated using simple differences.
+    // All other columns are populated using the triangle-predictor
+    output[0] = seed;
+    int prior = seed;
+    int kEncoding = 0;
+    for (int i = 1; i < nColumns; i++) {
+      prior += encoding[kEncoding++];
+      output[i] = prior;
+    }
+    prior = seed;
+    for (int i = 1; i < nRows; i++) {
+      prior += encoding[kEncoding++];
+      output[i * nColumns] = prior;
+    }
+
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int k1 = iRow * nColumns;
+      int k0 = k1 - nColumns;
+      for (int i = 1; i < nColumns; i++) {
+        long za = output[k0++];
+        long zb = output[k1++];
+        long zc = output[k0];
+        int prediction = (int) (zb + zc - za);
+        output[k1] = prediction + encoding[kEncoding++];
+      }
+    }
+  }
+
+
     @Override
     public boolean isNullDataSupported() {
         return false;

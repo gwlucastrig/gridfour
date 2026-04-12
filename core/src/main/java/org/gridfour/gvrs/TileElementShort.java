@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.gridfour.io.BufferedRandomAccessFile;
+import org.gridfour.util.GridfourConstants;
 
 /**
  * Provides methods and elements for accessing a tile from a raster data set.
@@ -210,7 +211,11 @@ class TileElementShort extends TileElement {
   byte[] encode(CodecMaster codec) {
     int[] iValue = new int[nCells];
     for (int index = 0; index < nCells; index++) {
-      iValue[index] = values[index];
+      int v = values[index];
+      if(v==fillValue){
+        v= GridfourConstants.INT4_NULL_CODE;
+      }
+      iValue[index] = v;
     }
     byte[] encoding = codec.encode(nRows, nColumns, iValue);
     if (encoding == null || encoding.length >= standardSizeInBytes) {
@@ -233,7 +238,11 @@ class TileElementShort extends TileElement {
     } else {
       int[] iDecoding = codec.decode(nRows, nColumns, encoding);
       for (int i = 0; i < values.length; i++) {
-        values[i] = (short) iDecoding[i];
+        if(iDecoding[i]==GridfourConstants.INT4_NULL_CODE){
+          values[i] = GridfourConstants.SHORT_NULL_CODE;
+        }else{
+          values[i] = (short) iDecoding[i];
+        }
       }
     }
   }

@@ -1058,4 +1058,15 @@ class RecordManager {
   ITileDirectory getTileDirectory() {
     return tileDirectory;
   }
+
+  /**
+   * Gets the file position of the record for the specified
+   * tile index.
+   *
+   * @param tileIndex the index for the tile of interest.
+   * @return if the tile exists in the file, a positive integer value; otherwise, zero.
+   */
+  long getTilePosition(int tileIndex) {
+    return tileDirectory.getFilePosition(tileIndex);
+  }
 }

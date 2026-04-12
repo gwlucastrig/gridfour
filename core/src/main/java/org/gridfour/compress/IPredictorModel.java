@@ -46,7 +46,7 @@ public interface IPredictorModel {
    * output values from the specified input.
    *
    * @param seed a seed value to provide the initial value for the encoding
-   * @param encoding the input values for the encoding, usually dimensions to
+   * @param encoding the input values for the encoding, usually dimensioned to
    * nRows*nColumns
    * @param nRows the number of rows in the raster data grid
    * @param nColumns the number of columns in the raster data grid
@@ -58,13 +58,13 @@ public interface IPredictorModel {
    * least nRows*nColumns
    */
   void decode(
-          int seed,
-          int nRows,
-          int nColumns,
-          byte[] encoding,
-          int offset,
-          int length,
-          int[] output);
+    int seed,
+    int nRows,
+    int nColumns,
+    byte[] encoding,
+    int offset,
+    int length,
+    int[] output);
 
   /**
    * Encodes the specified data using the predictor model to develop
@@ -88,17 +88,68 @@ public interface IPredictorModel {
    * otherwise, a value -1 to indicate an encoding failure.
    */
   int encode(
-          int nRows,
-          int nColumns,
-          int[] values,
-          byte[] encoding);
+    int nRows,
+    int nColumns,
+    int[] values,
+    byte[] encoding);
+
+  /**
+   * Decodes the specified data using the predictor model to compute
+   * output values from the specified input.
+   *
+   * @param seed a seed value to provide the initial value for the encoding
+   * @param encoding the input values for the encoding, usually dimensioned to
+   * nRows*nColumns
+   * @param nRows the number of rows in the raster data grid
+   * @param nColumns the number of columns in the raster data grid
+   * @param offset the starting offset in the encoding array from which
+   * data is to be taken.
+   * @param length the length of the valid section of the encoding array
+   * from which data is to be taken.
+   * @param output array to accept the output data values, dimensions to at
+   * least nRows*nColumns
+   */
+  void decodeInt(
+    int seed,
+    int nRows,
+    int nColumns,
+    int[] encoding,
+    int offset,
+    int length,
+    int[] output);
+
+  /**
+   * Encodes the specified data using the predictor model to develop
+   * computed adjustments for the data grid.
+   * <p>
+   * This routine returns the seed value detected in the data. This value is
+   * usually the first entry in the input value. In cases where the data
+   * contains nulls, the seed is sometimes the mean value of the non-null
+   * entries.
+   * <p>
+   * The length of the encoded output will be the product
+   * of the numbers of rows and columns. Encoded values will be based
+   * on residuals from the predictor.
+   *
+   * @param nRows the number of rows in the raster data grid
+   * @param nColumns the number of columns in the data data grid
+   * @param values the input values to be encoded
+   * @param encoding the output encoding
+   * @return if successful, the number of bytes in the output encoding;
+   * otherwise, a value -1 to indicate an encoding failure.
+   */
+  int encodeInt(
+    int nRows,
+    int nColumns,
+    int[] values,
+    int[] encoding);
 
   /**
    * Indicates that the predictor model is intended to handle null values.
    * In many real-world raster data products, the transition from regions
    * of valid data to null data is frequently discontinuous. While most
    * predictor models can handle the transition, the results often compress
-   * poorly.  This method indicates if a predictor is intended to support
+   * poorly. This method indicates if a predictor is intended to support
    * cells with null data.
    *
    * @return true if null values are permitted; otherwise false.
@@ -113,10 +164,10 @@ public interface IPredictorModel {
    */
   int getSeed();
 
-
   /**
    * Gets the predictor type.
+   *
    * @return a valid enumeration corresponding the the type of predictor
    */
-    PredictorModelType getPredictorType();
+  PredictorModelType getPredictorType();
 }

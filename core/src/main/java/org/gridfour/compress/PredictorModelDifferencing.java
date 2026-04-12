@@ -114,7 +114,7 @@ public class PredictorModelDifferencing implements IPredictorModel {
         int nColumns,
         int[] values,
         byte[] output) {
-        
+
         CodecM32 mCodec = new CodecM32(output, 0, output.length);
         encodedSeed = values[0];
         int prior = encodedSeed;
@@ -165,6 +165,64 @@ public class PredictorModelDifferencing implements IPredictorModel {
             }
         }
     }
+
+  @Override
+  public int encodeInt(
+    int nRows,
+    int nColumns,
+    int[] values,
+    int[] output) {
+
+    encodedSeed = values[0];
+    int prior = encodedSeed;
+    int kEncoding = 0;
+    for (int i = 1; i < nColumns; i++) {
+      int test = values[i];
+      int delta = test - prior;
+      output[kEncoding++] = delta;
+      prior = test;
+    }
+
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      prior = values[index - nColumns];
+      for (int i = 0; i < nColumns; i++) {
+        int test = values[index++];
+        int delta = test - prior;
+        output[kEncoding++] = delta;
+        prior = test;
+      }
+
+    }
+
+    return kEncoding;
+
+  }
+
+  @Override
+  public void decodeInt(
+    int seed,
+    int nRows,
+    int nColumns,
+    int[] encoding, int offset, int length,
+    int[] output) {
+    int kEncoding = offset;
+    output[0] = seed;
+    int prior = seed;
+    for (int i = 1; i < nColumns; i++) {
+      prior += encoding[kEncoding++];
+      output[i] = prior;
+    }
+
+    for (int iRow = 1; iRow < nRows; iRow++) {
+      int index = iRow * nColumns;
+      prior = output[index - nColumns];
+      for (int iCol = 0; iCol < nColumns; iCol++) {
+        prior += encoding[kEncoding++];
+        output[index++] = prior;
+      }
+    }
+  }
 
     @Override
     public boolean isNullDataSupported() {
