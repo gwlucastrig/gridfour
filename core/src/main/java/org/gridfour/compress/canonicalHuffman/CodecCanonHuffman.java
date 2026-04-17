@@ -71,7 +71,6 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     predictorModel[1] = new PredictorModelLinear();
     predictorModel[2] = new PredictorModelTriangle();
     predictorModel[3] = new PredictorModelDifferencingWithNulls();
-
   }
 
   @Override

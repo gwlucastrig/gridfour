@@ -161,34 +161,8 @@ class TreeBuilder {
     int maxCodeLength = establishCodeLengths(root, sortNodes.length);
     if (maxCodeLength > 15) {
       treeDepthLimited = true;
-    }
-
-    // If the maximum code length exceeds 15 bits, we reduce
-    // the code length using the MiniZ length-limiting algorithm
-    // as described by Stepham Brumme
-    while (maxCodeLength > 15) {
-      // reduce the maximum code length
-      int yIndex = -1;
-      int xIndex = -1;
-      for (int i = 0; i < sortNodes.length; i++) {
-        if (sortNodes[i].nBitsInCode < maxCodeLength) {
-          yIndex = i;
-        } else if (sortNodes[i].nBitsInCode == maxCodeLength) {
-          xIndex = i;
-        }
-      }
-      if (yIndex < 0 || xIndex < 0) {
-        break;
-      }
-      sortNodes[yIndex].nBitsInCode++;
-      sortNodes[xIndex].nBitsInCode = sortNodes[yIndex].nBitsInCode;
-      int n = 0;
-      for (int i = 0; i < sortNodes.length; i++) {
-        if (sortNodes[i].nBitsInCode > n) {
-          n = sortNodes[i].nBitsInCode;
-        }
-      }
-      maxCodeLength = n;
+      PackageMerge pm = new PackageMerge();
+      pm.merge(15, sortNodes);
     }
 
     Arrays.sort(sortNodes, countSymbolComp);
