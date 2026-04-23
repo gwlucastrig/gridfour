@@ -49,7 +49,7 @@ class TreeBuilder {
 
   SymbolNode[] symbolNodes;
 
-  boolean treeDepthLimited;
+  boolean maxCodeLengthLimited;
 
   TreeBuilder() {
 
@@ -73,7 +73,7 @@ class TreeBuilder {
   int buildTree(SymbolNode[] symbolNodes) {
     // The symbol counts have already been established.
     // Use them to populate the canonical Huffman coding sequences.
-    treeDepthLimited = false;
+    maxCodeLengthLimited = false;
 
     this.symbolNodes = symbolNodes;
     int k = 0;
@@ -158,11 +158,13 @@ class TreeBuilder {
       }
     }
 
+    // The maximum standard symbol length is currently implemented as 15.
+    // Ensure that none of the code lengths exceed that value
     int maxCodeLength = establishCodeLengths(root, sortNodes.length);
-    if (maxCodeLength > 15) {
-      treeDepthLimited = true;
+    if (maxCodeLength > LengthEncoder.MAX_STANDARD_SYMBOL) {
+      maxCodeLengthLimited = true;
       PackageMerge pm = new PackageMerge();
-      pm.merge(15, sortNodes);
+      pm.merge(LengthEncoder.MAX_STANDARD_SYMBOL, sortNodes);
     }
 
     Arrays.sort(sortNodes, countSymbolComp);
@@ -305,7 +307,7 @@ class TreeBuilder {
     return true;
   }
 
-  boolean isTreeDepthLimited() {
-    return treeDepthLimited;
+  boolean isMaxCodeLengthLimited() {
+    return maxCodeLengthLimited;
   }
 }

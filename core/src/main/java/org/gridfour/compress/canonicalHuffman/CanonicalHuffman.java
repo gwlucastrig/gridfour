@@ -89,7 +89,7 @@ public class CanonicalHuffman {
   private int escapeCountBits8;
   private int escapeCountBits24;
 
-  private boolean treeDepthLimited;
+  private boolean maxCodeLengthLimited;
 
   public CanonicalHuffman() {
     symbolNodes = new SymbolNode[N_SYMBOLS_TOTAL];
@@ -107,7 +107,7 @@ public class CanonicalHuffman {
     escapeCountBits8 = 0;
     escapeCountBits24 = 0;
 
-    treeDepthLimited = true;
+    maxCodeLengthLimited = true;
 
     for (SymbolNode symbolNode : symbolNodes) {
       symbolNode.clear();
@@ -145,7 +145,7 @@ public class CanonicalHuffman {
     countSymbols(nSymbolsInText, offset, text);
     TreeBuilder textTree = new TreeBuilder();
     textTree.buildTree(symbolNodes);
-    treeDepthLimited = textTree.isTreeDepthLimited();
+    maxCodeLengthLimited = textTree.isMaxCodeLengthLimited();
 
     int[] textCodeLengths = getCodeLengths(symbolNodes);
 
@@ -421,7 +421,7 @@ public class CanonicalHuffman {
       nBitsInEncoding, (nBitsInEncoding + 7) / 8);
     ps.format("  Bits per symbol:       %12.4f%n",
       (double) nBitsInEncoding / (double) nSymbolsInText);
-    ps.format("  Code length truncated:       %s%n ", treeDepthLimited ? "true" : "false");
+    ps.format("  Code length truncated:       %s%n ", maxCodeLengthLimited ? "true" : "false");
     ps.println();
     ps.println("Escape sequences");
     ps.format("   4 bits: %8d%n", escapeCountBits4);
