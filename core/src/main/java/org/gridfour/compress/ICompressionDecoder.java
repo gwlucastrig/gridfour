@@ -50,14 +50,11 @@ public interface ICompressionDecoder {
 
     /**
      * Decodes the content of the packing and populates an
-     * integer array to store the data.
+     * byte array to store the data.
      *
-     * @param nRows a value of 1 or greater giving the number of rows in the
-     * tile
-     * @param nColumns a value of 1 or greater giving the number of columns in
-     * the
-     * @param packing an array of bytes containing the encoded data to be
-     * decompressed
+     * @param nRows a value of 1 or greater giving the number of rows in the  tile
+     * @param nColumns a value of 1 or greater giving the number of columns in the tile
+     * @param packing an array of bytes containing the encoded data to be decompressed
      * @return if successful, a valid integer array giving content for the
      * tile in row-major order
      * @throws IOException in the event of an incompatible packing
@@ -95,15 +92,12 @@ public interface ICompressionDecoder {
     void clearAnalysisData();
 
     /**
-     * Decodes the content of the packing and populates an
-     * integer array to store the data.
+     * Decodes the content of the packing and populates a single-precision
+     * floating point value array (4-byte Java float) to store the data.
      *
-     * @param nRows a value of 1 or greater giving the number of rows in the
-     * tile
-     * @param nColumns a value of 1 or greater giving the number of columns in
-     * the
-     * @param packing an array of bytes containing the encoded data to be
-     * decompressed
+     * @param nRows a value of 1 or greater giving the number of rows in the tile
+     * @param nColumns a value of 1 or greater giving the number of columns in the tile
+     * @param packing an array of bytes containing the encoded data to be decompressed
      * @return if successful, a valid integer array giving content for the
      * tile in row-major order
      * @throws IOException in the event of an incompatible packing

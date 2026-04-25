@@ -55,7 +55,7 @@ import org.gridfour.util.GridfourConstants;
  * <p>
  * When the Gridfour API stores raster data, it uses a predictor-based system
  * in which values in a raster are predicted by the values of neighboring
- * cells.  The resulting residuals are typically of small magnitude with
+ * cells. The resulting residuals are typically of small magnitude with
  * the majority falling near zero. To support that pattern, this class
  * using canonical Huffman codes to represent values in the range -128 to 127.
  * Values outside this range are represented using special escape-codes
@@ -66,16 +66,17 @@ public class CanonicalHuffman {
   private static final int N_SYMBOLS_STANDARD = 256;
   private static final int I_ESCAPE_4BITS = 256;
   private static final int I_ESCAPE_1BYTE = 257;
-  private static final int I_ESCAPE_3BYTES = 258;
-  private static final int I_NULL_DATA_CODE = 259;
-  private static final int I_END_OF_TEXT = 260;
+  private static final int I_NULL_DATA_CODE = 258;
+  private static final int I_END_OF_TEXT = 259;
 
   /**
    * The number of symbols defined by the Gridfour implementation of
    * canonical Huffman coding. Symbols are assigned values starting
    * with zero, giving a range of values from zero to N_SYMBOLS_TOTAL-1.
+   * An array dimensions to N_SYMBOLS_TOTAL is sufficient to hold one element
+   * per symbol.
    */
-  static final int N_SYMBOLS_TOTAL = 261;
+  static final int N_SYMBOLS_TOTAL = 260;
 
   final private SymbolNode[] symbolNodes;
 
@@ -189,10 +190,20 @@ public class CanonicalHuffman {
           output.appendBits(8, symbol & 0xff);
         } else if (symbol == GridfourConstants.INT4_NULL_CODE) {
           textTree.writeOneSymbol(output, I_NULL_DATA_CODE);
+        } else if (-8333608 <= symbol && symbol <= 8388607) {
+          textTree.writeOneSymbol(output, (symbol >> 16) & 0xff);
+          textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
+          output.appendBits(8, (symbol >> 8) & 0xff);
+          textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
+          output.appendBits(8, symbol & 0xff);
         } else {
           textTree.writeOneSymbol(output, (symbol >> 24) & 0xff);
-          textTree.writeOneSymbol(output, I_ESCAPE_3BYTES);
-          output.appendBits(24, symbol & 0xffffff);
+          textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
+          output.appendBits(8, (symbol >> 16) & 0xff);
+          textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
+          output.appendBits(8, (symbol >> 8) & 0xff);
+          textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
+          output.appendBits(8, symbol & 0xff);
         }
       }
     }
@@ -262,6 +273,7 @@ public class CanonicalHuffman {
 
   /**
    * Count the symbols in the input text.
+   *
    * @param nSymbolsInText the number of symbols in the text.
    * @param offset an offset to the starting position within the text
    * @param text the text
@@ -285,9 +297,11 @@ public class CanonicalHuffman {
         symbolNodes[(symbol >> 8) & 0xff].count++;
       } else if (symbol == GridfourConstants.INT4_NULL_CODE) {
         symbolNodes[I_NULL_DATA_CODE].count++;
+      } else if (-8388608 <= symbol && symbol <= 8388607) {
+        symbolNodes[I_ESCAPE_1BYTE].count += 2;
+        symbolNodes[(symbol >> 16) & 0xff].count++;
       } else {
-        escapeCountBits24++;
-        symbolNodes[I_ESCAPE_3BYTES].count++;
+        symbolNodes[I_ESCAPE_1BYTE].count += 3;
         symbolNodes[(symbol >> 24) & 0xff].count++;
       }
     }
@@ -378,11 +392,6 @@ public class CanonicalHuffman {
             prior = (prior << 8) | part;
             text[iSymbol - 1] = prior;
             break;
-          case I_ESCAPE_3BYTES:
-            part = input.getBits(24);
-            prior = (prior << 24) | part;
-            text[iSymbol - 1] = prior;
-            break;
           case I_NULL_DATA_CODE:
             prior = GridfourConstants.INT4_NULL_CODE;
             text[iSymbol++] = GridfourConstants.INT4_NULL_CODE;
@@ -399,10 +408,10 @@ public class CanonicalHuffman {
     return true;
   }
 
-
   /**
    * Print diagnostics describing the results of the most recently
    * encoded text.
+   *
    * @param ps a valid instance to receive the output.
    */
   public void printDiagnostics(PrintStream ps) {
@@ -432,6 +441,7 @@ public class CanonicalHuffman {
   /**
    * A diagnostic tool for printing out the canonical Huffman code
    * sequences for each symbol.
+   *
    * @param ps a valid instance to receive the output.
    */
   public void printCodeBits(PrintStream ps) {
@@ -486,6 +496,7 @@ public class CanonicalHuffman {
   /**
    * Get the number of bits required to store the code-table
    * section of the encoded text.
+   *
    * @return a positive integer
    */
   public int getBitsInCodeTableCount() {
@@ -494,12 +505,13 @@ public class CanonicalHuffman {
 
   /**
    * Get the number of unique symbols identified in the most recently
-   * encoded text.  This value includes special symbols such as the
+   * encoded text. This value includes special symbols such as the
    * end-of-text code defined by this class.
    * <p>
    * In the case of integer values outside the range of a single
    * byte (-128 to +127), a value is treated as a symbol in the range
    * 0 to 255 followed by a non-Huffman encoded set of "escape bits".
+   *
    * @return a positive integer in the range 0 to N_SYMBOLS_TOTAL.
    */
   public int getUniqueSymbolCount() {
@@ -509,6 +521,7 @@ public class CanonicalHuffman {
   /**
    * Gets the number of escape bits needed to represent the most recently
    * encoded Huffman text.
+   *
    * @return a positive integer.
    */
   int getEscapeBitCounts() {
