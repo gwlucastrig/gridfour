@@ -63,12 +63,6 @@ import org.gridfour.util.GridfourConstants;
  */
 public class CanonicalHuffman {
 
-  private static final int N_SYMBOLS_STANDARD = 256;
-  private static final int I_ESCAPE_4BITS = 256;
-  private static final int I_ESCAPE_1BYTE = 257;
-  private static final int I_NULL_DATA_CODE = 258;
-  private static final int I_END_OF_TEXT = 259;
-
   /**
    * The number of symbols defined by the Gridfour implementation of
    * canonical Huffman coding. Symbols are assigned values starting
@@ -77,6 +71,13 @@ public class CanonicalHuffman {
    * per symbol.
    */
   static final int N_SYMBOLS_TOTAL = 260;
+
+  private static final int N_SYMBOLS_STANDARD = 256;
+  private static final int I_NULL_DATA_CODE = 256;
+  private static final int I_ESCAPE_1BYTE = 257;
+  private static final int I_ESCAPE_4BITS = 258;
+  private static final int I_END_OF_TEXT = 259;
+
 
   final private SymbolNode[] symbolNodes;
 
@@ -88,6 +89,7 @@ public class CanonicalHuffman {
   private int nBitsInEncoding;
   private int escapeCountBits4;
   private int escapeCountBits8;
+  private int escapeCountBits16;
   private int escapeCountBits24;
 
   private boolean maxCodeLengthLimited;
@@ -106,6 +108,7 @@ public class CanonicalHuffman {
     nBitsInCodeTable = 0;
     escapeCountBits4 = 0;
     escapeCountBits8 = 0;
+    escapeCountBits16 = 0;
     escapeCountBits24 = 0;
 
     maxCodeLengthLimited = true;
@@ -163,7 +166,7 @@ public class CanonicalHuffman {
         // because we expect that these will be the substantial majority
         // of symbols we encounter, implement special coding to expedite
         // processing.
-        SymbolNode node = symbolNodes[symbol & 0xff];
+        SymbolNode node = symbolNodes[symbol + 128];
         int nFullBytesInCode = node.nBitsInCode / 8;
         for (int j = 0; j < nFullBytesInCode; j++) {
           output.appendBits(8, node.code[j]);
@@ -181,23 +184,27 @@ public class CanonicalHuffman {
         //     one byte to regular encoding
         //     and one or three bytes based on magnitude of symbol
         if (-2048 <= symbol && symbol <= 2047) {
-          textTree.writeOneSymbol(output, (symbol >> 4) & 0xff);
+          int target = (symbol >> 4) + 128;
+          textTree.writeOneSymbol(output, target);
           textTree.writeOneSymbol(output, I_ESCAPE_4BITS);
           output.appendBits(4, symbol & 0x0f);
         } else if (-32768 <= symbol && symbol <= 32767) {
-          textTree.writeOneSymbol(output, (symbol >> 8) & 0xff);
+          int target = (symbol >> 8) + 128;
+          textTree.writeOneSymbol(output, target);
           textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
           output.appendBits(8, symbol & 0xff);
         } else if (symbol == GridfourConstants.INT4_NULL_CODE) {
           textTree.writeOneSymbol(output, I_NULL_DATA_CODE);
         } else if (-8333608 <= symbol && symbol <= 8388607) {
-          textTree.writeOneSymbol(output, (symbol >> 16) & 0xff);
+          int target = (symbol >> 16) + 128;
+          textTree.writeOneSymbol(output, target);
           textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
           output.appendBits(8, (symbol >> 8) & 0xff);
           textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
           output.appendBits(8, symbol & 0xff);
         } else {
-          textTree.writeOneSymbol(output, (symbol >> 24) & 0xff);
+          int target = (symbol >> 24) + 128;
+          textTree.writeOneSymbol(output, target);
           textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
           output.appendBits(8, (symbol >> 16) & 0xff);
           textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
@@ -286,23 +293,30 @@ public class CanonicalHuffman {
       int symbol = text[iSymbol + offset];
       if (-128 <= symbol && symbol <= 127) {
         // the symbol is in the range of standard (one byte) symbols
-        symbolNodes[symbol & 0xff].count++;
+        int target = symbol + 128;
+        symbolNodes[target].count++;
       } else if (-2048 <= symbol && symbol <= 2047) {
+        int target = (symbol >> 4) + 128;
         escapeCountBits4++;
         symbolNodes[I_ESCAPE_4BITS].count++;
-        symbolNodes[(symbol >> 4) & 0xff].count++;
+        symbolNodes[target].count++;
       } else if (-32768 <= symbol && symbol <= 32767) {
+        int target = (symbol >> 8) + 128;
         escapeCountBits8++;
         symbolNodes[I_ESCAPE_1BYTE].count++;
-        symbolNodes[(symbol >> 8) & 0xff].count++;
+        symbolNodes[target].count++;
       } else if (symbol == GridfourConstants.INT4_NULL_CODE) {
         symbolNodes[I_NULL_DATA_CODE].count++;
       } else if (-8388608 <= symbol && symbol <= 8388607) {
+        int target = (symbol >> 16) + 128;
+        escapeCountBits16++;
         symbolNodes[I_ESCAPE_1BYTE].count += 2;
-        symbolNodes[(symbol >> 16) & 0xff].count++;
+        symbolNodes[target].count++;
       } else {
+        int target = (symbol >> 24) + 128;
+        escapeCountBits24++;
         symbolNodes[I_ESCAPE_1BYTE].count += 3;
-        symbolNodes[(symbol >> 24) & 0xff].count++;
+        symbolNodes[target].count++;
       }
     }
 
@@ -375,9 +389,7 @@ public class CanonicalHuffman {
         break;
       }
       if (symbol < N_SYMBOLS_STANDARD) {
-        if ((symbol & 0x80) != 0) {
-          symbol |= 0xffffff00;
-        }
+        symbol -= 128;
         text[iSymbol++] = symbol;
         prior = symbol;
       } else {
@@ -435,6 +447,7 @@ public class CanonicalHuffman {
     ps.println("Escape sequences");
     ps.format("   4 bits: %8d%n", escapeCountBits4);
     ps.format("   8 bits: %8d%n", escapeCountBits8);
+    ps.format("  16 bits: %8d%n", escapeCountBits16);
     ps.format("  24 bits: %8d%n", escapeCountBits24);
   }
 
