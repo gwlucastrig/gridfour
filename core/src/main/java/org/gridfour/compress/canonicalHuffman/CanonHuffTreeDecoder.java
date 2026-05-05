@@ -44,13 +44,25 @@ import java.util.List;
 import org.gridfour.io.BitInputStore;
 
 /**
- *
+ * Provides a utility for decoding a canonical Huffman code.
  */
  class CanonHuffTreeDecoder {
 
   final int[] nodeIndex;
   final int nUniqueSymbols;
 
+  /**
+   * Given an array of symbol lengths, constructs a representation of the
+   * corresponding canonical Huffman tree that is suitable for efficient
+   * decoding of the corresponding encoded text.
+   * <p>
+   * The symbol lengths are given as an array corresponding to the complete
+   * symbol set (alphabet) in the encoding.  In some cases, symbols may
+   * be encoded with zero-lengths to indicate that they are not used in
+   * the encoding.
+   * @param symbolLengths a valid array of lengths with a one-to-one correspondence
+   * to the elements of the symbol set.
+   */
   CanonHuffTreeDecoder(int[] symbolLengths) {
     int nSymbols = symbolLengths.length; // will include end-of-text symbol
     List<SymbolNode> list = new ArrayList<>();
@@ -151,6 +163,16 @@ import org.gridfour.io.BitInputStore;
     return true;
   }
 
+   /**
+    * Decode the specified number of symbols from the bit store.
+    * The number of symbols to be extracted is not necessarily the
+    * complete number of symbols in the input set.
+    * @param input a valid instance to provide bits for decoding.
+    * @param nSymbolsInText the number of symbols to be extracted.
+    * @param text an array dimensioned large enought to receive
+    * the indicated number of symbols.
+    * @return if successful, true; false values are not returned at this time.
+    */
    boolean decode(BitInputStore input, int nSymbolsInText, int[] text) {
 
     for (int i = 0; i < nSymbolsInText; i++) {

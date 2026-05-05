@@ -69,6 +69,8 @@ public class LsHeader {
    * using the Deflate library.
    */
   public final static int COMPRESSION_TYPE_DEFLATE = 1;
+
+  public final static int COMPRESSION_TYPE_CANON_HUFFMAN = 2;
   /**
    * A mask for extracting the compression type from a packing.
    */

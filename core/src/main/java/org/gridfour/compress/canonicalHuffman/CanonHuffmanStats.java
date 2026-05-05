@@ -51,9 +51,6 @@ import org.gridfour.compress.PredictorModelType;
  */
 public class CanonHuffmanStats {
 
-  private static final int N_SYMBOLS_TOTAL = 261;
-
-  final PredictorModelType pcType;
   final String name;
   long nTilesCounted;
   long nBytesTotal;
@@ -66,21 +63,17 @@ public class CanonHuffmanStats {
   double sumEntropy;
   long sumEscapeBits;
 
-  long[] sA = new long[N_SYMBOLS_TOTAL];
-
   /**
    * Construct a statistics object for the specified predictor model.
    *
    * @param pcType a valid predictor model type.
    */
   public CanonHuffmanStats(PredictorModelType pcType) {
-    this.pcType = pcType;
     name = pcType.name();
   }
 
   public CanonHuffmanStats(String name) {
     this.name = name;
-    pcType = PredictorModelType.None;
   }
 
   /**
@@ -109,16 +102,16 @@ public class CanonHuffmanStats {
     nBitsOverheadTotal += nBitsOverhead;
   }
 
-  private static final double log2 = Math.log(2.0);
-
   /**
    * Add counts for the symbols derived from the predictor
    * for the tile.
    *
    * @param nSymbolsInText the total number of symbols in the encoded data
    * @param symbols the encoded data
+   * @param entropy the entropy rate computed for the associated symbol set;
+   * zero if unavailable.
    */
-  public void addCountsForSymbols(int nSymbolsInText, int[] symbols) {
+  public void addCountsForSymbols(int nSymbolsInText, int[] symbols, double entropy) {
     if (nSymbolsInText <= 0) {
       return;
     }
@@ -136,24 +129,7 @@ public class CanonHuffmanStats {
       sumObserved += observed[i];
     }
 
-    double d = (double) nSymbolsInText;
-    double s = 0;
-    for (int i = 0; i < 256; i++) {
-      if (mCount[i] > 0) {
-        double p = mCount[i] / d;
-        s += p * Math.log(p) / log2;
-      }
-    }
-    this.sumEntropy -= s;
-
-    if (nSymbolsInText < 2) {
-      return;
-    }
-
-    for (int i = 1; i < nSymbolsInText; i++) {
-      int value = symbols[i] & 0xff;
-      sA[value]++;
-    }
+    this.sumEntropy += entropy;
   }
 
   /**
@@ -254,6 +230,10 @@ public class CanonHuffmanStats {
     return (double) nBytesTotal / (double) nTilesCounted;
   }
 
+  /**
+   * Gets the average number of bits used to populate escape sequences.
+   * @return a positive value; zero if not-populated.
+   */
   public double getAverageEscapeBits() {
     if (nTilesCounted == 0) {
       return 0;

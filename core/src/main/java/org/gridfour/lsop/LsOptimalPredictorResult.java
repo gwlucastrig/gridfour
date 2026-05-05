@@ -51,6 +51,9 @@ public class LsOptimalPredictorResult {
   final int nInteriorCodes;
   final byte[] interiorCodes;
 
+  final int []initializationInt;
+  final int []interiorInt;
+
   public LsOptimalPredictorResult(
     int seed,
     int nCoefficients,
@@ -58,7 +61,9 @@ public class LsOptimalPredictorResult {
     int nInitializerCodes,
     byte[] initializerCodes,
     int nInteriorCodes,
-    byte[] interiorCodes) {
+    byte[] interiorCodes,
+    int []initializationInt,
+    int []interiorInt) {
     this.seed = seed;
     this.nCoefficients = nCoefficients;
     this.coefficients = coefficients;
@@ -66,6 +71,8 @@ public class LsOptimalPredictorResult {
     this.initializerCodes = initializerCodes;
     this.nInteriorCodes = nInteriorCodes;
     this.interiorCodes = interiorCodes;
+    this.initializationInt = initializationInt;
+    this.interiorInt = interiorInt;
   }
 
   /**

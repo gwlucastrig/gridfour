@@ -52,8 +52,8 @@
 package org.gridfour.lsop;
 
 import java.util.zip.Deflater;
-import org.gridfour.compress.HuffmanEncoder;
 import org.gridfour.compress.ICompressionEncoder;
+import org.gridfour.compress.canonicalHuffman.CanonicalHuffman;
 import org.gridfour.io.BitOutputStore;
 
 /**
@@ -94,19 +94,19 @@ public class LsEncoder12 implements ICompressionEncoder {
     this.deflateEnabled = enabled;
   }
 
-
   /**
    * Enables or disables the inclusion of a value checksum in the compressed
-   * encoding.  The value checksum is an optional element that is computed
-   * from the raw data values.  It provides decompression implementations with
+   * encoding. The value checksum is an optional element that is computed
+   * from the raw data values. It provides decompression implementations with
    * a diagnostic for assessing whether a decompression operation correctly
    * recovered the original data even when the original data is not
    * available for comparison. This feature is needed because LSOP depends
    * on floating-point calculations that exactly match those that were performed
    * when the data was compressed.
    * <p>
-   * While this feature is unnecessary when working strictly with Java implementations,
-   * it will be useful when porting to alternative languages.  The floating-point
+   * While this feature is unnecessary when working strictly with Java
+   * implementations,
+   * it will be useful when porting to alternative languages. The floating-point
    * semantics of alternate languages are not necessarily the same as Java.
    * <p>
    * Note that including the checksum will add 4 bytes of overhead to each
@@ -114,14 +114,13 @@ public class LsEncoder12 implements ICompressionEncoder {
    *
    * @param valueChecksumEnabled sets the enable status for checksum.
    */
-  public void setValueChecksumEnabled(boolean valueChecksumEnabled){
+  public void setValueChecksumEnabled(boolean valueChecksumEnabled) {
     this.valueChecksumEnabled = valueChecksumEnabled;
   }
 
   @Override
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
-    LsOptimalPredictorResult result = optimalPredictor.encode(
-      nRows, nCols, values);
+    LsOptimalPredictorResult result = optimalPredictor.encode(nRows, nCols, values);
     if (result == null) {
       return null;
     }
@@ -142,20 +141,20 @@ public class LsEncoder12 implements ICompressionEncoder {
       result.coefficients,
       result.nInitializerCodes,
       result.nInteriorCodes,
-      LsHeader.COMPRESSION_TYPE_HUFFMAN,
+      LsHeader.COMPRESSION_TYPE_CANON_HUFFMAN,
       valueChecksumEnabled,
       checksum);
 
-    HuffmanEncoder huffman = new HuffmanEncoder();
-    BitOutputStore store = new BitOutputStore();
-    huffman.encode(store, result.nInitializerCodes, result.initializerCodes);
-    huffman.encode(store, result.nInteriorCodes, result.interiorCodes);
-    int huffLength = store.getEncodedTextLengthInBytes();
+    CanonicalHuffman canonHuff = new CanonicalHuffman();
+    BitOutputStore canonStore = new BitOutputStore();
+    canonHuff.encode(canonStore, result.initializationInt.length, 0, result.initializationInt);
+    canonHuff.encode(canonStore, result.interiorInt.length, 0, result.interiorInt);
 
-    byte[] packing = new byte[header.length + huffLength];
-    byte[] huff = store.getEncodedText();
+    byte[] canon = canonStore.getEncodedText();
+    int canonLength = canon.length;
+    byte[] packing = new byte[header.length + canon.length];
     System.arraycopy(header, 0, packing, 0, header.length);
-    System.arraycopy(huff, 0, packing, header.length, huff.length);
+    System.arraycopy(canon, 0, packing, header.length, canon.length);
 
     if (!deflateEnabled) {
       return packing;
@@ -166,9 +165,10 @@ public class LsEncoder12 implements ICompressionEncoder {
     //      of the grid
     //   2. the predictor sequence for the inside of the grid, the
     //      part which can be populated using the predictor.
+    //
     // Experimentation showed that the Deflate output was smaller if
     // the two sequences were compressed separately. I hypothesize that
-    // the reason for this is that the staistical properties of the two
+    // the reason for this is that the statistical properties of the two
     // sequences are different enough that combining them in a single
     // output adds overhead to the Deflate output and reduces compressibility.
     //
@@ -182,7 +182,7 @@ public class LsEncoder12 implements ICompressionEncoder {
     deflater.finish();
     byte[] insidePack = new byte[result.nInteriorCodes + 128];
     int insideN = deflater.deflate(insidePack, 0, insidePack.length, Deflater.FULL_FLUSH);
-    if (insideN <= 0 || insideN >= huffLength) {
+    if (insideN <= 0 || insideN >= canonLength) {
       // either the deflate failed (insideN<=0) or the Deflate results for
       // the inside region of the grid is larger than Huffman.
       // In either case, we're done.
@@ -194,7 +194,7 @@ public class LsEncoder12 implements ICompressionEncoder {
     deflater.finish();
     byte[] initPack = new byte[result.nInitializerCodes + 128];
     int initN = deflater.deflate(initPack, 0, initPack.length, Deflater.FULL_FLUSH);
-    if (initN <= 0 || initN + insideN >= huffLength) {
+    if (initN <= 0 || initN + insideN >= canonLength) {
       // either the deflate failed (insideN<=0) or the Deflate results for
       // the overall grid is larger than Huffman.
       return packing;

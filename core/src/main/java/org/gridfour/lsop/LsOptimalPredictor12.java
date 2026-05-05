@@ -66,7 +66,6 @@
  */
 package org.gridfour.lsop;
 
-
 import org.gridfour.compress.CodecM32;
 import org.gridfour.util.jama.LUDecomposition;
 import org.gridfour.util.jama.Matrix;
@@ -82,7 +81,8 @@ import org.gridfour.util.jama.Matrix;
  * <p>
  * The floating-point arithmetic operations for the encode method in this class
  * are performed using the Java strictfp specification. This design choice
- * is essential to the correct operation of this module. Because one of the goals
+ * is essential to the correct operation of this module. Because one of the
+ * goals
  * for Gridfour is to facilitate portability to other development environments,
  * it is essential that the math operations performed here be reliably
  * reproducible across platforms and programming languages.
@@ -116,12 +116,19 @@ public class LsOptimalPredictor12 {
     }
 
     // Initialze storage for
-    //    1) two full initial rows
-    //    2) first two columns in each subsequent row
-    //    3) last two columns in each subsequent row
-    //  Constructor CodecM32 allocates 6 bytes per value
-    int n = nColumns * 4 + nRows * 2 - 8;
+    //    1) First row, excluding 1st column  (nColumns-1)
+    //    2) First column, excluding row 0    (nRows-1)
+    //    3) Second row                       (nColumns-1)
+    //    4) Second column                    (nRows-2)
+    //    5  Last tw0 columns                  2*(nRows-2)
+    //                                     ------------------
+    //                                    4*nRows+2*nColumns - 9
+    //    Steps 1 and 2 use a simple differencing predictor,
+    //    steps 3,4, and 5, use a triangle predictor.
+    int n = nRows * 4 + nColumns * 2 - 9;
     CodecM32 initializationCodec = new CodecM32(n);
+    int[] initializationInt = new int[n];
+    int k;
 
     // The Initialization
     // It is necessary to initialize the first two rows and the
@@ -132,14 +139,15 @@ public class LsOptimalPredictor12 {
     // Finally, we use the triangle predictor for the last two columns. But
     // when decompressing, the final two columns will not be extracted
     // until after the interior is fully populated.
-
     // Fist row, start from column 1, do not encode column 0
+    k = 0;
     int seed = values[0];
     long prior = seed;
     for (int i = 1; i < nColumns; i++) {
       long test = values[i];
       long delta = test - prior;
       initializationCodec.encode((int) delta);
+      initializationInt[k++] = (int) delta;
       prior = test;
     }
 
@@ -149,6 +157,7 @@ public class LsOptimalPredictor12 {
       long test = values[i * nColumns];
       long delta = test - prior;
       initializationCodec.encode((int) delta);
+      initializationInt[k++] = (int) delta;
       prior = test;
     }
 
@@ -162,6 +171,7 @@ public class LsOptimalPredictor12 {
       long test = values[index];
       long delta = test - ((a + c) - b);
       initializationCodec.encode((int) delta);
+      initializationInt[k++] = (int) delta;
 
     }
 
@@ -174,27 +184,29 @@ public class LsOptimalPredictor12 {
       long test = values[index];
       long delta = test - ((a + c) - b);
       initializationCodec.encode((int) delta);
+      initializationInt[k++] = (int) delta;
     }
 
-    // The last two columns
-      for (int i = 2; i < nRows; i++) {
-          int index = i * nColumns + nColumns - 2;
-          long a = values[index - 1];
-          long b = values[index - nColumns - 1];
-          long c = values[index - nColumns];
-          long test = values[index];
-          long delta = test - ((a + c) - b);
-          initializationCodec.encode((int) delta);
+    // The last two columns use the triangle predictor
+    for (int i = 2; i < nRows; i++) {
+      int index = i * nColumns + nColumns - 2;
+      long a = values[index - 1];
+      long b = values[index - nColumns - 1];
+      long c = values[index - nColumns];
+      long test = values[index];
+      long delta = test - ((a + c) - b);
+      initializationCodec.encode((int) delta);
+      initializationInt[k++] = (int) delta;
 
-          index++;
-          a = values[index - 1];
-          b = values[index - nColumns - 1];
-          c = values[index - nColumns];
-          test = values[index];
-          delta = test - ((a + c) - b);
-          initializationCodec.encode((int) delta);
-      }
-
+      index++;
+      a = values[index - 1];
+      b = values[index - nColumns - 1];
+      c = values[index - nColumns];
+      test = values[index];
+      delta = test - ((a + c) - b);
+      initializationCodec.encode((int) delta);
+      initializationInt[k++] = (int) delta;
+    }
 
     // now process the samples and compute the 12-by-12 optimal predictor
     double[] ud = computeCoefficients(nRows, nColumns, values);
@@ -231,10 +243,14 @@ public class LsOptimalPredictor12 {
     // u13, or u[12], would  the coefficient for the lagrange multplier itself,
     // which we do not use in the predictor and do not populate in code.
 
-    // Allocate a new mCodec with storage for the interior codes
-    // use it to store the delta values.
+    // Allocate a new storage for the interior codes
+    // use it to store the residual values.  The first two rows and
+    // the first and last 2 columns are populated by the initializer.
+    // So there are (nRows-2)*(nColumns-4) interior elements.
     n = (nRows - 2) * (nColumns - 4);
     CodecM32 interiorCodec = new CodecM32(n);
+    int[] interiorInt = new int[n];
+    k = 0;
     for (int iRow = 2; iRow < nRows; iRow++) {
       for (int iCol = 2; iCol < nColumns - 2; iCol++) {
         int index = iRow * nColumns + iCol;
@@ -253,6 +269,7 @@ public class LsOptimalPredictor12 {
         int estimate = StrictMath.round(p);
         int delta = values[index] - estimate;
         interiorCodec.encode(delta);
+        interiorInt[k++] = (int) delta;
         double err = values[index] - p;
         errorSum += err;
         errorSquaredSum += err * err;
@@ -271,9 +288,8 @@ public class LsOptimalPredictor12 {
 
     return new LsOptimalPredictorResult(seed, 12, u,
       nInitializationCodes, initializationEncoding,
-      nInteriorCodes, interiorEncoding);
+      nInteriorCodes, interiorEncoding, initializationInt, interiorInt);
   }
-
 
   /**
    * Computes the coefficients for an optimal predictor. In the unusual case
@@ -351,17 +367,17 @@ public class LsOptimalPredictor12 {
     }
     b[12][0] = s[0];
 
-    try{
-        Matrix mat = new Matrix(m, 13, 13);
-        LUDecomposition lud = new LUDecomposition(mat);
-        Matrix solution = lud.solve(new Matrix(b, 13, 1));
-        double[] result = new double[12];
-        for (int i = 0; i < 12; i++) {
-            result[i] = solution.get(i, 0);
-        }
-        return result;
-    }catch(RuntimeException rex){
-        return null;
+    try {
+      Matrix mat = new Matrix(m, 13, 13);
+      LUDecomposition lud = new LUDecomposition(mat);
+      Matrix solution = lud.solve(new Matrix(b, 13, 1));
+      double[] result = new double[12];
+      for (int i = 0; i < 12; i++) {
+        result[i] = solution.get(i, 0);
+      }
+      return result;
+    } catch (RuntimeException rex) {
+      return null;
     }
 
   }

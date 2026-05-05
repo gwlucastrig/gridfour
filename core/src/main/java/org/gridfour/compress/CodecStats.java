@@ -90,7 +90,7 @@ public class CodecStats {
     /**
      * Add metadata about the tile to the counts
      *
-     * @param nBytesForTile the number of byts for the compressed version of the
+     * @param nBytesForTile the number of bytes for the compressed version of the
      * tile.
      * @param nSymbolsInTile the number of values in the tile, typically
      * the number of cells in the grid.
@@ -104,7 +104,7 @@ public class CodecStats {
         nBitsOverheadTotal += nBitsOverhead;
     }
 
-    private static final double log2 = Math.log(2.0);
+    private static final double LOG2 = Math.log(2.0);
 
     /**
      * Add counts for the M32 symbols derived from the predictor
@@ -136,7 +136,7 @@ public class CodecStats {
         for (int i = 0; i < 256; i++) {
             if (mCount[i] > 0) {
                 double p = mCount[i] / d;
-                s += p * Math.log(p) / log2;
+                s += p * Math.log(p) / LOG2;
             }
         }
         this.sumEntropyM32 -= s;
@@ -237,12 +237,10 @@ public class CodecStats {
      * @return a positive floating point value, potentially zero.
      */
     public double getAverageMCodeLength() {
-
         if (nM32Counted == 0) {
             return 0;
         }
         return (double) this.sumLengthM32 / (double) nM32Counted;
-
     }
 
     /**
@@ -283,4 +281,22 @@ public class CodecStats {
         }
         return (double) nBytesTotal / (double) nTilesCounted;
     }
+
+
+  /**
+   * Adds statistics for data compressed using a non-M32 format
+   * (typically canonical Huffman or other system). In such cases,
+   * the symbol counting and entropy calculation are often
+   * outside the scope of the standard operations for this class.
+   *
+   * @param nSymbolTotal total number of symbols, including special symbols
+   * @param nUniqueSymbol number of unique symbols
+   * @param entropy computed entropy
+   */
+  public void addStatsForNonM32(int nSymbolTotal, int nUniqueSymbol, double entropy) {
+    this.nM32Counted++;
+    this.sumLengthM32 += nSymbolTotal;
+    this.sumObservedM32 += nUniqueSymbol;
+    this.sumEntropyM32 += entropy;
+  }
 }

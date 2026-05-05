@@ -57,12 +57,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
+import org.gridfour.compress.CodecM32;
 import org.gridfour.compress.CodecStats;
 import org.gridfour.compress.HuffmanDecoder;
-import org.gridfour.compress.PredictorModelType;
-import org.gridfour.io.BitInputStore;
-import org.gridfour.compress.CodecM32;
 import org.gridfour.compress.ICompressionDecoder;
+import org.gridfour.compress.PredictorModelType;
+import org.gridfour.compress.canonicalHuffman.CanonicalHuffman;
+import org.gridfour.io.BitInputStore;
 
 /**
  * Provides methods and data elements used to decode data compressed
@@ -101,9 +102,22 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
 
         byte[] initializerCodes = new byte[nInitializerCodes];
         byte[] interiorCodes = new byte[nInteriorCodes];
+        int[] values = new int[nRows * nColumns];
 
+        if(compressionType==LsHeader.COMPRESSION_TYPE_CANON_HUFFMAN){
+         int n = nRows * 4 + nColumns * 2 - 9;
+        int[] initializerInt = new int[n];
+        n = (nRows-2)*(nColumns-4);
+        int []interiorInt = new int[n];
+          BitInputStore inputStore = new BitInputStore(packing, headerSize, packing.length - headerSize);
+          CanonicalHuffman canonHuff = new CanonicalHuffman();
+          canonHuff.decode(inputStore, initializerInt.length, initializerInt);
+          canonHuff.decode(inputStore, interiorInt.length, interiorInt);
+          int offset = unpackInitializers(initializerInt, seed, nRows, nColumns, values);
+          unpackInterior(interiorInt, initializerInt, offset, u, nRows, nColumns, values);
+        }else{
         if (compressionType == 0) {
-            // Huffman dencoding
+            // Huffman decoding
             BitInputStore inputStore = new BitInputStore(packing, headerSize, packing.length - headerSize);
             HuffmanDecoder decoder = new HuffmanDecoder();
             decoder.decode(inputStore, nInitializerCodes, initializerCodes);
@@ -130,9 +144,11 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
                 throw new IOException(dfe.getMessage(), dfe);
             }
         }
-        int[] values = new int[nRows * nColumns];
+
         CodecM32 m32 = unpackInitializers(initializerCodes, seed, nRows, nColumns, values);
         unpackInterior(interiorCodes, u, m32, nRows, nColumns, values);
+        }
+
 
       if (header.valueChecksumIncluded) {
         int checksum = LsHeader.computeChecksum(nRows, nColumns, values);
@@ -182,6 +198,50 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
 
         return m32;
     }
+
+
+     private int unpackInitializers(int[] packing, int seed, int nRows, int nColumns, int values[]) {
+
+       int k = 0;
+        // step 1, the first row -------------------
+        values[0] = seed;
+        int v = seed;
+        for (int i = 1; i < nColumns; i++) {
+            v += packing[k++];
+            values[i] = v;
+        }
+
+        // step 2, the left column -------------------------
+        v = seed;
+        for (int i = 1; i < nRows; i++) {
+            v += packing[k++];
+            values[i * nColumns] = v;
+        }
+
+        // now use the triangle predictor ------------------------------
+        // step 4, the second row
+        for (int i = 1; i < nColumns; i++) {
+            int index = nColumns + i;
+            long a = values[index - 1];
+            long b = values[index - nColumns - 1];
+            long c = values[index - nColumns];
+            values[index] = (int) (packing[k++] + ((a + c) - b));
+        }
+
+        // step 5, the second column ------------------------
+        for (int i = 2; i < nRows; i++) {
+            int index = i * nColumns + 1;
+            long a = values[index - 1];
+            long b = values[index - nColumns - 1];
+            long c = values[index - nColumns];
+            values[index] = (int) (packing[k++] + ((a + c) - b));
+        }
+
+        return k;
+    }
+
+
+
 
     void unpackInterior(byte[] packing, float[] u, CodecM32 mInit, int nRows, int nColumns, int[] values) {
         // Although the array u[] is indexed from zero, the coefficients
@@ -291,151 +351,328 @@ strictfp public class LsDecoder12 implements ICompressionDecoder {
         }
     }
 
-    @Override
-    public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
-        if (codecStats == null) {
-            codecStats = new CodecStats[6];
-            codecStats[0] = new CodecStats(PredictorModelType.None);
-            codecStats[1] = new CodecStats(PredictorModelType.None);
-            codecStats[2] = new CodecStats(PredictorModelType.None);
-            codecStats[3] = new CodecStats(PredictorModelType.None);
-            codecStats[4] = new CodecStats(PredictorModelType.None);
-            codecStats[5] = new CodecStats(PredictorModelType.None);
+
+    void unpackInterior(int[] interiorInt, int []initializerInt, int initializerOffset, float[] u,  int nRows, int nColumns, int[] values) {
+        // Although the array u[] is indexed from zero, the coefficients
+        // for the predictors are numbered starting at one. Here we copy them
+        // out so that the code will match up with the indexing used in the
+        // original papers.  There may be some small performance gain to be
+        // had by not indexing the array u[] multiple times in the loop below,
+        // but that is not the main motivation for using the copy variables.
+        float u1 = u[0];
+        float u2 = u[1];
+        float u3 = u[2];
+        float u4 = u[3];
+        float u5 = u[4];
+        float u6 = u[5];
+        float u7 = u[6];
+        float u8 = u[7];
+        float u9 = u[8];
+        float u10 = u[9];
+        float u11 = u[10];
+        float u12 = u[11];
+
+        int k = 0;
+        int kInit = initializerOffset;
+
+        // in the loop below, we wish to economize on processing by copying
+        // the neighbor values into local variables.  In the inner (column)
+        // loop, as each raster cell is processed, the local copies of the z values
+        // (z1, z2, etc.) are shifted to the left to populate the neighbor
+        // values for the next cell in the loop.
+        // The reason we do this is two-fold. First, due to arry bounds checking,
+        // accessing an array element in Java is more expensive than reading
+        // a local variable. Second, promoting an integer to a float also
+        // carries a small overhead. The shifting strategy below helps
+        // save that processing.  In testing, the extra coding for local variables
+        // resulted in about a 10 percent reduction in processing time.
+        //
+        //   For a given grid cell of interest P, the layout for neighbors is
+        //                              iCol
+        //        iRow      z6      z1    P     --    --
+        //        iRow-1    z7      z2    z3    z4    z5
+        //        iRow-2    z8      z9    z10   z11   z12
+        //
+        //  For example, as we increment iCol, the z1 value from the first iteration
+        //  becomes the z6 value for the second, the z2 value from the first becomes
+        //  the z7 value for the second, etc.
+        for (int iRow = 2; iRow < nRows; iRow++) {
+            int index = iRow * nColumns + 2;
+            float z1 = values[index - 1];
+            float z2 = values[index - nColumns - 1];
+            float z3 = values[index - nColumns];
+            float z4 = values[index - nColumns + 1];
+            float z5; // = values[index - nColumns + 2];  computed below
+            float z6 = values[index - 2];
+            float z7 = values[index - nColumns - 2];
+            float z8 = values[index - 2 * nColumns - 2];
+            float z9 = values[index - 2 * nColumns - 1];
+            float z10 = values[index - 2 * nColumns];
+            float z11 = values[index - 2 * nColumns + 1];
+            float z12; // values[index - 2 * nColumns + 2];  computed below
+            for (int iCol = 2; iCol < nColumns - 2; iCol++) {
+                index = iRow * nColumns + iCol;
+                z5 = values[index - nColumns + 2];
+                z12 = values[index - 2 * nColumns + 2];
+                float p = u1 * z1
+                    + u2 * z2
+                    + u3 * z3
+                    + u4 * z4
+                    + u5 * z5
+                    + u6 * z6
+                    + u7 * z7
+                    + u8 * z8
+                    + u9 * z9
+                    + u10 * z10
+                    + u11 * z11
+                    + u12 * z12;
+                int estimate = StrictMath.round(p);
+                values[index] = estimate + interiorInt[k++];
+
+                // perform the shifting operation for all variables so that
+                // only z5 and z12 will have to be read from the values array.
+                z6 = z1;
+                z1 = values[index];
+
+                z7 = z2;
+                z2 = z3;
+                z3 = z4;
+                z4 = z5;
+
+                z8 = z9;
+                z9 = z10;
+                z10 = z11;
+                z11 = z12;
+            }
+
+            // The last two columns in the row are "unreachable" to
+            // the Optimal Predictor and must be populated using some other
+            // predictor.  In this case, we apply the Triangle Predictor.
+            // The residuals for these columns were stored as part of the
+            // initialization elements (rather than the interior).
+            // Unfortunately, this logic must mix two separate data elements,
+            // the initializer and the interior residuals, in a convoluted pattern.
+            // We could not process them until the interior elements
+            // were populated. But we can't wait until all the interior is
+            // populated because the some cells in the optimal predictor calculation
+            // depend on input  from the last columns.
+            index = iRow * nColumns + nColumns - 2;
+            long a = values[index - 1];
+            long b = values[index - nColumns - 1];
+            long c = values[index - nColumns];
+            values[index] = (int) (initializerInt[kInit++] + ((a + c) - b));
+            index++;
+            a = values[index - 1];
+            b = values[index - nColumns - 1];
+            c = values[index - nColumns];
+            values[index] = (int) (initializerInt[kInit++] + ((a + c) - b));
+        }
+    }
+
+  @Override
+  public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
+    if (codecStats == null) {
+      codecStats = new CodecStats[9];
+      for (int i = 0; i < codecStats.length; i++) {
+        codecStats[i] = new CodecStats(PredictorModelType.None);
+      }
+    }
+
+    LsHeader header = new LsHeader(packing, 0);
+    int nInitializerCodes = header.getCodedInitializerLength();
+    int nInteriorCodes = header.getCodedInteriorLength();
+    int format = header.getCompressionType();
+    int headerSize = header.getHeaderSize();
+    // float []coefficients = header.getOptimalPredictorCoefficients();
+
+    if (format == LsHeader.COMPRESSION_TYPE_CANON_HUFFMAN) {
+      int nInitializers = nRows * 4 + nColumns * 2 - 9;
+      int[] initializerInt = new int[nInitializers];
+      int nInterior = (nRows - 2) * (nColumns - 4);
+      int[] interiorInt = new int[nInterior];
+      BitInputStore inputStore = new BitInputStore(packing, headerSize, packing.length - headerSize);
+      CanonicalHuffman canonHuff = new CanonicalHuffman();
+      canonHuff.decode(inputStore, initializerInt.length, initializerInt);
+
+      int initializerBitLength = inputStore.getPosition();
+      int nBytesForInitializers = (initializerBitLength + 7) / 8;
+      int nBitsOverheadForInitializers = canonHuff.getBitsInCodeTableCount();
+      canonHuff.clear();
+      canonHuff.countSymbols(initializerInt.length, 0, initializerInt);
+
+      codecStats[6].addToCounts(
+        nBytesForInitializers,
+        nInitializers,
+        nBitsOverheadForInitializers);
+
+      int nInitializersTotal = canonHuff.getTotalSymbolCount();
+      int nInitializersUniqueSymbol = canonHuff.getUniqueSymbolCount();
+      double eInitializer = canonHuff.getEntropy();
+      codecStats[6].addStatsForNonM32(
+        nInitializersTotal, nInitializersUniqueSymbol, eInitializer);
+
+      canonHuff.decode(inputStore, interiorInt.length, interiorInt);
+      int nBytesForInterior = (inputStore.getPosition() - initializerBitLength + 7) / 8;
+      int nBitsOverheadForInterior = canonHuff.getBitsInCodeTableCount();
+      canonHuff.clear();
+      canonHuff.countSymbols(interiorInt.length, 0, interiorInt);
+
+      codecStats[7].addToCounts(
+        nBytesForInterior,
+        nInterior,
+        nBitsOverheadForInterior);
+
+      int nInteriorTotal = canonHuff.getTotalSymbolCount();
+      int nInteriorUniqueSymbol = canonHuff.getUniqueSymbolCount();
+      double eInterior = canonHuff.getEntropy();
+      codecStats[7].addStatsForNonM32(
+        nInteriorTotal, nInteriorUniqueSymbol, eInterior);
+
+      codecStats[8].addToCounts(nBytesForInitializers + nBytesForInterior,
+        nInitializers + nInterior,
+        nBitsOverheadForInitializers + nBitsOverheadForInterior);
+
+      double eTotal = (eInitializer * nInitializersTotal + eInterior * nInteriorTotal)
+        / (nInitializersTotal + nInteriorTotal);
+      codecStats[8].addStatsForNonM32(
+        nInitializersTotal + nInteriorTotal,
+        nInitializersUniqueSymbol + nInteriorUniqueSymbol,
+        eTotal);
+
+      return;
+    }
+
+    long nBytesForInitializers = 0;
+    long nBytesForInterior = 0;
+    byte[] initializerCodes = new byte[nInitializerCodes];
+    byte[] interiorCodes = new byte[nInteriorCodes];
+    if (format == LsHeader.COMPRESSION_TYPE_HUFFMAN) {
+      // Huffman encoding
+      BitInputStore inputStore
+        = new BitInputStore(packing, headerSize, packing.length - headerSize);
+      HuffmanDecoder decoder = new HuffmanDecoder();
+      decoder.decode(inputStore, nInitializerCodes, initializerCodes);
+      int nBitsForInitializers = inputStore.getPosition();
+      decoder.decode(inputStore, nInteriorCodes, interiorCodes);
+      int nBitsForInterior = inputStore.getPosition() - nBitsForInitializers;
+      nBytesForInitializers = (nBitsForInitializers + 7) / 8;
+      nBytesForInterior = (nBitsForInterior + 7) / 8;
+    } else if (format == LsHeader.COMPRESSION_TYPE_DEFLATE) {
+      // Deflate encoding
+      try {
+        Inflater inflater = new Inflater();
+        inflater.setInput(packing, headerSize, packing.length - headerSize);
+        int test = inflater.inflate(initializerCodes);
+        if (test < nInitializerCodes) {
+          throw new IOException("Format mismatch, unable to read initializer codes");
+        }
+        nBytesForInitializers = inflater.getBytesRead();
+        inflater.end();
+        inflater = new Inflater();
+        int offset = headerSize + (int) nBytesForInitializers;
+        inflater.setInput(packing, offset, packing.length - offset);
+        test = inflater.inflate(interiorCodes);
+        nBytesForInterior = inflater.getBytesRead();
+        inflater.end();
+        if (test < nInteriorCodes) {
+          throw new IOException("Format mismatch, unable to read interior codes");
+        }
+      } catch (DataFormatException dfe) {
+        throw new IOException(dfe.getMessage(), dfe);
+      }
+    }
+
+    // number of symbols for interior, first and last two columns (4*nRows),
+    // bottom 2 rows (2*nColumns), deducting for column overlap
+    int k = format * 3;
+    CodecStats stats = codecStats[k];
+    int nSymbolsForInitializers = 4 * nRows + 2 * nColumns - 8;
+    stats.addToCounts((int) nBytesForInitializers, nSymbolsForInitializers, 0);
+    stats.addCountsForM32(nInitializerCodes, initializerCodes);
+
+    stats = codecStats[k + 1];
+    int nSymbolsForInterior = nRows * nColumns - nSymbolsForInitializers;
+    stats.addToCounts((int) nBytesForInterior, nSymbolsForInterior, 0);
+    stats.addCountsForM32(nInteriorCodes, interiorCodes);
+
+    int nBytesTotal = packing.length - headerSize;
+    stats = codecStats[k + 2];
+    int nSymbols = nRows * nColumns;
+    stats.addToCounts(nBytesTotal, nSymbols, 0);
+
+    // a temporary solution
+    byte[] temp = new byte[nInitializerCodes + nInteriorCodes];
+    System.arraycopy(initializerCodes, 0, temp, 0, nInitializerCodes);
+    System.arraycopy(interiorCodes, 0, temp, nInitializerCodes, nInteriorCodes);
+    stats.addCountsForM32(temp.length, temp);
+  }
+
+  @Override
+  public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
+    ps.println("LSOP12                                         Compressed Output    |       Predictor Residuals");
+    if (codecStats == null || nTilesInRaster == 0) {
+      ps.format("   Tiles Compressed:  0%n");
+      return;
+    }
+    for (int iGroup = 0; iGroup < 3; iGroup++) {
+       CodecStats total = codecStats[iGroup * 3+2];
+       if(total.getTileCount()==0){
+         continue;
+       }
+      switch (iGroup) {
+        case 0:
+          ps.format("  Legacy Huffman%n");
+          break;
+        case 1:
+          ps.format("  Deflate%n");
+          break;
+        default:
+          ps.format("  Canonical Huffman%n");
+          break;
+      }
+      ps.format("   Phase                   Times Used        bits/sym    bits/tile  |  avg-n-symbol  avg-unique  entropy%n");
+
+      for (int iStats = 0; iStats < 3; iStats++) {
+        CodecStats stats = codecStats[iGroup * 3 + iStats];
+        String label;
+        switch (iStats) {
+          case 0:
+            label = "Initializers";
+            break;
+          case 1:
+            label = "Interior";
+            break;
+          default:
+            label = "Total";
+            break;
         }
 
-
-        LsHeader header = new LsHeader(packing, 0);
-        int nInitializerCodes = header.getCodedInitializerLength();
-        int nInteriorCodes = header.getCodedInteriorLength();
-        int format = header.getCompressionType();
-        int headerSize = header.getHeaderSize();
-        float []coefficients = header.getOptimalPredictorCoefficients();
-
-        long nBytesForInitializers = 0;
-        long nBytesForInterior = 0;
-        byte[] initializerCodes = new byte[nInitializerCodes];
-        byte[] interiorCodes = new byte[nInteriorCodes];
-        if (format == 0) {
-            // Huffman encoding
-            BitInputStore inputStore
-                = new BitInputStore(packing, headerSize, packing.length - headerSize);
-            HuffmanDecoder decoder = new HuffmanDecoder();
-            decoder.decode(inputStore, nInitializerCodes, initializerCodes);
-            int nBitsForInitializers = inputStore.getPosition();
-            decoder.decode(inputStore, nInteriorCodes, interiorCodes);
-            int nBitsForInterior = inputStore.getPosition() - nBitsForInitializers;
-            nBytesForInitializers = (nBitsForInitializers + 7) / 8;
-            nBytesForInterior = (nBitsForInterior + 7) / 8;
+        long tileCount = stats.getTileCount();
+        double bitsPerSymbol = stats.getBitsPerSymbol();
+        double avgBitsInText = stats.getAverageLength() * 8;
+        double avgUniqueSymbols = stats.getAverageObservedMCodes();
+        double avgMCodeLength = stats.getAverageMCodeLength();
+        double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
+        double entropy = stats.getEntropy();
+        String timesUsed;
+        if (iStats == 0 || iStats == 1) {
+          timesUsed = "                 ";
         } else {
-            // Deflate encoding
-            try {
-                Inflater inflater = new Inflater();
-                inflater.setInput(packing, headerSize, packing.length - headerSize);
-                int test = inflater.inflate(initializerCodes);
-                if (test < nInitializerCodes) {
-                    throw new IOException("Format mismatch, unable to read initializer codes");
-                }
-                nBytesForInitializers = inflater.getBytesRead();
-                inflater.end();
-                inflater = new Inflater();
-                int offset = headerSize + (int) nBytesForInitializers;
-                inflater.setInput(packing, offset, packing.length - offset);
-                test = inflater.inflate(interiorCodes);
-                nBytesForInterior = inflater.getBytesRead();
-                inflater.end();
-                if (test < nInteriorCodes) {
-                    throw new IOException("Format mismatch, unable to read interior codes");
-                }
-            } catch (DataFormatException dfe) {
-                throw new IOException(dfe.getMessage(), dfe);
-            }
+          timesUsed = String.format("%8d (%4.1f %%)", tileCount, percentTiles);
         }
-
-        // number of symbols for interior, first and last two columns (4*nRows),
-        // bottom 2 rows (2*nColumns), deducting for column overlap
-        int k = format * 3;
-        CodecStats stats = codecStats[k];
-        int nSymbolsForInitializers = 4 * nRows + 2 * nColumns - 8;
-        stats.addToCounts((int) nBytesForInitializers, nSymbolsForInitializers, 0);
-        stats.addCountsForM32(nInitializerCodes, initializerCodes);
-
-        stats = codecStats[k + 1];
-        int nSymbolsForInterior = nRows * nColumns - nSymbolsForInitializers;
-        stats.addToCounts((int) nBytesForInterior, nSymbolsForInterior, 0);
-        stats.addCountsForM32(nInteriorCodes, interiorCodes);
-
-        int nBytesTotal = packing.length - headerSize;
-        stats = codecStats[k + 2];
-        int nSymbols = nRows * nColumns;
-        stats.addToCounts(nBytesTotal, nSymbols, 0);
-
-        // a temporary solution
-        byte[] temp = new byte[nInitializerCodes + nInteriorCodes];
-        System.arraycopy(initializerCodes, 0, temp, 0, nInitializerCodes);
-        System.arraycopy(interiorCodes, 0, temp, nInitializerCodes, nInteriorCodes);
-        stats.addCountsForM32(temp.length, temp);
-        //stats.addCountsForM32(nInitializerCodes, initializerCodes);
-        //stats.addCountsForM32(nInteriorCodes, interiorCodes);
-
+        ps.format("   %-20.20s %s     %5.2f  %12.1f   | %10.1f      %6.1f    %6.2f%n",
+          label,
+          timesUsed,
+          bitsPerSymbol,
+          avgBitsInText,
+          avgMCodeLength,
+          avgUniqueSymbols,
+          entropy);
+      }
     }
 
-    @Override
-    public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
-        ps.println("LSOP12                                         Compressed Output    |       Predictor Residuals");
-        if (codecStats == null || nTilesInRaster == 0) {
-            ps.format("   Tiles Compressed:  0%n");
-            return;
-        }
-        for (int iGroup = 0; iGroup < 2; iGroup++) {
-            if (iGroup == 0) {
-                ps.format("  Huffman%n");
-            } else {
-                ps.format("  Deflate%n");
-            }
-            ps.format("   Phase                   Times Used        bits/sym    bits/tile  |  m32 avg-len   avg-unique  entropy%n");
-
-            for (int iStats = 0; iStats < 3; iStats++) {
-                CodecStats stats = codecStats[iGroup * 3 + iStats];
-                String label;
-                switch (iStats) {
-                    case 0:
-                        label = "Initializers";
-                        break;
-                    case 1:
-                        label = "Interior";
-                        break;
-                    default:
-                        label = "Total";
-                        break;
-                }
-
-                long tileCount = stats.getTileCount();
-                double bitsPerSymbol = stats.getBitsPerSymbol();
-                double avgBitsInText = stats.getAverageLength() * 8;
-                double avgUniqueSymbols = stats.getAverageObservedMCodes();
-                double avgMCodeLength = stats.getAverageMCodeLength();
-                double percentTiles = 100.0 * (double) tileCount / nTilesInRaster;
-                double entropy = stats.getEntropy();
-                stats = codecStats[iGroup * 3 + iStats];
-                String timesUsed;
-                if (iStats == 0 || iStats == 1) {
-                    timesUsed = "                 ";
-                } else {
-                    timesUsed = String.format("%8d (%4.1f %%)", tileCount, percentTiles);
-                }
-                ps.format("   %-20.20s %s     %5.2f  %12.1f   | %10.1f      %6.1f    %6.2f%n",
-                    label,
-                    timesUsed,
-                    bitsPerSymbol,
-                    avgBitsInText,
-                    avgMCodeLength,
-                    avgUniqueSymbols,
-                    entropy);
-            }
-        }
-
-        ps.println("");
-    }
+    ps.println("");
+  }
 
     @Override
     public void clearAnalysisData() {

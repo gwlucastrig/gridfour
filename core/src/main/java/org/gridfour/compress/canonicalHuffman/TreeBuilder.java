@@ -55,6 +55,8 @@ class TreeBuilder {
 
   }
 
+
+
   /**
    * Builds the Huffman tree based on the count values in the
    * input symbol nodes and populates them with canonical Huffman
@@ -270,7 +272,7 @@ class TreeBuilder {
    *
    * @param sortNodes the array of symbol nodes with count greater than zero.
    */
-  private void populateCanonicalCodes(SymbolNode[] sortNodes) {
+   void populateCanonicalCodes(SymbolNode[] sortNodes) {
     Arrays.sort(sortNodes, (SymbolNode o1, SymbolNode o2) -> {
       int test = o1.nBitsInCode - o2.nBitsInCode;
       if (test == 0) {

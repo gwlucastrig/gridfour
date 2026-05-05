@@ -185,33 +185,27 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
       codecStats[pcArray.length] = new CanonHuffmanStats("All Predictors");
     }
 
-    int nSymbolsInText = nRows * nColumns;
+    int nSymbolsInText = nRows * nColumns-1;
 
     CanonicalHuffman decoder = new CanonicalHuffman();
     BitInputStore inputStore = new BitInputStore(packing, 6, packing.length - 6);
     int[] residuals = new int[nSymbolsInText];
     decoder.decode(inputStore, nSymbolsInText, residuals);
 
-    // Future work:  maybe fully encode the text rather than
-    // just counting symbols.  Doing so is the only way we have (currently)
-    // to determine whether the tree depth was truncated.
-    // If we make this change, we can scope the countSymbols method as private
-    // to the CanonicalHuffman class.
     CanonicalHuffman canHuff = new CanonicalHuffman();
-    canHuff.countSymbols(nSymbolsInText, 0, residuals);
+    canHuff.countSymbols(residuals.length, 0, residuals);
     int escapeBitCounts = canHuff.getEscapeBitCounts();
+    double entropy = canHuff.getEntropy();
 
     CanonHuffmanStats stats = codecStats[packing[1] & 0xff];
-    int nValues = nRows * nColumns;
-    stats.addToCounts(packing.length - 6, nValues, decoder.getBitsInCodeTableCount());
-    stats.addCountsForSymbols(nValues, residuals);
+    stats.addToCounts(packing.length - 6, nSymbolsInText, decoder.getBitsInCodeTableCount());
+    stats.addCountsForSymbols(nSymbolsInText, residuals, entropy);
     CanonHuffmanStats total = codecStats[codecStats.length - 1];
-    total.addToCounts(packing.length - 6, nValues, decoder.getBitsInCodeTableCount());
-    total.addCountsForSymbols(nValues, residuals);
+    total.addToCounts(packing.length - 6, nSymbolsInText, decoder.getBitsInCodeTableCount());
+    total.addCountsForSymbols(nSymbolsInText, residuals, entropy);
 
     stats.sumEscapeBits += escapeBitCounts;
     total.sumEscapeBits += escapeBitCounts;
-
   }
 
   @Override

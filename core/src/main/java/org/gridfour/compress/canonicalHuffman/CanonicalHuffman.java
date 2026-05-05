@@ -40,6 +40,7 @@ package org.gridfour.compress.canonicalHuffman;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -80,6 +81,8 @@ public class CanonicalHuffman {
 
 
   final private SymbolNode[] symbolNodes;
+  final private int [] count4bit = new int[16];
+  final private int [] count8bit = new int[256];
 
   private int nSymbolsInText;
   private int nUniqueSymbols;
@@ -94,6 +97,9 @@ public class CanonicalHuffman {
 
   private boolean maxCodeLengthLimited;
 
+  /**
+   * Standard constructor.
+   */
   public CanonicalHuffman() {
     symbolNodes = new SymbolNode[N_SYMBOLS_TOTAL];
     for (int i = 0; i < symbolNodes.length; i++) {
@@ -101,7 +107,11 @@ public class CanonicalHuffman {
     }
   }
 
-  void clear() {
+  /**
+   * Clear any counts and statistics gathered during the most recent
+   * input processing.
+   */
+  public void clear() {
     nSymbolsInText = 0;
     nUniqueSymbols = 0;
     nBitsInText = 0;
@@ -111,12 +121,16 @@ public class CanonicalHuffman {
     escapeCountBits16 = 0;
     escapeCountBits24 = 0;
 
-    maxCodeLengthLimited = true;
+    maxCodeLengthLimited = false;
 
     for (SymbolNode symbolNode : symbolNodes) {
       symbolNode.clear();
     }
+
+    Arrays.fill(count4bit, 0);
+    Arrays.fill(count8bit, 0);
   }
+
 
   /**
    * Encodes an array of integer data using the Gridfour implementation of the
@@ -134,6 +148,28 @@ public class CanonicalHuffman {
    * @return if successful, a valid array of bytes; otherwise a null
    */
   public byte[] encode(int nSymbolsInText, int offset, int[] text) {
+      BitOutputStore output = new BitOutputStore();
+      encode(output, nSymbolsInText, offset, text);
+      return output.getEncodedText();
+  }
+
+
+   /**
+   * Encodes an array of integer data using the Gridfour implementation of the
+   * canonical Huffman encoding. Because this class was written to support
+   * GVRS operations, it assumes that the input data (the "text")
+   * is integral numerical data with the majority of values falling in the
+   * range between -128 and +127 (the range of a signed byte). This
+   * implementation supports values that require more than a single byte
+   * representation using non-compressed "escape" codes.
+   *
+   * @param output a valid instance to receive the compressed results.
+   * @param nSymbolsInText the number of symbols to be compressed
+   * @param offset the starting position within the text array
+   * @param text an array of integers to be compressed.
+   * @return if successful, the number of bytes in the output; otherwise, zero.
+   */
+   public int encode(BitOutputStore output, int nSymbolsInText, int offset, int[] text) {
     if (nUniqueSymbols > 0) {
       // this instance was used at least once before, clear it out.
       clear();
@@ -143,7 +179,8 @@ public class CanonicalHuffman {
       throw new IllegalArgumentException("Empty or null data input data");
     }
     if (nSymbolsInText + offset > text.length) {
-      throw new IllegalArgumentException("Text array too small for offset and symbol-count specifications");
+      throw new IllegalArgumentException(
+        "Text array too small for offset and symbol-count specifications");
     }
 
     countSymbols(nSymbolsInText, offset, text);
@@ -153,7 +190,7 @@ public class CanonicalHuffman {
 
     int[] textCodeLengths = getCodeLengths(symbolNodes);
 
-    BitOutputStore output = new BitOutputStore();
+
     buildCodeLengthTree(output, textCodeLengths);
 
     nBitsInCodeTable = output.getEncodedTextLength();
@@ -219,7 +256,7 @@ public class CanonicalHuffman {
 
     nBitsInEncoding = output.getEncodedTextLength();
     nBitsInText = nBitsInEncoding - nBitsInCodeTable;
-    return output.getEncodedText();
+    return output.getEncodedTextLength();
   }
 
   private void buildCodeLengthTree(BitOutputStore output, int[] textCodeLengths) {
@@ -285,7 +322,7 @@ public class CanonicalHuffman {
    * @param offset an offset to the starting position within the text
    * @param text the text
    */
-  void countSymbols(int nSymbolsInText, int offset, int[] text) {
+  public void countSymbols(int nSymbolsInText, int offset, int[] text) {
     this.nSymbolsInText = nSymbolsInText;
 
     symbolNodes[I_END_OF_TEXT].count = 1;
@@ -300,11 +337,13 @@ public class CanonicalHuffman {
         escapeCountBits4++;
         symbolNodes[I_ESCAPE_4BITS].count++;
         symbolNodes[target].count++;
+        count4bit[(symbol >> 4) & 0x0f]++;
       } else if (-32768 <= symbol && symbol <= 32767) {
         int target = (symbol >> 8) + 128;
         escapeCountBits8++;
         symbolNodes[I_ESCAPE_1BYTE].count++;
         symbolNodes[target].count++;
+        count8bit[(symbol >> 8) & 0xff]++;
       } else if (symbol == GridfourConstants.INT4_NULL_CODE) {
         symbolNodes[I_NULL_DATA_CODE].count++;
       } else if (-8388608 <= symbol && symbol <= 8388607) {
@@ -312,11 +351,16 @@ public class CanonicalHuffman {
         escapeCountBits16++;
         symbolNodes[I_ESCAPE_1BYTE].count += 2;
         symbolNodes[target].count++;
+        count8bit[(symbol >> 8) & 0xff]++;
+        count8bit[(symbol >> 16) & 0xff]++;
       } else {
         int target = (symbol >> 24) + 128;
         escapeCountBits24++;
         symbolNodes[I_ESCAPE_1BYTE].count += 3;
         symbolNodes[target].count++;
+        count8bit[(symbol >> 8) & 0xff]++;
+        count8bit[(symbol >> 16) & 0xff]++;
+        count8bit[(symbol >> 24) & 0xff]++;
       }
     }
 
@@ -325,7 +369,6 @@ public class CanonicalHuffman {
         nUniqueSymbols++;
       }
     }
-
   }
 
   int[] getCodeLengths(SymbolNode[] nodes) {
@@ -508,13 +551,16 @@ public class CanonicalHuffman {
 
   /**
    * Get the number of bits required to store the code-table
-   * section of the encoded text.
+   * section of the encoded text.  This class populates a value for this
+   * method when input data is processed by the encode method or the
+   * countSymbols method.
    *
-   * @return a positive integer
+   * @return if populated, a positive integer; otherwise, zero.
    */
   public int getBitsInCodeTableCount() {
     return nBitsInCodeTable;
   }
+
 
   /**
    * Get the number of unique symbols identified in the most recently
@@ -532,12 +578,82 @@ public class CanonicalHuffman {
   }
 
   /**
+   * Gets the total number of symbols counted from the most recent input
+   * set, including special symbols and the end-of-text symbol.
+   * @return a positive integer value.
+   */
+  public int getTotalSymbolCount(){
+    int n=0;
+    for (SymbolNode symbolNode : symbolNodes) {
+      n += symbolNode.count;
+    }
+    return n;
+  }
+
+  /**
    * Gets the number of escape bits needed to represent the most recently
-   * encoded Huffman text.
+   * encoded Huffman text. This class populates a value for this
+   * method when input data is processed by the encode method or the
+   * countSymbols method. If neither of these methods was called,
+   * the return value for this method is undefined.
    *
    * @return a positive integer.
    */
-  int getEscapeBitCounts() {
-    return escapeCountBits4 * 4 + escapeCountBits8 * 8 + escapeCountBits24 * 24;
+  public int getEscapeBitCounts() {
+    return escapeCountBits4 * 4
+      + escapeCountBits8 * 8
+      + escapeCountBits16 * 16
+      + escapeCountBits24 * 24;
+  }
+
+
+  /**
+   * Gets the entropy based on the most recently processed sample.
+   * @return a positive floating-point value; zero if no-data is available.
+   */
+  public double getEntropy() {
+    if (this.nSymbolsInText == 0) {
+      return 0;
+    }
+    double e = 0;
+    double e4 = 0;
+    double e8 = 0;
+    double d = getTotalSymbolCount();
+    for (SymbolNode symbolNode : symbolNodes) {
+        int n = symbolNode.count;
+        if (n > 0) {
+          double p = n / d;
+          e += p * Math.log(p);
+      }
+    }
+
+    // The contribition from the escape sequences is based on the
+    // conditional probability of the numerical value of each escape bit set.
+    // So we use the product of the probability of the escape symbol,
+    // followed by the individual contribitions for each possible escape
+    // bit set.
+    if (symbolNodes[I_ESCAPE_4BITS].count > 0) {
+      double n4 = symbolNodes[I_ESCAPE_4BITS].count;
+      double p = n4 / d;
+      for (int j = 0; j < count4bit.length; j++) {
+        if (count4bit[j] > 0) {
+          double q = (double) count4bit[j] / n4; // conditional p(j|i4)
+          e4 += p * q*Math.log(q);
+        }
+      }
+    }
+
+    if (symbolNodes[I_ESCAPE_1BYTE].count > 0) {
+      double n8 = symbolNodes[I_ESCAPE_1BYTE].count;
+      double p = n8 / d;
+      for (int j = 0; j < count8bit.length; j++) {
+        if (count8bit[j] > 0) {
+          double q = (double) count8bit[j] / n8; // conditional p(j|i8)
+          e8 += p * q*Math.log(q);
+        }
+      }
+    }
+
+    return -(e + e4 + e8) / Math.log(2.0);
   }
 }

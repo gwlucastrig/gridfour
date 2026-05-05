@@ -156,7 +156,7 @@ public class LsOptimalPredictor08 {
 
         return new LsOptimalPredictorResult(seed, 8, u,
             nInitializationCodes, initializationEncoding,
-            nInteriorCodes, interiorEncoding);
+            nInteriorCodes, interiorEncoding, null, null);
     }
 
 
