@@ -80,6 +80,8 @@ public class LsHeader {
   */
   public final static int VALUE_CHECKSUM_INCLUDED = 0x80;
 
+  private final static int REVISION_FLAG = 0x40;
+
   protected final int codecIndex;
   protected final int nCoefficients;
   protected final int seed;
@@ -100,37 +102,88 @@ public class LsHeader {
    * @param packingOffset the starting position within the encoded packing
    */
   public LsHeader(byte[] packing, int packingOffset) {
-// the header is 15+N*4 bytes:
+ // In order to support legacy formats, there are two layouts used for
+    // the header.
+    //  Legacy
+    //   the header is 15+N*4 bytes + 4 byte optional checksum:
     //   for 8 predictor coefficients:  47 bytes
     //   for 12 predictor coefficients: 63 bytes
     //    1 byte     codecIndex
     //    1 byte     number of predictor coefficients (N)
     //    4 bytes    seed
-    //    N*4 bytes  predictor coefficients
+    //    N*4 bytes  coefficients
     //    4 bytes    nInitializationCodes
     //    4 bytes    nInteriorCodes
     //    1 byte     method
+    //    if checksum is included
+    //       4 bytes value checksum
+    //  Revised added to support Canonical Huffman
+    //   the header is 7+N*4 bytes + 8 bytes if not canonical huffman + optional checksum:
+    //    1 byte     codecIndex
+    //    1 byte
+    //        bit 7:     checksum included
+    //        bit 6:     revision flag
+    //        bit 5:     reserved
+    //        bits 0 to 4:  type code
+    //    1 byte     number of predictor coefficients (N)
+    //    4 bytes    seed
+    //    N*4 bytes  coefficients
+    //    if type is deflate or legacy Huffman
+    //       4 bytes    nInitializationCodes
+    //       4 bytes    nInteriorCodes
+    //    if checksum is included
+    //       4 bites value checksum
 
     int offset = packingOffset;
     codecIndex = packing[offset++];
-    nCoefficients = packing[offset++];
-    seed = unpackInteger(packing, offset);
-    offset += 4;
-    u = new float[nCoefficients];
-    for (int i = 0; i < nCoefficients; i++) {
-      u[i] = unpackFloat(packing, offset);
+    int revisionTest = packing[offset] & REVISION_FLAG;
+    if (revisionTest == 0) {
+      // the source data is in the legacy format
+      nCoefficients = packing[offset++];
+      seed = unpackInteger(packing, offset);
       offset += 4;
-    }
-    nInitializerCodes = unpackInteger(packing, offset);
-    offset += 4;
-    nInteriorCodes = unpackInteger(packing, offset);
-    offset += 4;
-    compressionType = packing[offset]&COMPRESSION_TYPE_MASK;
-    valueChecksumIncluded = (packing[offset]&VALUE_CHECKSUM_INCLUDED)!=0;
-    offset++;
-    if(valueChecksumIncluded){
-      valueChecksum = unpackInteger(packing, offset);
+      u = new float[nCoefficients];
+      for (int i = 0; i < nCoefficients; i++) {
+        u[i] = unpackFloat(packing, offset);
+        offset += 4;
+      }
+      nInitializerCodes = unpackInteger(packing, offset);
       offset += 4;
+      nInteriorCodes = unpackInteger(packing, offset);
+      offset += 4;
+      compressionType = packing[offset] & COMPRESSION_TYPE_MASK;
+      valueChecksumIncluded = (packing[offset] & VALUE_CHECKSUM_INCLUDED) != 0;
+      offset++;
+      if (valueChecksumIncluded) {
+        valueChecksum = unpackInteger(packing, offset);
+        offset += 4;
+      }
+    } else {
+      // the source data is in the revised format
+      compressionType = packing[offset] & COMPRESSION_TYPE_MASK;
+      valueChecksumIncluded = (packing[offset] & VALUE_CHECKSUM_INCLUDED) != 0;
+      offset++;
+      nCoefficients = packing[offset++];
+      seed = unpackInteger(packing, offset);
+      offset += 4;
+      u = new float[nCoefficients];
+      for (int i = 0; i < nCoefficients; i++) {
+        u[i] = unpackFloat(packing, offset);
+        offset += 4;
+      }
+      if (compressionType == COMPRESSION_TYPE_CANON_HUFFMAN) {
+        this.nInitializerCodes = 0;
+        this.nInteriorCodes = 0;
+      }else{
+        nInitializerCodes = unpackInteger(packing, offset);
+        offset += 4;
+        nInteriorCodes = unpackInteger(packing, offset);
+        offset += 4;
+      }
+      if (valueChecksumIncluded) {
+        valueChecksum = unpackInteger(packing, offset);
+        offset += 4;
+      }
     }
     headerSize = offset - packingOffset;
   }
@@ -143,10 +196,12 @@ public class LsHeader {
    * @param seed the seed value
    * @param u the compression coefficients, should be dimensioned
    * to at least nCoefficients
-   * @param nInitializationCodes the number of M32 codes in the initializer
-   * @param nInteriorCodes the number of M32 codes in the interior
+   * @param nInitializationCodes the number of M32 codes in the initializer;
+   * supply zero when M32 not used
+   * @param nInteriorCodes the number of M32 codes in the interior;
+   * supply zero when M32 not used
    * @param compressionTypeCode indicates which standard compression method
-   * (Huffman or Deflate) was used to compress the M32 code sequence
+   * (legacy Huffman, Deflate, or canonical Huffman) was used to compress the residuals
    * @param valueChecksumIncluded indicates that the header includes a
    * CRC32C checksum computed from the source data.
    * @param valueChecksum a checksum, if included
@@ -162,33 +217,49 @@ public class LsHeader {
     int compressionTypeCode,
     boolean valueChecksumIncluded,
     int valueChecksum) {
-    // the header is 15+N*4 bytes:
-    //   for 8 predictor coefficients:  47 bytes
-    //   for 12 predictor coefficients: 63 bytes
+    //  The header is now packed in the "revised" format.  A single bit
+    //  in the second byte indicates that the revised format is used.
+    //  This approach provides backward compatibility with existing files.
+    //   the header is 7+N*4 bytes + 8 bytes for non-canonical format
+    //   plus the size of the optional checksum if provided
+    //      Legacy Huffman, Deflate    63 bytes (+ optional 4)
+    //      Canonical Huffman:         55 bytes (+ optional 4)
     //    1 byte     codecIndex
+    //    1 byte
+    //        bit 7:     checksum included
+    //        bit 6:     revision flag (set to 1)
+    //        bit 5:     reserved
+    //        bits 0 to 4:  type code
     //    1 byte     number of predictor coefficients (N)
     //    4 bytes    seed
     //    N*4 bytes  coefficients
-    //    4 bytes    nInitializationCodes
-    //    4 bytes    nInteriorCodes
-    //    1 byte     method
-    int packsize = 15+nCoefficients*4 + (valueChecksumIncluded? 4:0);
+    //    if type is deflate or legacy Huffman
+    //       4 bytes    nInitializationCodes
+    //       4 bytes    nInteriorCodes
+    //    if checksum is included
+    //       4 bites value checksum
+    int packsize = 7 + nCoefficients * 4 + (valueChecksumIncluded ? 4 : 0);
+    if (compressionTypeCode != LsHeader.COMPRESSION_TYPE_CANON_HUFFMAN) {
+      packsize += 8;
+    }
     byte[] packing = new byte[packsize];
     packing[0] = (byte) (codecIndex & 0xff);
-    packing[1] = (byte) nCoefficients;
-    int offset = packInteger(packing, 2, seed);
+    int typeCode = compressionTypeCode | REVISION_FLAG;
+    if (valueChecksumIncluded) {
+      typeCode |= VALUE_CHECKSUM_INCLUDED;
+    }
+    packing[1] = (byte) typeCode;
+    packing[2] = (byte) nCoefficients;
+    int offset = packInteger(packing, 3, seed);
     for (int i = 0; i < nCoefficients; i++) {
       offset = packFloat(packing, offset, u[i]);
     }
-    offset = packInteger(packing, offset, nInitializationCodes);
-    offset = packInteger(packing, offset, nInteriorCodes);
-    int typeCode = compressionTypeCode;
-    if(valueChecksumIncluded){
-      typeCode|=VALUE_CHECKSUM_INCLUDED;
+    if (compressionTypeCode != LsHeader.COMPRESSION_TYPE_CANON_HUFFMAN) {
+      offset = packInteger(packing, offset, nInitializationCodes);
+      offset = packInteger(packing, offset, nInteriorCodes);
     }
-    packing[offset++] = (byte)typeCode;
-    if(valueChecksumIncluded){
-      offset = packInteger(packing, offset, valueChecksum);
+    if (valueChecksumIncluded) {
+      packInteger(packing, offset, valueChecksum);
     }
     return packing;
   }
