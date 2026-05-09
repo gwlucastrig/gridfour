@@ -149,6 +149,13 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     CanonicalHuffman decoder = new CanonicalHuffman();
     BitInputStore inputStore = new BitInputStore(packing, 6, packing.length - 6);
 
+    // For most predictors, the seed value will be the value of the first
+    // cell in the tile.  So the text will contain one fewer integer value
+    // than the tile.  But in the case of differencing-with-nulls, the
+    // seed is not the first cell (which could, of course, be null).
+    // So the text contains one value per cell. So nSymbolsInText serves
+    // as a limit, though the Huffman decoder may terminate sooner when it
+    // encounters an end-of-text symbol.
     int nSymbolsInText = nRows * nColumns;
     int[] residuals = new int[nRows * nColumns];
     decoder.decode(inputStore, nSymbolsInText, residuals);
@@ -185,8 +192,9 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
       codecStats[pcArray.length] = new CanonHuffmanStats("All Predictors");
     }
 
-    int nSymbolsInText = nRows * nColumns-1;
-
+    // See note in decode method about nSymbolsInText calculation.
+    int nSymbolsInText = nRows * nColumns;
+	
     CanonicalHuffman decoder = new CanonicalHuffman();
     BitInputStore inputStore = new BitInputStore(packing, 6, packing.length - 6);
     int[] residuals = new int[nSymbolsInText];
