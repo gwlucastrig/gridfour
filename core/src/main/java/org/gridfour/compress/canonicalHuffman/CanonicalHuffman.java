@@ -279,10 +279,14 @@ public class CanonicalHuffman {
     LengthEncoder codeTableTreeLengthPack = LengthEncoder.encodeLengths(
       codeTableTreeLengths.length, codeTableTreeLengths);
 
+    // Write one reserved bit for future development
+    output.appendBit(0);
+
     // Write the non-Huffman coded introduction. This gives the
     // first set of Huffman code lengths that can be used to
     // build the code-table tree.
-    LengthEncoder.writeEncodedLengths(output, codeTableTreeLengthPack.nCodes,
+    LengthEncoder.writeEncodedLengths(output, 
+      codeTableTreeLengthPack.nCodes,
       codeTableTreeLengthPack.codes,
       codeTableTreeLengthPack.runLengths);
 
@@ -400,6 +404,10 @@ public class CanonicalHuffman {
     if (nSymbolsInText <= 0) {
       return false;
     }
+    
+    // Read the one reserved bit (not currently used)
+    input.getBit();
+
     int[] codeTableLengths = new int[LengthEncoder.SYMBOL_SET_SIZE + 1];
     LengthEncoder.readEncodedLengths(input, LengthEncoder.SYMBOL_SET_SIZE + 1, codeTableLengths);
 
