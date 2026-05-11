@@ -52,5 +52,10 @@ public enum GvrsCodecType {
     /**
      * A non-lossy float format
      */
-    GvrsFloat
+    GvrsFloat,
+
+    /**
+     * Compression using an implementation of the canonical Huffman algorithm.
+     */
+    GvrsCanonicalHuffman,
 }

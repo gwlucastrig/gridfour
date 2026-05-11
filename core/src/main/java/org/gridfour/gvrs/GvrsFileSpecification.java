@@ -50,6 +50,7 @@ import org.gridfour.compress.CodecFloat;
 import org.gridfour.compress.CodecHuffman;
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.ICompressionEncoder;
+import org.gridfour.compress.canonicalHuffman.CodecCanonHuffman;
 import org.gridfour.coordinates.GeoPoint;
 import org.gridfour.coordinates.GridPoint;
 import org.gridfour.coordinates.IGeoPoint;
@@ -218,9 +219,14 @@ public class GvrsFileSpecification {
    * in the API, so we avoid instantiating unneeded classes.
    */
   private void initDefaultCodecList() {
-    addCodecSpec(GvrsCodecType.GvrsHuffman.name(), CodecHuffman.class);
+    CodecHolder spec = new CodecHolder(
+      GvrsCodecType.GvrsHuffman.name(),
+      null,
+      CodecHuffman.class);
+    codecList.add(spec);
     addCodecSpec(GvrsCodecType.GvrsDeflate.name(), CodecDeflate.class);
     addCodecSpec(GvrsCodecType.GvrsFloat.name(), CodecFloat.class);
+    addCodecSpec(GvrsCodecType.GvrsCanonicalHuffman.name(), CodecCanonHuffman.class);
   }
 
   private CodecHolder getCodecHolderFromList(String identifier){
@@ -526,7 +532,7 @@ public class GvrsFileSpecification {
       for (CodecHolder holder : s.codecList) {
         codecList.add(new CodecHolder(holder));
       }
-    }							  
+    }
   }
 
   /**

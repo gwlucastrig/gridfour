@@ -48,10 +48,8 @@ import java.util.Locale;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
-
 import org.gridfour.gvrs.GvrsElementSpecification;
 import org.gridfour.gvrs.GvrsElementSpecificationFloat;
-
 import org.gridfour.gvrs.GvrsElementSpecificationIntCodedFloat;
 import org.gridfour.gvrs.GvrsElementSpecificationShort;
 import org.gridfour.gvrs.GvrsElementType;
@@ -307,7 +305,7 @@ public class PackageData {
         }
       }
 
-      int[] tileSize = options.getTileSize(90, 120);
+      int[] tileSize = options.getTileSize(120, 180);
       int nRowsInTile = tileSize[0];
       int nColsInTile = tileSize[1];
 

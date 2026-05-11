@@ -165,38 +165,7 @@ class LengthEncoder {
 
     return new LengthEncoder(n, nCountCode, countCode, runLength);
   }
-
-  static int[] decodeLengths(int nOutput, int nInput, int[] codes, int[] runLengths) {
-    int nCodeLen = 0;
-    int[] codeLen = new int[nOutput];
-    int prior = 0;
-    for (int iInput = 0; iInput < nInput; iInput++) {
-      if (codes[iInput] <= MAX_STANDARD_SYMBOL) {
-        // a simple literal
-        prior = codes[iInput];
-        codeLen[nCodeLen++] = prior;
-      } else if (codes[iInput] == REPEAT_PREV_2BITS) {
-        // simple repeat
-        int n = runLengths[iInput] + 3;
-        for (int i = 0; i < n; i++) {
-          codeLen[nCodeLen++] = prior;
-        }
-      } else if (codes[iInput] == REPEAT_ZERO_3BITS) {
-        prior = 0;
-        int n = runLengths[iInput] + 3;
-        for (int i = 0; i < n; i++) {
-          codeLen[nCodeLen++] = 0;
-        }
-      } else if (codes[iInput] == REPEAT_ZERO_7BITS) {
-        int n = runLengths[iInput] + 11;
-        for (int i = 0; i < n; i++) {
-          codeLen[nCodeLen++] = 0;
-        }
-      }
-    }
-    return codeLen;
-  }
-
+ 
   static void writeEncodedLengths(BitOutputStore output, int nCodes, int[] codes, int[] runLengths) {
     for (int i = 0; i < nCodes; i++) {
       int index = codes[i];

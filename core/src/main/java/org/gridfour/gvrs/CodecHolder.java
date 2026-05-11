@@ -39,13 +39,13 @@
  */
 package org.gridfour.gvrs;
 
-import org.gridfour.compress.ICompressionDecoder;
-import org.gridfour.compress.ICompressionEncoder;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import org.gridfour.compress.ICompressionDecoder;
+import org.gridfour.compress.ICompressionEncoder;
 
 /**
  * Provides data elements and methods related to the use of data compressors
@@ -246,9 +246,11 @@ class CodecHolder {
             String codecID = cs.getIdentification();
             Class<?> encoderClass = cs.getEncoder();
             Class<?> decoderClass = cs.getDecoder();
+            String encoderName = encoderClass == null ? "" : encoderClass.getCanonicalName();
+            String decoderName = decoderClass == null ? "" : decoderClass.getCanonicalName();
             sb.append(codecID).append(',')
-                .append(encoderClass.getCanonicalName()).append(',')
-                .append(decoderClass.getCanonicalName()).append('\n');
+                .append(encoderName).append(',')
+                .append(decoderName).append('\n');
         }
         return sb.toString();
 
