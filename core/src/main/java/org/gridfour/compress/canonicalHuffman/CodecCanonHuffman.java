@@ -40,6 +40,7 @@ package org.gridfour.compress.canonicalHuffman;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
 import org.gridfour.compress.ICompressionDecoder;
 import org.gridfour.compress.ICompressionEncoder;
 import org.gridfour.compress.IPredictorModel;
@@ -77,6 +78,8 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
   public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
     boolean containsNullValue = false;
     boolean containsValidData = false;
+
+
     for (int i = 0; i < values.length; i++) {
       if (values[i] == INT4_NULL_CODE) {
         containsNullValue = true;
@@ -86,6 +89,23 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     }
     if (!containsValidData) {
       return null;
+    }
+
+        boolean containsUniformValue = true;
+    int prior = values[0];
+    for(int i=1; i<values.length; i++){
+      if(values[i] != prior){
+        containsUniformValue = false;
+        break;
+      }
+    }
+
+    if (containsUniformValue) {
+      BitOutputStore store = new BitOutputStore();
+      store.appendBits(8, codecIndex);
+      store.appendBits(8, 0);  // predictor type
+      store.appendBits(32, values[0]);
+      return store.getEncodedText();
     }
 
     int resultLength = Integer.MAX_VALUE;
@@ -139,13 +159,21 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
 
   @Override
   public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
-    IPredictorModel pcc = this.decodePredictorCorrector(packing[1]);
+    int predictorIndex = packing[1];
     int seed
       = (packing[2] & 0xff)
       | ((packing[3] & 0xff) << 8)
       | ((packing[4] & 0xff) << 16)
       | ((packing[5] & 0xff) << 24);
 
+    if(predictorIndex == 0 && packing.length==6){
+      // special coding for the uniform value case
+      int []output = new int[nRows*nColumns];
+      Arrays.fill(output, seed);
+      return output;
+    }
+
+    IPredictorModel pcc = this.decodePredictorCorrector(predictorIndex);
     CanonicalHuffman decoder = new CanonicalHuffman();
     BitInputStore inputStore = new BitInputStore(packing, 6, packing.length - 6);
 
@@ -166,6 +194,9 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
   }
 
   private IPredictorModel decodePredictorCorrector(int code) throws IOException {
+    // note that a code of 0 is interpreted as an error.  It should have been
+    // handled by the calling module.  If it somehow got passed in here,
+    // it would be an error condition.
     PredictorModelType pcType = PredictorModelType.valueOf(code);
     switch (pcType) {
       case Differencing:
@@ -194,10 +225,24 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
 
     // See note in decode method about nSymbolsInText calculation.
     int nSymbolsInText = nRows * nColumns;
-	
+    int[] residuals = new int[nSymbolsInText];
+
+    int predictorIndex = packing[1]&0xff;
+    if (predictorIndex == 0 && packing.length == 6) {
+      // special handling for uniform value case,
+      // all residuals have a value of zero
+      CanonHuffmanStats stats = codecStats[0];
+      stats.addToCounts(0, nSymbolsInText, 0);
+      stats.addCountsForSymbols(nSymbolsInText, residuals, 0.0);
+      CanonHuffmanStats total = codecStats[codecStats.length - 1];
+      total.addToCounts(0, nSymbolsInText, 0);
+      total.addCountsForSymbols(nSymbolsInText, residuals, 0.0);
+      return;
+    }
+
+
     CanonicalHuffman decoder = new CanonicalHuffman();
     BitInputStore inputStore = new BitInputStore(packing, 6, packing.length - 6);
-    int[] residuals = new int[nSymbolsInText];
     decoder.decode(inputStore, nSymbolsInText, residuals);
 
     CanonicalHuffman canHuff = new CanonicalHuffman();
@@ -229,7 +274,11 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     for (CanonHuffmanStats stats : codecStats) {
       String label = stats.getLabel();
       if (label.equalsIgnoreCase("None")) {
-        continue;
+        // The uniform case will be populated with predictor type of "none"
+        label = "Uniform Value";
+        if (stats.nTilesCounted == 0) {
+          continue;
+        }
       }
       long tileCount = stats.getTileCount();
       double bitsPerSymbol = stats.getBitsPerSymbol();
