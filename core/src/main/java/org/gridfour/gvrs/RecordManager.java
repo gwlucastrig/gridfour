@@ -169,11 +169,9 @@ class RecordManager {
     braf.write(0);
     braf.write(0);
     braf.write(0);
-    if (recordType != RecordType.Tile && recordType != RecordType.Freespace) {
-      byte[] zero = new byte[recordSize - RECORD_HEADER_SIZE];
-      braf.writeFully(zero);
-      braf.seek(recordPos + RECORD_HEADER_SIZE);
-    }
+    byte[] zero = new byte[recordSize - RECORD_HEADER_SIZE];
+    braf.writeFully(zero);
+    braf.seek(recordPos + RECORD_HEADER_SIZE);
   }
 
   private void fileSpaceFinishRecord(long contentPos, int contentSize) throws IOException {
@@ -246,7 +244,9 @@ class RecordManager {
       // at the end of the file, we can reuse the space that it occupies
       // and just extend the file size as necessary
       long fileSize = braf.getFileSize();
-      if (prior != null && prior.filePos + prior.blockSize == fileSize) {
+      if (prior != null && prior.filePos + prior.blockSize == fileSize && prior.blockSize<sizeToStore) {
+        // The end of the file includes a free block that is smaller than the targeted
+        // size-to-store.  We can simply overwrite it, extending the file size.
         if (priorPrior != null) {
           priorPrior.next = null;
         } else {
@@ -257,6 +257,8 @@ class RecordManager {
         return prior.filePos + RECORD_HEADER_SIZE;
       }
 
+      // There ar no free blocks that can be used for output.
+      // Allocate space by extending the file.
       expectedFileSize = fileSize + sizeToStore;
       fileSpaceInitRecord(fileSize, sizeToStore, recordType);
       return fileSize + RECORD_HEADER_SIZE;
