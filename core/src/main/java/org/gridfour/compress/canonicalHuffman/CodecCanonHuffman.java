@@ -62,6 +62,7 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
   private final IPredictorModel[] predictorModel;
 
   private CanonHuffmanStats[] codecStats;
+  private int [][]escapeBitCounts;
 
   /**
    * Standard constructor
@@ -221,6 +222,9 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
         codecStats[i] = new CanonHuffmanStats(pcArray[i]);
       }
       codecStats[pcArray.length] = new CanonHuffmanStats("All Predictors");
+
+      CanonicalHuffman scratch = new CanonicalHuffman();
+      escapeBitCounts = scratch.getEscapeBitCounts();
     }
 
     // See note in decode method about nSymbolsInText calculation.
@@ -247,8 +251,12 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
 
     CanonicalHuffman canHuff = new CanonicalHuffman();
     canHuff.countSymbols(residuals.length, 0, residuals);
-    int escapeBitCounts = canHuff.getEscapeBitCounts();
+    int escapeBitCountTotal = canHuff.getEscapeBitCountTotal();
     double entropy = canHuff.getEntropy();
+    int [][]r = canHuff.getEscapeBitCounts();
+    for(int i=0; i<r[1].length; i++){
+      escapeBitCounts[1][i] += r[1][i];
+    }
 
     CanonHuffmanStats stats = codecStats[packing[1] & 0xff];
     stats.addToCounts(packing.length - 6, nSymbolsInText, decoder.getBitsInCodeTableCount());
@@ -257,8 +265,8 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     total.addToCounts(packing.length - 6, nSymbolsInText, decoder.getBitsInCodeTableCount());
     total.addCountsForSymbols(nSymbolsInText, residuals, entropy);
 
-    stats.sumEscapeBits += escapeBitCounts;
-    total.sumEscapeBits += escapeBitCounts;
+    stats.sumEscapeBits += escapeBitCountTotal;
+    total.sumEscapeBits += escapeBitCountTotal;
   }
 
   @Override
@@ -298,6 +306,20 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
         avgBitsInTree);
     }
 
+    CanonHuffmanStats total = codecStats[codecStats.length-1];
+    double totalTiles = (double)total.getTileCount();
+    if(totalTiles<=0){
+      totalTiles = 1; // just for averaging
+    }
+
+    ps.println("Escape sequences");
+    ps.println("length    count     bits/tile");
+    for (int i = 0; i < escapeBitCounts[0].length; i++) {
+      ps.format("  %2d  %10d    %7.2f%n",
+        escapeBitCounts[0][i],
+        escapeBitCounts[1][i],
+        escapeBitCounts[0][i] * (escapeBitCounts[1][i] / totalTiles));
+    }
   }
 
   @Override
