@@ -110,6 +110,54 @@ public class RecordAllocationTest {
     }
   }
 
+/**
+   * Performs a test to verify that the RecordManager correctly handles the
+   * case reported as Issue 38.  The the lask block of file space is marked as free
+   * and the application attempts to allocate a slightly smaller block.
+   * The API should recognize that the free block is not small enough to split
+   * so the new block cannot fit inside its limits.  The API
+   * should allocate a new block.  In versions previous to Issue 38,
+   * the API would use the free space and thus leak some storage.   
+   */
+  @Test
+  void fileSpaceLastRecordNotReused() {
+    File testFile = new File(tempDir, "fileSpaceLastRecordNotReused.gvrs");
+    if (testFile.exists()) {
+      testFile.delete();
+    }
+
+    GvrsFileSpecification spec = new GvrsFileSpecification(10, 10);
+    GvrsElementSpecification eSpec = new GvrsElementSpecificationInt("z");
+    spec.addElementSpecification(eSpec);
+    try (
+       GvrsFile gvrs = new GvrsFile(testFile, spec)) {
+      RecordManager recordMan = gvrs.getRecordManager();
+      long rec0 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+      long rec1 = recordMan.fileSpaceAlloc(1024, RecordType.Metadata);
+	   long fileSize = testFile.length();
+	   // To allocate 1024 bytes:
+	   //    8 bytes header
+	   //    1024 bytes storage
+	   //    4 bytes checksum
+	   //    4 bytes padding (required to make block size a multiple of 8
+	   //  -------------------
+	   //    1040  bytes titak
+	   // but rec1 will point to the begining of the storage, not the header
+	   assertEquals(fileSize - 1040 + 8 , rec1, "File size fully zeroed and matching last record offset");
+	   
+      recordMan.fileSpaceDealloc(rec1);
+	  // Free rec1 and then allocate a space slightly smaller than its original size.
+	  // Verify that the new allocation is tacked on to the end of the file
+	  // rather than overwriting the rec1 space.
+      long recx = recordMan.fileSpaceAlloc(1024 - 10, RecordType.Metadata);
+      assertEquals(fileSize + 8, recx, "Last record incorrectly reused with some storage space leaked ");
+    } catch (IOException ex) {
+      fail("IOException in processing " + testFile + " " + ex.getMessage());
+    }
+  }
+
+
+
   /**
    * Performs a test to verify that adjacent free records would be
    * combined into a single free record.
