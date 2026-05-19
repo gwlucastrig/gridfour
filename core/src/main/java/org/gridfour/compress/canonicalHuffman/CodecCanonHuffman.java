@@ -313,11 +313,12 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     }
 
     ps.println("Escape sequences");
-    ps.println("length    count     bits/tile");
+    ps.println("length    count     n/tile  bits/tile");
     for (int i = 0; i < escapeBitCounts[0].length; i++) {
-      ps.format("  %2d  %10d    %7.2f%n",
+      ps.format("  %2d  %10d    %7.2f    %7.2f%n",
         escapeBitCounts[0][i],
         escapeBitCounts[1][i],
+        escapeBitCounts[1][i]/totalTiles,
         escapeBitCounts[0][i] * (escapeBitCounts[1][i] / totalTiles));
     }
   }

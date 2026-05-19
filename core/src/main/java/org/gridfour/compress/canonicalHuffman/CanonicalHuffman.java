@@ -71,14 +71,13 @@ public class CanonicalHuffman {
    * An array dimensions to N_SYMBOLS_TOTAL is sufficient to hold one element
    * per symbol.
    */
-  static final int N_SYMBOLS_TOTAL = 261;
+  static final int N_SYMBOLS_TOTAL = 260;
 
   private static final int N_SYMBOLS_STANDARD = 256;
   private static final int I_NULL_DATA_CODE = 256;
   private static final int I_ESCAPE_1BYTE = 257;
-  private static final int I_ESCAPE_4BITS = 258;
-  private static final int I_ESCAPE_2BITS = 259;
-  private static final int I_END_OF_TEXT = 260;
+  private static final int I_ESCAPE_2BITS = 258;
+  private static final int I_END_OF_TEXT = 259;
 
 
   final private SymbolNode[] symbolNodes;
@@ -86,7 +85,6 @@ public class CanonicalHuffman {
   // The following counts are used for computing entropy when
   // analyzing the effectiveness of a compressed format.
   final private int [] count2bit = new int[4];
-  final private int [] count4bit = new int[16];
   final private int [] count8bit = new int[256];
 
   private int nSymbolsInText;
@@ -97,6 +95,7 @@ public class CanonicalHuffman {
   private int nBitsInEncoding;
   private int escapeCountBits2;
   private int escapeCountBits4;
+  private int escapeCountBits6;
   private int escapeCountBits8;
   private int escapeCountBits16;
   private int escapeCountBits24;
@@ -134,7 +133,6 @@ public class CanonicalHuffman {
     }
 
     Arrays.fill(count2bit, 0);
-    Arrays.fill(count4bit, 0);
     Arrays.fill(count8bit, 0);
   }
 
@@ -228,15 +226,29 @@ public class CanonicalHuffman {
         // Based on the magnitude of the symbol, we will append one or more
         // escape sequences to follow it.
         if (-512 <= symbol && symbol <= 511) {
+          // store a 8+2 bit symbol (2 escape bits)
           int target = (symbol >> 2) + 128;
           textTree.writeOneSymbol(output, target);
           textTree.writeOneSymbol(output, I_ESCAPE_2BITS);
           output.appendBits(2, symbol & 0x03);
         } else if (-2048 <= symbol && symbol <= 2047) {
+          // store a 8+4 bit symbol using 2 sets of 2 escape bits
           int target = (symbol >> 4) + 128;
           textTree.writeOneSymbol(output, target);
-          textTree.writeOneSymbol(output, I_ESCAPE_4BITS);
-          output.appendBits(4, symbol & 0x0f);
+          textTree.writeOneSymbol(output, I_ESCAPE_2BITS);
+          output.appendBits(2, (symbol >> 2) & 0x03);
+          textTree.writeOneSymbol(output, I_ESCAPE_2BITS);
+          output.appendBits(2, symbol & 0x03);
+        } else if (-8192 <= symbol && symbol <= 8191) {
+          // store a 8+6 bit symbol using 3 sets of 2 escape bits
+          int target = (symbol >> 6) + 128;
+          textTree.writeOneSymbol(output, target);
+          textTree.writeOneSymbol(output, I_ESCAPE_2BITS);
+          output.appendBits(2, (symbol >> 4) & 0x03);
+          textTree.writeOneSymbol(output, I_ESCAPE_2BITS);
+          output.appendBits(2, (symbol >> 2) & 0x03);
+          textTree.writeOneSymbol(output, I_ESCAPE_2BITS);
+          output.appendBits(2, symbol & 0x03);
         } else if (-32768 <= symbol && symbol <= 32767) {
           int target = (symbol >> 8) + 128;
           textTree.writeOneSymbol(output, target);
@@ -349,18 +361,31 @@ public class CanonicalHuffman {
         int target = symbol + 128;
         symbolNodes[target].count++;
       } else if (-512 <= symbol && symbol <= 511) {
+        // count 8+2 bit symbol with one 2-bit escape sequence
         int target = (symbol >> 2) + 128;
         escapeCountBits2++;
         symbolNodes[I_ESCAPE_2BITS].count++;
         symbolNodes[target].count++;
         count2bit[(symbol >> 2) & 0x03]++;
       } else if (-2048 <= symbol && symbol <= 2047) {
+        // count 8+4 bit symbol as 2 sets of 2-bit escape sequences
         int target = (symbol >> 4) + 128;
         escapeCountBits4++;
-        symbolNodes[I_ESCAPE_4BITS].count++;
+        symbolNodes[I_ESCAPE_2BITS].count += 2;
         symbolNodes[target].count++;
-        count4bit[(symbol >> 4) & 0x0f]++;
+        count2bit[(symbol >> 2) & 0x03]++;
+        count2bit[symbol & 0x03]++;
+      } else if (-8192 <= symbol && symbol <= 8191) {
+        // count 8+6 bit symbol as 3 sets of 2-bit escape sequences
+        int target = (symbol >> 6) + 128;
+        escapeCountBits6++;
+        symbolNodes[I_ESCAPE_2BITS].count += 3;
+        symbolNodes[target].count++;
+        count2bit[(symbol >> 4) & 0x03]++;
+        count2bit[(symbol >> 2) & 0x03]++;
+        count2bit[symbol & 0x03]++;
       } else if (-32768 <= symbol && symbol <= 32767) {
+        // count 8+8 bit symbol with one 8-bit escape sequence
         int target = (symbol >> 8) + 128;
         escapeCountBits8++;
         symbolNodes[I_ESCAPE_1BYTE].count++;
@@ -466,11 +491,6 @@ public class CanonicalHuffman {
           case I_ESCAPE_2BITS:
             part = input.getBits(2);
             prior = (prior << 2) | part;
-            text[iSymbol - 1] = prior;
-            break;
-          case I_ESCAPE_4BITS:
-            part = input.getBits(4);
-            prior = (prior << 4) | part;
             text[iSymbol - 1] = prior;
             break;
           case I_ESCAPE_1BYTE:
@@ -661,10 +681,11 @@ public class CanonicalHuffman {
    */
   public int[][] getEscapeBitCounts(){
     int [][]r = new int[2][];
-    r[0] = new int[]{2, 4, 8, 16, 24};
+    r[0] = new int[]{2, 4, 6, 8, 16, 24};
     r[1] = new int[]{
       escapeCountBits2,
       escapeCountBits4,
+      escapeCountBits6,
       escapeCountBits8,
       escapeCountBits16,
       escapeCountBits24};
@@ -682,7 +703,6 @@ public class CanonicalHuffman {
     }
     double e = 0;
     double e2 = 0;
-    double e4 = 0;
     double e8 = 0;
     double d = getTotalSymbolCount();
     for (SymbolNode symbolNode : symbolNodes) {
@@ -694,7 +714,7 @@ public class CanonicalHuffman {
     }
 
     // The contribition from the escape sequences is based on the
-    // conditional probability of the numerical value of each escape bit set.
+    // conditional probability of each potential value in the escape-bit sets.
     // So we use the product of the probability of the escape symbol,
     // followed by the individual contribitions for each possible escape
     // bit set.
@@ -703,23 +723,13 @@ public class CanonicalHuffman {
       double n2 = symbolNodes[I_ESCAPE_2BITS].count;
       double p = n2 / d;
       for (int j = 0; j < count2bit.length; j++) {
-        if (count4bit[j] > 0) {
+        if (count2bit[j] > 0) {
           double q = (double) count2bit[j] / n2; // conditional p(j|i4)
           e2 += p * q * Math.log(q);
         }
       }
     }
 
-    if (symbolNodes[I_ESCAPE_4BITS].count > 0) {
-      double n4 = symbolNodes[I_ESCAPE_4BITS].count;
-      double p = n4 / d;
-      for (int j = 0; j < count4bit.length; j++) {
-        if (count4bit[j] > 0) {
-          double q = (double) count4bit[j] / n4; // conditional p(j|i4)
-          e4 += p * q*Math.log(q);
-        }
-      }
-    }
 
     if (symbolNodes[I_ESCAPE_1BYTE].count > 0) {
       double n8 = symbolNodes[I_ESCAPE_1BYTE].count;
@@ -732,6 +742,6 @@ public class CanonicalHuffman {
       }
     }
 
-    return -(e + e2 + e4 + e8) / Math.log(2.0);
+    return -(e + e2 + e8) / Math.log(2.0);
   }
 }
