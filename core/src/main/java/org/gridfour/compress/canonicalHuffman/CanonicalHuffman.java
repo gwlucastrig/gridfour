@@ -195,7 +195,6 @@ public class CanonicalHuffman {
 
     int[] textCodeLengths = getCodeLengths(symbolNodes);
 
-
     buildCodeLengthTree(output, textCodeLengths);
 
     nBitsInCodeTable = output.getEncodedTextLength();
@@ -462,11 +461,15 @@ public class CanonicalHuffman {
     CanonHuffTreeDecoder textTree = new CanonHuffTreeDecoder(textTreeLengths);
     nUniqueSymbols = textTree.nUniqueSymbols;
     decodeText(textTree, input, nSymbolsInText, text);
+
     return true;
   }
 
+
   boolean decodeText(CanonHuffTreeDecoder textTree, BitInputStore input, int nSymbolsInText, int[] text) {
     int[] nodeIndex = textTree.nodeIndex;
+    int []lookup = textTree.lookup;
+    int kLookup = textTree.kLookup;
     int prior = 0;
     int part;
     int iSymbol = 0;
@@ -474,7 +477,8 @@ public class CanonicalHuffman {
     // because the last symbol in the encoding could be an escape cpde
     // which modifies the prior value.
     while (true) {
-      int offset = nodeIndex[1 + input.getBit()]; // start from the root node
+      int iX = input.getBits(kLookup);
+      int offset = lookup[iX];
       while (nodeIndex[offset] == -1) {
         offset = nodeIndex[offset + 1 + input.getBit()];
       }

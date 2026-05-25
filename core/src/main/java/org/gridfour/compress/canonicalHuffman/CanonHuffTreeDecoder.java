@@ -50,6 +50,8 @@ import org.gridfour.io.BitInputStore;
 
   final int[] nodeIndex;
   final int nUniqueSymbols;
+  final int kLookup;
+  final int [] lookup;
 
   /**
    * Given an array of symbol lengths, constructs a representation of the
@@ -95,12 +97,21 @@ import org.gridfour.io.BitInputStore;
     int nUsed = 3;
     Arrays.fill(nodeIndex, -1);
 
+    // arbitrarily limit the size of the lookup table to 2^8.
+    int minCodeLength = sortNodes[0].nBitsInCode;
+    kLookup = minCodeLength>8 ? 8 : minCodeLength;
+    lookup = new int[1<<kLookup];
+
+
     for (int iNode = 0; iNode < sortNodes.length; iNode++) {
       SymbolNode node = sortNodes[iNode];
       int index = 0;
       long bits = codeBits[iNode].bits;
-      for (int i = node.nBitsInCode - 1; i >= 0; i--) {
+      int iLookup = 0;
+      for(int k=0; k<node.nBitsInCode; k++){
+        int i = node.nBitsInCode - 1 - k;
         int bit = (int) ((bits >> i) & 1);
+        iLookup |= (bit<<k);
         int test = nodeIndex[index + 1 + bit];
         if (test < 0) {
           nodeIndex[index + 1 + bit] = nUsed;
@@ -109,9 +120,11 @@ import org.gridfour.io.BitInputStore;
         } else {
           index = test;
         }
+        if(k==kLookup-1){
+          lookup[iLookup] = index;
+        }
       }
       nodeIndex[index] = node.symbol;
-
     }
   }
 
