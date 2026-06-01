@@ -1598,7 +1598,7 @@ public class GvrsFileSpecification {
           + codecID + "\"");
       }
     }
-    if (codecID.length() > 16) {
+    if (codecID.length() > 32) {
       throw new IllegalArgumentException(
         "Maximum identification length is 16 characters: " + codecID);
     }

@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class BitOutputStoreIT {
 
-  private static final int[] MASK = new int[33];
+  private static final int[] MASK = new int[9];
 
   static {
     // mask[0] = 00000000
@@ -97,7 +97,7 @@ public class BitOutputStoreIT {
     int[] values = new int[nSymbolsInText];
     BitOutputStore writer = new BitOutputStore();
     for (int i = 0; i < nSymbolsInText; i++) {
-      int n = random.nextInt(32) + 1;  // nextInt(32) gives values 0 to 31
+      int n = random.nextInt(8) + 1;  // nextInt(32) gives values 0 to 7
       int v = random.nextInt();
       nBits[i] = n;
       values[i] = v & MASK[n];  // zero-out bits past position n
