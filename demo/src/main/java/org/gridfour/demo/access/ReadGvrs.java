@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
+import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
 import org.gridfour.gvrs.GvrsElement;
 import org.gridfour.gvrs.GvrsFile;
@@ -51,29 +52,67 @@ import org.gridfour.gvrs.GvrsMetadata;
  */
 public class ReadGvrs {
 
+  private static String[] usage = {
+    "ReadGvrs -- utility to exercise GVRS file access",
+    "Arguments:",
+    "  -in <file path>     path to input file (mandatory)",
+    "  -nTests <n>         number of times to read file",
+    "  -multithread, -nomultithread  indicate whether multithreading is used",
+    "  -oneReadPerTile, -nooneReadOnePerTile  indicate whether to limit data access",
+    "",
+    "   By default, this application performs read operations for each",
+    "   cell in the raster grid.  However, when the readOnePerTile options",
+    "   is set, it reads only one data cell per tile.  This options allows",
+    "   testing to separate the processing time for file access and",
+    "   decompression (if any) from time required to trasfer data values",
+    "   to the calling application.",};
+
+  private static void printUsage() {
+    for (String s : usage) {
+      System.out.println(s);
+    }
+  }
+
   public static void main(String[] args) throws IOException {
 
     PrintStream ps = System.out;
     long time0, time1;
 
     if (args.length == 0) {
-      System.out.println("No input file specified");
+      printUsage();
       System.exit(0);
     }
-    File file = new File(args[0]);
+    boolean[] matched = new boolean[args.length];
+    TestOptions options = new TestOptions();
+    options.argumentScan(args);
+
+    File file = options.getInputFile();
+    if (file == null) {
+      file = new File(args[0]);
+    }
+    if (!file.exists()) {
+      file = null;
+    }
+
+    if (file == null) {
+      System.out.println("Missing or non-existing file specification");
+      System.exit(-1);
+    }
+
     System.out.println("Reading file " + file.getPath());
-    boolean oneTestPerTile = args.length > 1;
 
-    // Open the file.  The time required to open the file depends, in part,
-    // on whether a supplemental index file (.gvrs) is available.  To test the
-    // difference, simply delete the .gvrx file.   Deleting the index file
-    // will also allow you to test whether the .gvrs file can be opened
-    // successfully when an index file is not availble.
-    GvrsFileSpecification spec = null;
+    int nTests = options.scanIntOption(args, "-nTests", matched, 4);
+    boolean multiThread = options.scanBooleanOption(args, "-multithread", matched, false);
+    boolean oneReadPerTile = options.scanBooleanOption(args, "-oneReadPerTile", matched, false);
+
+    System.out.println("Multi-thread options: " + (multiThread ? "enabled " : "disabled"));
+
+    // Open the file ---------------------------------------
+    GvrsFileSpecification spec;
+
     int nRows, nCols, nRowsOfTiles, nColsOfTiles, nTiles;
-
     time0 = System.nanoTime();
-    try ( GvrsFile gvrs = new GvrsFile(file, "r")) {
+    try (GvrsFile gvrs = new GvrsFile(file, "r")) {
       time1 = System.nanoTime();
       double timeForOpeningFile = (time1 - time0) / 1.0e+6;
 
@@ -118,23 +157,22 @@ public class ReadGvrs {
     // we collect a sum of the samples.  This value serves as a diagnostic
     // for ensuring consistent implementations when making code changes.
     // It also provides a way of exercising the data-reading logic.
-    int nTest = 4;
     double sumSample = 0;
     long nSample = 0;
     int rowStep = 1;
     int colStep = 1;
-    if (oneTestPerTile) {
+    if (oneReadPerTile) {
       rowStep = spec.getRowsInTile();
       colStep = spec.getColumnsInTile();
 
     }
-    for (int iTest = 0; iTest < nTest; iTest++) {
+    for (int iTest = 0; iTest < nTests; iTest++) {
       time0 = System.nanoTime();
-      try ( GvrsFile gvrs = new GvrsFile(file, "r")) {
+      try (GvrsFile gvrs = new GvrsFile(file, "r")) {
         List<GvrsElement> elementList = gvrs.getElements();
         GvrsElement zElement = elementList.get(0);
         gvrs.setTileCacheSize(GvrsCacheSize.Large);
-        gvrs.setMultiThreadingEnabled(true);
+        gvrs.setMultiThreadingEnabled(multiThread);
         for (int iRow = 0; iRow < nRows; iRow += rowStep) {
           for (int iCol = 0; iCol < nCols; iCol += colStep) {
             double sample = zElement.readValue(iRow, iCol);
@@ -147,15 +185,15 @@ public class ReadGvrs {
         System.out.format("Time to read all tiles        %10.1f ms%n",
           timeForReadingFile);
 
-        if (iTest == nTest - 1) {
+        if (iTest == nTests - 1) {
           // on the last test, summarize
           gvrs.summarize(ps, false);
         }
       } // end of try-with-resources for GvrsFile
     }
 
-    ps.println("Avg Samples " + sumSample / (double) nSample);
-
+    String oneTest = oneReadPerTile ? " (one read operation per tile) " : "";
+    ps.println("Avg Samples " + oneTest + sumSample / (double) nSample);
   }
 
 }
