@@ -97,7 +97,7 @@ public class PackageData {
     "",
     "   -codec [Huffman, Legacy, LSOP, Deflate]  Specifies that only the indicated CODECs are to be registered.",
     "                                            This option is intended for testing and development purposes.",
-    "                                            If multiple CODECs are required, provide a comman-separated list.",
+    "                                            If multiple CODECs are required, provide a comma-separated list.",
     "",
     "Notes: ",
     "  The zScale option instructs the packager to use the",
@@ -421,7 +421,7 @@ public class PackageData {
           if ("huffman".equalsIgnoreCase(s)) {
             spec.addCompressionCodec(GvrsCodecType.GvrsCanonicalHuffman.name(), CodecCanonHuffman.class);
           } else if ("deflate".equalsIgnoreCase(s)) {
-            spec.addCompressionCodec("Deflate", CodecDeflate.class);
+            spec.addCompressionCodec(GvrsCodecType.GvrsDeflate.name(), CodecDeflate.class);
           } else if ("legacy".equalsIgnoreCase(s)) {
             spec.addCompressionCodec(GvrsCodecType.GvrsHuffman.name(), CodecHuffman.class);
           } else if ("lsop".equalsIgnoreCase(s)) {
