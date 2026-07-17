@@ -45,8 +45,12 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import org.gridfour.compress.CodecDeflate;
+import org.gridfour.compress.CodecHuffman;
+import org.gridfour.compress.canonicalHuffman.CodecCanonHuffman;
 import org.gridfour.demo.utils.TestOptions;
 import org.gridfour.gvrs.GvrsCacheSize;
+import org.gridfour.gvrs.GvrsCodecType;
 import org.gridfour.gvrs.GvrsElement;
 import org.gridfour.gvrs.GvrsElementSpecification;
 import org.gridfour.gvrs.GvrsElementSpecificationFloat;
@@ -90,6 +94,10 @@ public class PackageData {
     "",
     "   -geographic (-nogeographic)    Specifies that horizontal coordinates are geographic (latitude,longitude)",
     "   -cartesian (-nocartesian)      Specifies that horizontal coordinates are Cartesian (x,y)",
+    "",
+    "   -codec [Huffman, Legacy, LSOP, Deflate]  Specifies that only the indicated CODECs are to be registered.",
+    "                                            This option is intended for testing and development purposes.",
+    "                                            If multiple CODECs are required, provide a comman-separated list.",
     "",
     "Notes: ",
     "  The zScale option instructs the packager to use the",
@@ -177,6 +185,11 @@ public class PackageData {
     boolean useLsop = options.scanBooleanOption(args, "-lsop", matched, false);
     boolean enableMultiThreading
       = options.scanBooleanOption(args, "-multithread", matched, true);
+    String codecOption = options.scanStringOption(args, "-codec", matched);
+    String []codecs = null;
+    if(codecOption !=null && !codecOption.isBlank()){
+      codecs = codecOption.split(",");
+    }
 
     // Open the NetCDF file -----------------------------------
     ps.println("Opening NetCDF input file");
@@ -396,6 +409,25 @@ public class PackageData {
       // is enabled and the data type is integral.
       if (useLsop) {
         LsCodecUtility.addLsopToSpecification(spec, false);
+      }
+
+      if (codecs != null) {
+        // This option is used for testing by inserting only the
+        // codecs specified in the codec string.
+        spec.setDataCompressionEnabled(true);
+        spec.removeAllCompressionCodecs();
+        for (String codec : codecs) {
+          String s = codec.trim();
+          if ("huffman".equalsIgnoreCase(s)) {
+            spec.addCompressionCodec(GvrsCodecType.GvrsCanonicalHuffman.name(), CodecCanonHuffman.class);
+          } else if ("deflate".equalsIgnoreCase(s)) {
+            spec.addCompressionCodec("Deflate", CodecDeflate.class);
+          } else if ("legacy".equalsIgnoreCase(s)) {
+            spec.addCompressionCodec(GvrsCodecType.GvrsHuffman.name(), CodecHuffman.class);
+          } else if ("lsop".equalsIgnoreCase(s)) {
+            LsCodecUtility.addLsopToSpecification(spec, false);
+          }
+        }
       }
 
       // ---------------------------------------------------------
