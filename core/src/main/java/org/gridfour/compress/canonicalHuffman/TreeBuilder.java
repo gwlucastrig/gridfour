@@ -101,7 +101,12 @@ class TreeBuilder {
       @Override
       public int compare(SymbolNode o1, SymbolNode o2) {
         // The sorting order is designed to support both the initial
-        // non-canonical Huffman code tree and the final canonical tree.
+        // non-canonical Huffman code tree in preparation for the ultimate
+        // construction of the canonical tree. In particular, we wish to
+        // ensure that the end-of-text symbol receives the longest but sequence.
+        // While this condition is not absolutely required for Huffman coding,
+        // it can provide a small saving for the run-length encoded section
+        // of the code table.
         // The traditional algorithm depends on an initial sort giving the
         // leaf nodes in the order least-priority to most-priority.
         // The first node in the sorted list will eventually be assigned the
@@ -113,6 +118,9 @@ class TreeBuilder {
         // the following sorting keys
         //     primary key:    the count, ascending
         //     secondary key:  the symbol, descending
+        // Note that when the code builds the canonical Huffman tree,
+        // it applies a second sort based on the bit-lengths of the
+        // Huffman codes.  This comparator is not appropriate for that purpose.
         int test = Integer.compare(o1.count, o2.count);
         if (test == 0) {
           test = Integer.compare(o2.symbol, o1.symbol);
