@@ -84,8 +84,8 @@ class TileDecompressionAssistant implements Runnable {
 
   ArrayList<RasterTile> resultList = new ArrayList<>();
 
-  TileDecompressionAssistant(GvrsFileSpecification specification) {
-    codecMaster = new CodecMaster(specification.codecList);
+  TileDecompressionAssistant(CodecMaster codecMaster) {
+    this.codecMaster = codecMaster;
   }
 
   private boolean isIndexPending(int target) {
@@ -166,7 +166,7 @@ class TileDecompressionAssistant implements Runnable {
           task.process();
         } catch (IOException ioex) {
           // TO DO:
-          System.out.println("Need to address this " + ioex.getMessage());
+          System.out.println("Exception reading data in multithread mode: " + ioex.getMessage());
         }
       }
 

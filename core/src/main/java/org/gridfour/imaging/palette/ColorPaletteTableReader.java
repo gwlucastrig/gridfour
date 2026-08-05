@@ -515,7 +515,7 @@ public class ColorPaletteTableReader {
   private double parsePart(String name, String[] strings, int index) throws IOException {
     try {
       if (strings[index] == null) {
-        System.out.println("ouch");
+        throw new IOException("null field strings while parsing color specification");
       }
       return Double.parseDouble(strings[index]);
     } catch (NumberFormatException nex) {

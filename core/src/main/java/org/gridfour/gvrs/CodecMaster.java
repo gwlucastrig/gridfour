@@ -38,12 +38,12 @@
  */
 package org.gridfour.gvrs;
 
-import org.gridfour.compress.ICompressionDecoder;
-import org.gridfour.compress.ICompressionEncoder;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import org.gridfour.compress.ICompressionDecoder;
+import org.gridfour.compress.ICompressionEncoder;
 import org.gridfour.util.concurrent.TaskGroupExecutor;
 
 /**
@@ -103,12 +103,95 @@ class CodecMaster {
       }
     }
 
+   private static class DummyCodec implements ICompressionDecoder, ICompressionEncoder {
+
+     private final String name;
+
+     public DummyCodec(){
+       name = "Dummy Codec";
+     }
+     public DummyCodec(String name, ICompressionDecoder decoder) {
+       this.name = name;
+     }
+
+     public DummyCodec(String name, ICompressionEncoder decoder) {
+       this.name = name;
+     }
+
+
+    @Override
+    public int[] decode(int nRows, int nColumns, byte[] packing) throws IOException {
+      return null;
+    }
+
+    @Override
+    public void analyze(int nRows, int nColumns, byte[] packing) throws IOException {
+      // no action required
+    }
+
+    @Override
+    public void reportAnalysisData(PrintStream ps, int nTilesInRaster) {
+      // no action required
+    }
+
+    @Override
+    public void clearAnalysisData() {
+      // no action required
+    }
+
+    @Override
+    public float[] decodeFloats(int nRows, int nColumns, byte[] packing) throws IOException {
+      return null;
+    }
+
+    @Override
+    public byte[] encode(int codecIndex, int nRows, int nCols, int[] values) {
+      return null;
+    }
+
+    @Override
+    public byte[] encodeFloats(int codecIndex, int nRows, int nCols, float[] values) {
+      return null;
+    }
+
+    @Override
+    public boolean implementsFloatingPointEncoding() {
+      return false;
+    }
+
+    @Override
+    public boolean implementsIntegerEncoding() {
+      return false;
+    }
+
+  }
+
+
     List<CodecHolder> codecList = new ArrayList<>();
     private boolean implementsFloats;
 
     private TaskGroupExecutor tgExecutor;
     private boolean multiThreadingEnabled;
 
+    CodecMaster(List<CodecHolder> rasterCodecList, List<String> codecIdentificationList) {
+      codecList = new ArrayList<>();
+      for (String name : codecIdentificationList) {
+        CodecHolder holder = null;
+        for (CodecHolder h : rasterCodecList) {
+          if (name.equals(h.getIdentification())) {
+            holder = h;
+            break;
+          }
+        }
+        if (holder == null) {
+          Class<?> dummy = DummyCodec.class;
+          holder = new CodecHolder(name, dummy, dummy);
+        } else if (holder.implementsFloatingPointEncoding()) {
+          implementsFloats = true;
+        }
+        codecList.add(holder);
+      }
+    }
 
     CodecMaster(List<CodecHolder> rasterCodecList) {
         codecList = new ArrayList<>();

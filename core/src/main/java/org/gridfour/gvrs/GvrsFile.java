@@ -447,7 +447,7 @@ final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
       openedForWriting = true;
     }
 
-    codecMaster = new CodecMaster(spec.codecList);
+    codecMaster = new CodecMaster(spec.codecList, spec.codecIdentificationList);
     recordMan = new RecordManager(spec, codecMaster, braf, filePosContent);
     long savePos = braf.getFilePosition();
     if (filePosFreeSpaceDirectory > 0) {
@@ -488,7 +488,7 @@ final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
     // See if the source file included a metadata element that specified
     // the class paths for Java codecs. A file originating from an API
     // written in a language probably will not.
-    List<CodecSpecification> codecSpecificationList = new ArrayList<>();
+    List<CodecSpecification> codecSpecificationList;
     GvrsMetadata codecMetadata
       = readMetadata(GvrsMetadataNames.GvrsJavaCodecs.name(), 0);
     if (codecMetadata != null) {
@@ -1400,7 +1400,7 @@ final static long FILEPOS_OFFSET_TO_TILE_DIR = 80;
     if(!this.openedForWriting && spec.isDataCompressionEnabled()){
         // when the file is open strictly for reading, GVRS can take advantage
         // of a background thread using the TileDecompAssistant class.
-        tileDecompAssistant = new TileDecompressionAssistant(spec);
+        tileDecompAssistant = new TileDecompressionAssistant(codecMaster);
         tileDecompAssistant.start();
         tileCache.setTileDecompAssistant(tileDecompAssistant);
     }
