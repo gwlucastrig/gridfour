@@ -38,9 +38,7 @@
  */
 package org.gridfour.compress.canonicalHuffman;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import org.gridfour.io.BitInputStore;
 
 /**
@@ -48,10 +46,15 @@ import org.gridfour.io.BitInputStore;
  */
  class CanonHuffTreeDecoder {
 
-  final int[] nodeIndex;
   final int nUniqueSymbols;
-  final int kLookup;
-  final int [] lookup;
+   final int [] firstCode = new int[17];
+  final int [] maxCode = new int[17];
+  final int [] firstSymbolIndex = new int[17];
+  final int [] connellSymbol;
+
+  final int []qSymbol = new int[256];
+  final int []qBits = new int[256];
+  final int []qLen = new int[256];
 
   /**
    * Given an array of symbol lengths, constructs a representation of the
@@ -67,84 +70,126 @@ import org.gridfour.io.BitInputStore;
    */
   CanonHuffTreeDecoder(int[] symbolLengths) {
     int nSymbols = symbolLengths.length; // will include end-of-text symbol
-    List<SymbolNode> list = new ArrayList<>();
+
+    // Because the maximum length of a bit code is 16, the total number
+    // of combined lengths and symbol codes is managable. So we can avoid
+    // a Java sort and instead use an array based approach.
+    // In order to sort the symbol nodes, we create an array of booleans
+    // indexed on length and symbol code (in that order).  We mark all the
+    // ones that exist.  Then we populate the sortNodes array by looping
+    // through the "populated" array to see which ones actually occur.
+    // Testing revealed a saving of about 2% on total run time.
+    //
+    boolean []populated = new boolean[nSymbols*16];
+    int n=0;
     SymbolNode[] symbolNodes = new SymbolNode[nSymbols];
     for (int i = 0; i < nSymbols; i++) {
       symbolNodes[i] = new SymbolNode(i);
       symbolNodes[i].nBitsInCode = symbolLengths[i];
       if (symbolLengths[i] > 0) {
-        list.add(symbolNodes[i]);
+        n++;
+        int index = (symbolLengths[i]-1)*nSymbols+i;
+        populated[index] = true;
       }
     }
-    nUniqueSymbols = list.size();
-    SymbolNode[] sortNodes = list.toArray(SymbolNode[]::new);
-    Arrays.sort(sortNodes, (SymbolNode o1, SymbolNode o2) -> {
-      int test = o1.nBitsInCode - o2.nBitsInCode;
-      if (test == 0) {
-        return o1.symbol - o2.symbol;
-      }
-      return test;
-    });
 
-    HuffmanCodeBits[] codeBits = new HuffmanCodeBits[sortNodes.length];
-    codeBits[0] = new HuffmanCodeBits(sortNodes[0].nBitsInCode);
+    nUniqueSymbols = n;
+    SymbolNode[] sortNodes = new SymbolNode[nUniqueSymbols];
+    int nSort = 0;
+    for(int i=0; i<populated.length; i++){
+      if(populated[i]){
+        int index = i % nSymbols;
+        sortNodes[nSort++] = symbolNodes[index];
+      }
+    }
+
+    int[] codeBits = new int[sortNodes.length];
+    int length = sortNodes[0].nBitsInCode;
+    int bits = 0;
     for (int i = 1; i < sortNodes.length; i++) {
-      codeBits[i] = new HuffmanCodeBits(codeBits[i - 1], sortNodes[i].nBitsInCode);
+      int s = sortNodes[i].nBitsInCode;
+      bits++;
+      if (s > length) {
+        bits = bits << (s - length);
+        length = s;
+      }
+      codeBits[i] = bits;
     }
 
-    int n = nSymbols * 2 + 2;
-    nodeIndex = new int[n * 3];
-    int nUsed = 3;
-    Arrays.fill(nodeIndex, -1);
+    // Populate the elements related to Connell's algorithm ------------
+    connellSymbol = new int[sortNodes.length];
+    for(int i=0; i<sortNodes.length; i++){
+      connellSymbol[i] = sortNodes[i].symbol;
+    }
 
-    // arbitrarily limit the size of the lookup table to 2^8.
-    int minCodeLength = sortNodes[0].nBitsInCode;
-    kLookup = minCodeLength>8 ? 8 : minCodeLength;
-    lookup = new int[1<<kLookup];
+    Arrays.fill(maxCode, -1);
 
-
-    for (int iNode = 0; iNode < sortNodes.length; iNode++) {
-      SymbolNode node = sortNodes[iNode];
-      int index = 0;
-      long bits = codeBits[iNode].bits;
-      int iLookup = 0;
-      for(int k=0; k<node.nBitsInCode; k++){
-        int i = node.nBitsInCode - 1 - k;
-        int bit = (int) ((bits >> i) & 1);
-        iLookup |= (bit<<k);
-        int test = nodeIndex[index + 1 + bit];
-        if (test < 0) {
-          nodeIndex[index + 1 + bit] = nUsed;
-          index = nUsed;
-          nUsed += 3;
-        } else {
-          index = test;
-        }
-        if(k==kLookup-1){
-          lookup[iLookup] = index;
+    for(int i=0; i<sortNodes.length; i++){
+      int len = sortNodes[i].nBitsInCode;
+      int q = codeBits[i];
+      firstCode[len] = q; // (int)codeBits[i].bits;
+      firstSymbolIndex[len] = i;
+      n = 1;
+      for(int j=i+1; j<sortNodes.length; j++){
+        if(sortNodes[j].nBitsInCode == len){
+          n = j-i+1;
+        }else{
+          break;
         }
       }
-      nodeIndex[index] = node.symbol;
+      maxCode[len] = firstCode[len]+n-1;
+      i+=(n-1);
     }
+
+    // populate the quick-entry elements ----------------
+    // xmit variable is the bit code formatted in the same order
+    // as appears in the BitInputStream class.  It is the mirror
+    // image of the code-bits, except that we only capture the
+    // first 8 bits max.
+    for (int i = 0; i < sortNodes.length; i++) {
+      int symbol = sortNodes[i].symbol;
+      int len = sortNodes[i].nBitsInCode;
+      int q = codeBits[i];
+      n = len > 8 ? 8 : len;
+      int xmit = (q >> (len - 1)) & 1;
+      for (int j = 1; j < n; j++) {
+        int bit = (q >> (len - 1 - j)) & 1;
+        xmit |= (bit << j);
+      }
+      int jStep = 1 << n;
+      for (int j = xmit; j < 256; j += jStep) {
+        qLen[j] = len;
+        qBits[j] = (q >> len - 8) & 0xff;
+        qSymbol[j] = symbol;
+      }
+    }
+
   }
 
    boolean decodeTree(BitInputStore input, int nSymbols, int[] symbols) {
-
     // Decode the tree.
     int prior = 0;
     int n;
     int i;
     for (i = 0; i < nSymbols; i++) {
-      int offset = nodeIndex[1 + input.getBit()]; // start from the root node
-      while (nodeIndex[offset] == -1) {
-        offset = nodeIndex[offset + 1 + input.getBit()];
+      int codeVal = 0;
+      int length = 0;
+      int symbol = 0;
+      while (true) {
+        int bit = input.getBit();
+        codeVal = (codeVal << 1) | bit;
+        length++;
+        if (codeVal <= maxCode[length]) {
+          int offset = codeVal - firstCode[length];
+          symbol = connellSymbol[firstSymbolIndex[length] + offset];
+          break;
+        }
       }
-      int test = nodeIndex[offset];
-      if (test <= LengthEncoder.MAX_STANDARD_SYMBOL) {
-        symbols[i] = test;
-        prior = test;
+      if (symbol <= LengthEncoder.MAX_STANDARD_SYMBOL) {
+        symbols[i] = symbol;
+        prior = symbol;
       } else {
-        switch (test) {
+        switch (symbol) {
           case LengthEncoder.REPEAT_PREV_2BITS:
             n = input.getBits(2) + 3;
             for (int j = 0; j < n; j++) {
@@ -176,26 +221,4 @@ import org.gridfour.io.BitInputStore;
     return true;
   }
 
-   /**
-    * Decode the specified number of symbols from the bit store.
-    * The number of symbols to be extracted is not necessarily the
-    * complete number of symbols in the input set.
-    * @param input a valid instance to provide bits for decoding.
-    * @param nSymbolsInText the number of symbols to be extracted.
-    * @param text an array dimensioned large enought to receive
-    * the indicated number of symbols.
-    * @return if successful, true; false values are not returned at this time.
-    */
-   boolean decode(BitInputStore input, int nSymbolsInText, int[] text) {
-
-    for (int i = 0; i < nSymbolsInText; i++) {
-      int offset = nodeIndex[1 + input.getBit()]; // start from the root node
-      while (nodeIndex[offset] == -1) {
-        offset = nodeIndex[offset + 1 + input.getBit()];
-      }
-      text[i] = nodeIndex[offset];
-    }
-
-    return true;
-  }
 }

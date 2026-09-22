@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (C) 2026  Gary W. Lucas.
+ * Copyright (C) 2019  Gary W. Lucas.
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,59 +30,29 @@
  * Revision History:
  * Date     Name         Description
  * ------   ---------    -------------------------------------------------
- * 03/2026  G. Lucas     Initial implementation
- *
- * Notes:
+ * 10/2026  G. Lucas     Created to allow BitInputStore elements to be integrated
+ *                       directly  into calling modules to reduce overhead.
  *
  * -----------------------------------------------------------------------
  */
-package org.gridfour.compress.canonicalHuffman;
-
-import org.gridfour.io.BitOutputStore;
+package org.gridfour.io;
 
 /**
- * Provides temporary storage for a sequence of bits while building a
- * Huffman tree.
+ * Provides elements from a BitInputStore instance to support direct
+ * integration of bit access into a calling application.
  */
-class HuffmanCodeBits {
+public class BitInputState {
+  public final byte[] buffer;
+  public final int byteOffset0;
+  public int scratch;
+  public int nBitsInScratch;
+  public int nBytesProcessed;
 
-  int nBitsInCode;
-  long bits;
-
-  HuffmanCodeBits(int length) {
-    nBitsInCode = length;
-    //  recall that bits = 0;
-  }
-
-  HuffmanCodeBits(HuffmanCodeBits source, int length) {
-    bits = source.bits + 1;
-    if (length > source.nBitsInCode) {
-      bits = bits << (length - source.nBitsInCode);
-      nBitsInCode = length;
-    } else {
-      nBitsInCode = source.nBitsInCode;
-    }
-  }
-
-  byte[] getCodeBytes() {
-    BitOutputStore bitpath = new BitOutputStore();
-    for (int i = nBitsInCode - 1; i >= 0; i--) {
-      bitpath.appendBit((int) (bits >> i) & 1);
-    }
-    return bitpath.getEncodedText();
-  }
-
-  /**
-   * Gets the bit code in the order in which it is stored in a Gridfour
-   * BitInputStore.
-   * @return a copy of the bit element in the reverse order
-   */
-  int getXmitBitCode(){
-    int code = 0;
-    for(int i=0; i<nBitsInCode; i++){
-      int bit = ((int)(bits>>i)&1);
-      code |= bit<<(nBitsInCode-i-1);
-    }
-    return code;
+  BitInputState(byte []buffer, int byteOffset0, int iByte, int scratch, int nBitsInScratch){
+    this.buffer = buffer;
+    this.byteOffset0 = byteOffset0;
+    this.nBytesProcessed = iByte;
+    this.nBitsInScratch = nBitsInScratch;
+    this.scratch = scratch;
   }
 }

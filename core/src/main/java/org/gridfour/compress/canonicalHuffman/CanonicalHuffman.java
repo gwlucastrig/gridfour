@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import org.gridfour.io.BitInputState;
 import org.gridfour.io.BitInputStore;
 import org.gridfour.io.BitOutputStore;
 import org.gridfour.util.GridfourConstants;
@@ -79,13 +80,12 @@ public class CanonicalHuffman {
   private static final int I_ESCAPE_2BITS = 258;
   private static final int I_END_OF_TEXT = 259;
 
-
   final private SymbolNode[] symbolNodes;
 
   // The following counts are used for computing entropy when
   // analyzing the effectiveness of a compressed format.
-  final private int [] count2bit = new int[4];
-  final private int [] count8bit = new int[256];
+  final private int[] count2bit = new int[4];
+  final private int[] count8bit = new int[256];
 
   private int nSymbolsInText;
   private int nUniqueSymbols;
@@ -136,7 +136,6 @@ public class CanonicalHuffman {
     Arrays.fill(count8bit, 0);
   }
 
-
   /**
    * Encodes an array of integer data using the Gridfour implementation of the
    * canonical Huffman encoding. Because this class was written to support
@@ -153,13 +152,12 @@ public class CanonicalHuffman {
    * @return if successful, a valid array of bytes; otherwise a null
    */
   public byte[] encode(int nSymbolsInText, int offset, int[] text) {
-      BitOutputStore output = new BitOutputStore();
-      encode(output, nSymbolsInText, offset, text);
-      return output.getEncodedText();
+    BitOutputStore output = new BitOutputStore();
+    encode(output, nSymbolsInText, offset, text);
+    return output.getEncodedText();
   }
 
-
-   /**
+  /**
    * Encodes an array of integer data using the Gridfour implementation of the
    * canonical Huffman encoding. Because this class was written to support
    * GVRS operations, it assumes that the input data (the "text")
@@ -174,7 +172,7 @@ public class CanonicalHuffman {
    * @param text an array of integers to be compressed.
    * @return if successful, the number of bytes in the output; otherwise, zero.
    */
-   public int encode(BitOutputStore output, int nSymbolsInText, int offset, int[] text) {
+  public int encode(BitOutputStore output, int nSymbolsInText, int offset, int[] text) {
     if (nUniqueSymbols > 0) {
       // this instance was used at least once before, clear it out.
       clear();
@@ -465,41 +463,147 @@ public class CanonicalHuffman {
     return true;
   }
 
+  private static final int mask[] = new int[9];
+
+  static {
+    // mask[0] = 00000000
+    // masl[1] = 00000001
+    // mask[2] = 00000011
+    // mask[3] = 00000111
+    // etc.
+    int m = 1;
+    for (int i = 1; i < mask.length; i++) {
+      mask[i] = m;
+      m = (m << 1) | 1;
+    }
+  }
 
   boolean decodeText(CanonHuffTreeDecoder textTree, BitInputStore input, int nSymbolsInText, int[] text) {
-    int[] nodeIndex = textTree.nodeIndex;
-    int []lookup = textTree.lookup;
-    int kLookup = textTree.kLookup;
-    int prior = 0;
-    int part;
+    int[] firstCode = textTree.firstCode;
+    int[] maxCode = textTree.maxCode;
+    int[] firstSymbolIndex = textTree.firstSymbolIndex;
+    int[] connellSymbol = textTree.connellSymbol;
+    int[]qLen = textTree.qLen;
+    int[]qSymbol = textTree.qSymbol;
+    int[]qBits = textTree.qBits;
     int iSymbol = 0;
+    int prior = 0;
+    int bit;
+    int bits;
+
     // This loop terminates on an end of text.  We take this approach
     // because the last symbol in the encoding could be an escape cpde
     // which modifies the prior value.
+    // In the loop that follows, we have integrated the logic from
+    // BitInputStore.getBit() and .getBits(n) into the code here.
+    // In testing, we found improvements both for eliminating
+    // frequent calls to obtain input bits.   Initially, we treated
+    // the state variables -- buffer, scratch, nBitsInScratch, and nBytesProcessed --
+    // as member elements.  Later we found some improvement in treating them
+    // as local variables.
+    BitInputState state = input.getState();
+    byte[] buffer = state.buffer;
+    int scratch = state.scratch;
+    int nBit = state.nBitsInScratch;
+    int nBytesProcessed = state.nBytesProcessed;
+
     while (true) {
-      int iX = input.getBits(kLookup);
-      int offset = lookup[iX];
-      while (nodeIndex[offset] == -1) {
-        offset = nodeIndex[offset + 1 + input.getBit()];
+
+      int symbol = 0;
+
+      // bit = input.getByte() -------------------------
+      if (nBit < 8) {
+        // This is the only case where the loop might try to claim more bits
+        // than stored in the bit source.  Because we are grabbing at least 8 bits to
+        // support the quick-entry index, we might be requesting more than
+        // the number of bits left in the buffer. Normal read operations would
+        // not request extra bits. But, here we need to test.  If the logic
+        // requests more than the available bits, it is okay to allow them
+        // to go to zero.
+        if (nBytesProcessed < buffer.length) {
+          scratch |= ((buffer[nBytesProcessed++] & 0xff) << nBit);
+        }
+        nBit += 8;
       }
-      int symbol = nodeIndex[offset];
+
+      int test = scratch & 0xff;
+      int testLen = qLen[test];
+      if (testLen <= 8) {
+        symbol = qSymbol[test];
+        scratch >>= testLen;
+        nBit -= testLen;
+      } else {
+        // the quick-entry tables navigated the first 8 bits of the code,
+        // but the code is longer than 8 bits. no jump ahead and then
+        // access the source coding one bit at a time using Connell's algorithm.
+        int codeVal = qBits[test];
+        int length = 8;
+        scratch >>= 8;
+        nBit -= 8;
+        while (true) {
+          // bit = input.getBit() -------------------------
+          if (nBit == 0) {
+            scratch = buffer[nBytesProcessed++]&0xff;
+            nBit = 8;
+          }
+          bit = scratch & 1;
+          scratch >>= 1;
+          nBit--;
+
+          codeVal = (codeVal << 1) | bit;
+          length++;
+          if (codeVal <= maxCode[length]) {
+            int offset = codeVal - firstCode[length];
+            symbol = connellSymbol[firstSymbolIndex[length] + offset];
+            break;
+          }
+        }
+      }
+
       if (symbol == I_END_OF_TEXT) {
         break;
       }
       if (symbol < N_SYMBOLS_STANDARD) {
+        if (iSymbol == nSymbolsInText) {
+          break;
+        }
         symbol -= 128;
         text[iSymbol++] = symbol;
         prior = symbol;
       } else {
         switch (symbol) {
           case I_ESCAPE_2BITS:
-            part = input.getBits(2);
-            prior = (prior << 2) | part;
+            // bits = input.getBits(2) -------------------------------------
+            // in 75% of the cases, there will be enough bits to meet requirement
+            if (nBit < 2) {
+              scratch = ((buffer[nBytesProcessed++]&0xff) << nBit) | scratch;
+              nBit += 8;
+            }
+            bits = scratch & 0x03;
+            scratch >>= 2;
+            nBit -= 2;
+            // ------------------------------------------------
+            prior = (prior << 2) | bits;
             text[iSymbol - 1] = prior;
             break;
           case I_ESCAPE_1BYTE:
-            part = input.getBits(8);
-            prior = (prior << 8) | part;
+            // bits = input.getByte() -----------------------
+            if (nBit == 0) {
+              // note that the value of nBitsInScratch will remain as nBitsInScratch = 0;
+              // scratch is already invalid, and it will remain so.
+              bits = buffer[nBytesProcessed++]&0xff;
+            } else {
+              if (nBit < 8) {
+                scratch = ((buffer[nBytesProcessed++]&0xff) << nBit) | scratch;
+                nBit += 8;
+              }
+
+              bits = scratch & 0xff;
+              scratch >>= 8;
+              nBit -= 8;
+            }
+            // -------------------------------------------------
+            prior = (prior << 8) | bits;
             text[iSymbol - 1] = prior;
             break;
           case I_NULL_DATA_CODE:
@@ -514,6 +618,8 @@ public class CanonicalHuffman {
         }
       }
     }
+
+    input.setState(nBytesProcessed, scratch, nBit);
 
     return true;
   }
@@ -606,7 +712,7 @@ public class CanonicalHuffman {
 
   /**
    * Get the number of bits required to store the code-table
-   * section of the encoded text.  This class populates a value for this
+   * section of the encoded text. This class populates a value for this
    * method when input data is processed by the encode method or the
    * countSymbols method.
    *
@@ -615,7 +721,6 @@ public class CanonicalHuffman {
   public int getBitsInCodeTableCount() {
     return nBitsInCodeTable;
   }
-
 
   /**
    * Get the number of unique symbols identified in the most recently
@@ -635,10 +740,11 @@ public class CanonicalHuffman {
   /**
    * Gets the total number of symbols counted from the most recent input
    * set, including special symbols and the end-of-text symbol.
+   *
    * @return a positive integer value.
    */
-  public int getTotalSymbolCount(){
-    int n=0;
+  public int getTotalSymbolCount() {
+    int n = 0;
     for (SymbolNode symbolNode : symbolNodes) {
       n += symbolNode.count;
     }
@@ -655,15 +761,14 @@ public class CanonicalHuffman {
    * @return a positive integer.
    */
   public int getEscapeBitCountTotal() {
-    return escapeCountBits2*2
+    return escapeCountBits2 * 2
       + escapeCountBits4 * 4
       + escapeCountBits8 * 8
       + escapeCountBits16 * 16
       + escapeCountBits24 * 24;
   }
 
-
-    /**
+  /**
    * Gets a two-dimensional integer array giving the number of escape bits
    * needed to represent the most recently encoded Huffman text.
    * The array is organized by the length of each escape sequences.
@@ -683,8 +788,8 @@ public class CanonicalHuffman {
    *
    * @return a two dimension array giving bit lengths and counts.
    */
-  public int[][] getEscapeBitCounts(){
-    int [][]r = new int[2][];
+  public int[][] getEscapeBitCounts() {
+    int[][] r = new int[2][];
     r[0] = new int[]{2, 4, 6, 8, 16, 24};
     r[1] = new int[]{
       escapeCountBits2,
@@ -696,9 +801,9 @@ public class CanonicalHuffman {
     return r;
   }
 
-
   /**
    * Gets the entropy based on the most recently processed sample.
+   *
    * @return a positive floating-point value; zero if no-data is available.
    */
   public double getEntropy() {
@@ -710,10 +815,10 @@ public class CanonicalHuffman {
     double e8 = 0;
     double d = getTotalSymbolCount();
     for (SymbolNode symbolNode : symbolNodes) {
-        int n = symbolNode.count;
-        if (n > 0) {
-          double p = n / d;
-          e += p * Math.log(p);
+      int n = symbolNode.count;
+      if (n > 0) {
+        double p = n / d;
+        e += p * Math.log(p);
       }
     }
 
@@ -722,7 +827,6 @@ public class CanonicalHuffman {
     // So we use the product of the probability of the escape symbol,
     // followed by the individual contribitions for each possible escape
     // bit set.
-
     if (symbolNodes[I_ESCAPE_2BITS].count > 0) {
       double n2 = symbolNodes[I_ESCAPE_2BITS].count;
       double p = n2 / d;
@@ -734,18 +838,18 @@ public class CanonicalHuffman {
       }
     }
 
-
     if (symbolNodes[I_ESCAPE_1BYTE].count > 0) {
       double n8 = symbolNodes[I_ESCAPE_1BYTE].count;
       double p = n8 / d;
       for (int j = 0; j < count8bit.length; j++) {
         if (count8bit[j] > 0) {
           double q = (double) count8bit[j] / n8; // conditional p(j|i8)
-          e8 += p * q*Math.log(q);
+          e8 += p * q * Math.log(q);
         }
       }
     }
 
     return -(e + e2 + e8) / Math.log(2.0);
   }
+
 }

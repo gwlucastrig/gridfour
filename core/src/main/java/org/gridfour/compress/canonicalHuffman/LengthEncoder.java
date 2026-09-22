@@ -165,7 +165,7 @@ class LengthEncoder {
 
     return new LengthEncoder(n, nCountCode, countCode, runLength);
   }
- 
+
   static void writeEncodedLengths(BitOutputStore output, int nCodes, int[] codes, int[] runLengths) {
     for (int i = 0; i < nCodes; i++) {
       int index = codes[i];

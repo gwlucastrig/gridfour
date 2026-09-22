@@ -33,6 +33,8 @@
  * 09/2019  G. Lucas     Created
  * 06/2022  G. Lucas     Streamlined some code, improved processing speed
  *                       by about 10 percent and added better comments.
+ * 10/2026  G. Lucas     Refactored to allow logic to be integrated directly
+ *                       into calling modules to reduce overhead.
  *
  * Notes:
  *
@@ -47,44 +49,52 @@ package org.gridfour.io;
  */
 public class BitInputStore {
 
-  private static final long mask[] = new long[65];
+  private static final int mask[] = {
+	0x00,
+	0x01,
+	0x03,
+	0x07,
+	0x0f,
+	0x1f,
+	0x3f,
+	0x7f,
+	0xff
+};
 
-  static {
-    // mask[0] = 00000000
-    // masl[1] = 00000001
-    // mask[2] = 00000011
-    // mask[3] = 00000111
-    // etc.
-    long m = 1L;
-    for (int i = 1; i < 64; i++) {
-      mask[i] = m;
-      m = (m << 1) | 1L;
-    }
+  private final byte[] buffer;
+  private final int byteOffset0;  // initial byte offset
+
+  private int scratch;
+  private int nBitsInScratch;
+  private int nBytesProcessed;
+
+  int scratchMark;
+  int nBitMark;
+  int iByteMark;
+
+  public void mark(){
+    scratchMark = scratch;
+    nBitMark = nBitsInScratch;
+    iByteMark = nBytesProcessed;
   }
 
-
-  private final byte []text;
-    private final int nBits;
-    private int nBytesProcessed;
-
-  private long scratch;
-  private int iBit;
-  private int nBitsInScratch;
-
+  public void reset(){
+    scratch = scratchMark;
+    nBitsInScratch = nBitMark;
+    nBytesProcessed = iByteMark;
+  }
   /**
    * Construct a reader that will extract bits from the specified input.
    *
    * @param input a valid array of bytes storing the content.
    */
   public BitInputStore(byte[] input) {
-    nBits = input.length * 8;
-    scratch = 0;
-    nBitsInScratch = 0;
-    text = input;
+    byteOffset0 = 0;
+    buffer = input;
+
   }
 
-
-    /**
+  /**
    * Construct a reader that will extract bits from the specified input.
    *
    * @param input a valid array of bytes storing the content.
@@ -93,14 +103,12 @@ public class BitInputStore {
    * it is assumed that input is at least length+offset bytes long.
    */
   public BitInputStore(byte[] input, int offset, int length) {
-    if(length+offset>input.length){
-      throw new IllegalArgumentException("Insufficient input.length="+input.length
-              +" to support specified offset="+offset+", length="+length);
+    if (length + offset > input.length) {
+      throw new IllegalArgumentException("Insufficient input.length=" + input.length
+        + " to support specified offset=" + offset + ", length=" + length);
     }
-    nBits = length * 8;
-    scratch = 0;
-    nBitsInScratch = 0;
-    text = input;
+    buffer = input;
+    byteOffset0 = offset;
     nBytesProcessed = offset;
   }
 
@@ -111,111 +119,102 @@ public class BitInputStore {
    */
   public int getBit() {
     if (nBitsInScratch == 0) {
-      if (iBit >= nBits) {
-        throw new ArrayIndexOutOfBoundsException("Attempt to read past end of data");
-      }
-      moveTextToScratch();
+      scratch = buffer[nBytesProcessed++]&0xff;
+      nBitsInScratch = 8;
     }
 
-    int bit = (int) (scratch & 1L);
-    scratch >>>= 1;
+    int bit = scratch & 1;
+    scratch >>=1;
     nBitsInScratch--;
-    iBit++;
     return bit;
   }
+
+  public int getByte(){
+
+	if (nBitsInScratch == 0) {
+		// note that the value of nBitsInScratch will remain as nBitsInScratch = 0;
+		// scratch is already invalid, and it will remain so.
+		return buffer[nBytesProcessed++]&0xff;
+	}
+	else if (nBitsInScratch < 8) {
+		scratch = ((buffer[nBytesProcessed++]&0xff) << nBitsInScratch) | scratch;
+		nBitsInScratch += 8;
+	}
+
+	int result = scratch & 0xff;
+	scratch >>= 8;
+	nBitsInScratch -= 8;
+
+	return result;
+  }
+
+
 
   /**
    * Gets the specified number of bits from the context
    *
-   * @param nBitsInValue number of bits in the range 1 to 32.
+   * @param nBitsInValue number of bits in the range 1 to 8.
    * @return a valid integer value composed using the specified number of bits
    * from the content.
    */
   public int getBits(int nBitsInValue) {
-    if(nBitsInValue<1 || nBitsInValue>32){
-      throw new IllegalArgumentException(
-              "Attempt to get a number of bits not in range [1..32]: "
-                      +nBitsInValue);
+    //    assert nBitsInValue<1 || nBitsInValue>8 :
+    //              "Get number of bits not in range [1..8]: " + nBitsInValue;
+
+    if (nBitsInValue > 8 || nBitsInValue < 1) {
+      return 0;
     }
-
-    // The assumption here is that there will usually be sufficient
-    // bits remaining in scratch to satisfy the request.  So we test
-    // for a simplified-processing condition.
-    if (nBitsInScratch >= nBitsInValue) {
-      int v = (int) (scratch & mask[nBitsInValue]);
-      scratch >>>= nBitsInValue;
-      nBitsInScratch -= nBitsInValue;
-      iBit += nBitsInValue;
-      return v;
+    if (nBitsInScratch < nBitsInValue) {
+      scratch = (((buffer[nBytesProcessed++]&0xff) << nBitsInScratch) | scratch);
+      nBitsInScratch += 8;
     }
-
-    // There are insufficient bits remaining in scratch.
-    // We will have to fetch some from the text.  Verify that there will
-    // be sufficient bits to satisfy the request.
-    if (iBit + nBitsInValue > nBits) {
-      throw new ArrayIndexOutOfBoundsException("Attempt to read past end of data");
-    }
-
-
-    // if we get here, we know that nBitsInScratch < nBitsInValue
-    // Use what we have (nBitsInScratch could be zero) and shift
-    // in additional data from the text
-    long v = scratch;
-    int nBitsShort = nBitsInValue - nBitsInScratch;
-    int nBitsCopied = nBitsInScratch;
-    moveTextToScratch();
-    v |= (scratch & mask[nBitsShort]) << nBitsCopied;
-    scratch >>>= nBitsShort;
-    nBitsInScratch -= nBitsShort;
-    iBit += nBitsInValue;
-
-    return (int) v;
+    int result = scratch & mask[nBitsInValue];
+    scratch >>= nBitsInValue;
+    nBitsInScratch -= nBitsInValue;
+    return result;
   }
-
-
-  /**
-   * Transfers the content of the scratch buffer to the main text arrays. If
-   * necessary, the storage for the text will be expanded. The marker element
-   * will be reset to 1.
-   * <p>
-   * This method assumes that a check has already been performed to verify
-   * that there is data remaining in the text.
-   */
-  private void moveTextToScratch() {
-
-    if (nBytesProcessed + 8 <= text.length) {
-      // there are enough bytes to populate an entire long
-      // use a variation on Horners rule to unpack the content
-      scratch = ((((((text[nBytesProcessed + 7] << 8
-        | (text[nBytesProcessed + 6] & 0xffL)) << 8
-        | (text[nBytesProcessed + 5] & 0xffL)) << 8
-        | (text[nBytesProcessed + 4] & 0xffL)) << 8
-        | (text[nBytesProcessed + 3] & 0xffL)) << 8
-        | (text[nBytesProcessed + 2] & 0xffL)) << 8
-        | (text[nBytesProcessed + 1] & 0xffL)) << 8
-        | (text[nBytesProcessed] & 0xffL);
-      nBytesProcessed += 8;
-      nBitsInScratch = 64;
-    } else {
-      int k = 0;
-      scratch = 0;
-      for (int i = text.length - 1; i >= nBytesProcessed; i--) {
-        scratch <<= 8;
-        scratch |= text[i] & 0xff;
-        k++;
-      }
-      nBytesProcessed += k;
-      nBitsInScratch = k * 8;
-    }
-  }
-
 
   /**
    * Gets the current bit position within the input store.
    * This is the position from which the next bit will be read.
+   *
    * @return a value of zero or greater.
    */
-  public int getPosition(){
-    return iBit;
+  public int getPosition() {
+    if(nBitsInScratch==0){
+      // nBytesProcessed is the index of the next byte we will read
+      return (nBytesProcessed-byteOffset0)*8;
+    }else{
+      // nBytesProcessed has been advanced to point at the next byte to be taken.
+    return (nBytesProcessed-1-byteOffset0)*8+nBitsInScratch;
+    }
   }
+
+  /**
+   * Gets the state elements from an input store in order to allow its
+   * content to be accessed directly by a calling application. This approach
+   * is useful in cases where a very large number of bits are read from
+   * a store. It avoids the overhead due to method calls.
+   * @return a valid instance.
+   */
+  public BitInputState getState(){
+  return new BitInputState(buffer,  byteOffset0,  nBytesProcessed,  scratch,  nBitsInScratch);
+  }
+
+   /**
+   * Sets the state elements for an input store to allow an application
+   * to return control to the instance when it is processing the
+   * content directly.  This approach
+   * is useful in cases where a very large number of bits are read from
+   * a store. It avoids the overhead due to method calls.
+   * @param nBytesProcessed the number of bytes processed
+   * @param scratch the current scratch bits
+   * @param nBitsInScratch the number of bits in scratch
+   */
+  public void setState(int nBytesProcessed, int scratch, int nBitsInScratch){
+    this.nBytesProcessed = nBytesProcessed;
+    this.scratch = scratch;
+    this.nBitsInScratch = nBitsInScratch;
+  }
+
 }

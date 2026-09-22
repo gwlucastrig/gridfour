@@ -54,11 +54,17 @@ import org.gridfour.gvrs.GvrsMetadataNames;
 public class GvrsReadPerformance {
 
   private final static String[] usage = {
-    "PackageData  -- create a Gvrs file from from ETOPO1 or GEBCO_2019 Global DEM files",
+    "GvrsReadPerformance  -- tests the access speed for reading an entire file",
+    "",
     "Arguments:",
-    "    GvrsReadPerformance  <input_file>  [-multithread]",
+    "    GvrsReadPerformance  <input_file>  [-multithread] [-tileLoadOnly",
     "Input file is mandatory.  Multi-threading option can be used to test",
-    "the effects of multi-threading when processing compressed files",};
+    "the effects of multi-threading when reading compressed files",
+    "",
+    "The tile load only test performs a single read operation for each tile",
+    "allowing the code to focus on the overhead for decompressing tiles",
+    "and accessing the file system."
+  };
 
   final File inputFile;
   final GvrsFileSpecification spec;
@@ -356,9 +362,19 @@ public class GvrsReadPerformance {
       }
     }
 
+
+    boolean tileLoadOnly = false;
+    for (int i = 1; i < args.length; i++) {
+      if ("-tileLoadOnly".equalsIgnoreCase(args[i])) {
+        tileLoadOnly = true;
+        break;
+      }
+    }
+
     GvrsReadPerformance reader = new GvrsReadPerformance(ps, file);
     reader.setMultiThreadingEnabled(multiThreadingEnabled);
-    ps.format("Multi-threading enabled: " + multiThreadingEnabled);
+    ps.println("Multi-threading enabled: " + multiThreadingEnabled);
+    ps.println("Tile Load Only:          " + tileLoadOnly);
 
     // Note:  Each of the following tests opens the file,
     // processes its content, and then closes it.  The reason that
@@ -370,11 +386,15 @@ public class GvrsReadPerformance {
       "Test           Total time (s)    "
       + "Mean value       Samples     Million sample/sec");
     for (int iTest = 0; iTest < 3; iTest++) {
-      reader.testRowMajorScan(ps);
-      reader.testColumnMajorScan(ps);
-      reader.testRowBlockScan(ps);
-      reader.testTileBlockScan(ps);
-      reader.testTileLoadTime(ps);
+      if (tileLoadOnly) {
+        reader.testTileLoadTime(ps);
+      } else {
+        reader.testRowMajorScan(ps);
+        reader.testColumnMajorScan(ps);
+        reader.testRowBlockScan(ps);
+        reader.testTileBlockScan(ps);
+        reader.testTileLoadTime(ps);
+      }
       ps.println("");
     }
   }
