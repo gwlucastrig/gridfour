@@ -45,7 +45,7 @@
 package org.gridfour.io;
 
 /**
- * Writes a series of bits to an internal memory buffer.
+ * Writes a series of bits to an internal memory source.
  */
 public class BitInputStore {
 
@@ -61,27 +61,27 @@ public class BitInputStore {
 	0xff
 };
 
-  private final byte[] buffer;
-  private final int byteOffset0;  // initial byte offset
+  private final byte[] source; // the byte source
+  private final int sourceOffset;  // initial byte offset
 
   private int scratch;
   private int nBitsInScratch;
-  private int nBytesProcessed;
+  private int sIndex;
 
   int scratchMark;
-  int nBitMark;
-  int iByteMark;
+  int nBitsInSourceMark;
+  int sIndexMark;
 
   public void mark(){
     scratchMark = scratch;
-    nBitMark = nBitsInScratch;
-    iByteMark = nBytesProcessed;
+    nBitsInSourceMark = nBitsInScratch;
+    sIndexMark = sIndex;
   }
 
   public void reset(){
     scratch = scratchMark;
-    nBitsInScratch = nBitMark;
-    nBytesProcessed = iByteMark;
+    nBitsInScratch = nBitsInSourceMark;
+    sIndex = sIndexMark;
   }
   /**
    * Construct a reader that will extract bits from the specified input.
@@ -89,8 +89,8 @@ public class BitInputStore {
    * @param input a valid array of bytes storing the content.
    */
   public BitInputStore(byte[] input) {
-    byteOffset0 = 0;
-    buffer = input;
+    sourceOffset = 0;
+    source = input;
 
   }
 
@@ -107,9 +107,9 @@ public class BitInputStore {
       throw new IllegalArgumentException("Insufficient input.length=" + input.length
         + " to support specified offset=" + offset + ", length=" + length);
     }
-    buffer = input;
-    byteOffset0 = offset;
-    nBytesProcessed = offset;
+    source = input;
+    sourceOffset = offset;
+    sIndex = offset;
   }
 
   /**
@@ -119,7 +119,7 @@ public class BitInputStore {
    */
   public int getBit() {
     if (nBitsInScratch == 0) {
-      scratch = buffer[nBytesProcessed++]&0xff;
+      scratch = source[sIndex++]&0xff;
       nBitsInScratch = 8;
     }
 
@@ -134,10 +134,10 @@ public class BitInputStore {
 	if (nBitsInScratch == 0) {
 		// note that the value of nBitsInScratch will remain as nBitsInScratch = 0;
 		// scratch is already invalid, and it will remain so.
-		return buffer[nBytesProcessed++]&0xff;
+		return source[sIndex++]&0xff;
 	}
 	else if (nBitsInScratch < 8) {
-		scratch = ((buffer[nBytesProcessed++]&0xff) << nBitsInScratch) | scratch;
+		scratch = ((source[sIndex++]&0xff) << nBitsInScratch) | scratch;
 		nBitsInScratch += 8;
 	}
 
@@ -165,7 +165,7 @@ public class BitInputStore {
       return 0;
     }
     if (nBitsInScratch < nBitsInValue) {
-      scratch = (((buffer[nBytesProcessed++]&0xff) << nBitsInScratch) | scratch);
+      scratch = (((source[sIndex++]&0xff) << nBitsInScratch) | scratch);
       nBitsInScratch += 8;
     }
     int result = scratch & mask[nBitsInValue];
@@ -182,11 +182,11 @@ public class BitInputStore {
    */
   public int getPosition() {
     if(nBitsInScratch==0){
-      // nBytesProcessed is the index of the next byte we will read
-      return (nBytesProcessed-byteOffset0)*8;
+      // sIndex is the index of the next byte we will read
+      return (sIndex-sourceOffset)*8;
     }else{
-      // nBytesProcessed has been advanced to point at the next byte to be taken.
-    return (nBytesProcessed-1-byteOffset0)*8+nBitsInScratch;
+      // sIndex has been advanced to point at the next byte to be taken.
+    return (sIndex-1-sourceOffset)*8+nBitsInScratch;
     }
   }
 
@@ -198,7 +198,7 @@ public class BitInputStore {
    * @return a valid instance.
    */
   public BitInputState getState(){
-  return new BitInputState(buffer,  byteOffset0,  nBytesProcessed,  scratch,  nBitsInScratch);
+  return new BitInputState(source,  sourceOffset,  sIndex,  scratch,  nBitsInScratch);
   }
 
    /**
@@ -207,12 +207,12 @@ public class BitInputStore {
    * content directly.  This approach
    * is useful in cases where a very large number of bits are read from
    * a store. It avoids the overhead due to method calls.
-   * @param nBytesProcessed the number of bytes processed
+   * @param sIndex the number of bytes processed
    * @param scratch the current scratch bits
    * @param nBitsInScratch the number of bits in scratch
    */
-  public void setState(int nBytesProcessed, int scratch, int nBitsInScratch){
-    this.nBytesProcessed = nBytesProcessed;
+  public void setState(int sIndex, int scratch, int nBitsInScratch){
+    this.sIndex = sIndex;
     this.scratch = scratch;
     this.nBitsInScratch = nBitsInScratch;
   }

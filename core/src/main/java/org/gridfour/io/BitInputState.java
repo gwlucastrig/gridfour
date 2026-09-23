@@ -42,16 +42,38 @@ package org.gridfour.io;
  * integration of bit access into a calling application.
  */
 public class BitInputState {
-  public final byte[] buffer;
-  public final int byteOffset0;
-  public int scratch;
-  public int nBitsInScratch;
-  public int nBytesProcessed;
+  /**
+   * The array containing the bits to be extracted.
+   */
+  public final byte[] source;
+  /**
+   * The offset specified by the calling module to skip
+   * the initial bytes in the source array.
+   */
+  public final int sourceOffset;
+  /**
+   * The array index for the next byte to be extracted from
+   * the source data.  The total number of bytes used is
+   * sIndex+sourceOffset.
+   */
+  public final int sIndex;
+  /**
+   * A temporary field used to marshal bits from the source
+   * array for access.  In practice, this field never
+   * contains more than 31 bits (the sign bit is never set).
+   */
+  public final int scratch;
 
-  BitInputState(byte []buffer, int byteOffset0, int iByte, int scratch, int nBitsInScratch){
-    this.buffer = buffer;
-    this.byteOffset0 = byteOffset0;
-    this.nBytesProcessed = iByte;
+  /**
+   * The number of bits in the scratch array.
+   */
+  public final int nBitsInScratch;
+
+
+  BitInputState(byte []source, int sourceIndex, int sIndex, int scratch, int nBitsInScratch){
+    this.source = source;
+    this.sourceOffset = sourceIndex;
+    this.sIndex = sIndex;
     this.nBitsInScratch = nBitsInScratch;
     this.scratch = scratch;
   }

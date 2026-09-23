@@ -394,8 +394,8 @@ public class GvrsReadPerformance {
         reader.testRowBlockScan(ps);
         reader.testTileBlockScan(ps);
         reader.testTileLoadTime(ps);
+        ps.println("");
       }
-      ps.println("");
     }
   }
 

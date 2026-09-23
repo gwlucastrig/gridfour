@@ -451,12 +451,12 @@ public class CanonicalHuffman {
     int[] codeTableLengths = new int[LengthEncoder.SYMBOL_SET_SIZE + 1];
     LengthEncoder.readEncodedLengths(input, LengthEncoder.SYMBOL_SET_SIZE + 1, codeTableLengths);
 
-    CanonHuffTreeDecoder codeTable = new CanonHuffTreeDecoder(codeTableLengths);
+    CanonHuffTreeDecoder codeTable = new CanonHuffTreeDecoder(codeTableLengths, false);
     int[] textTreeLengths = new int[N_SYMBOLS_TOTAL + 1];
     codeTable.decodeTree(input, N_SYMBOLS_TOTAL, textTreeLengths);
     nBitsInCodeTable = input.getPosition();
 
-    CanonHuffTreeDecoder textTree = new CanonHuffTreeDecoder(textTreeLengths);
+    CanonHuffTreeDecoder textTree = new CanonHuffTreeDecoder(textTreeLengths, true);
     nUniqueSymbols = textTree.nUniqueSymbols;
     decodeText(textTree, input, nSymbolsInText, text);
 
@@ -483,9 +483,9 @@ public class CanonicalHuffman {
     int[] maxCode = textTree.maxCode;
     int[] firstSymbolIndex = textTree.firstSymbolIndex;
     int[] connellSymbol = textTree.connellSymbol;
-    int[]qLen = textTree.qLen;
-    int[]qSymbol = textTree.qSymbol;
-    int[]qBits = textTree.qBits;
+    int[] qLen = textTree.qLen;
+    int[] qSymbol = textTree.qSymbol;
+    int[] qBits = textTree.qBits;
     int iSymbol = 0;
     int prior = 0;
     int bit;
@@ -498,32 +498,48 @@ public class CanonicalHuffman {
     // BitInputStore.getBit() and .getBits(n) into the code here.
     // In testing, we found improvements both for eliminating
     // frequent calls to obtain input bits.   Initially, we treated
-    // the state variables -- buffer, scratch, nBitsInScratch, and nBytesProcessed --
+    // the state variables -- source, scratch, nBitsInScratch, and sIndex --
     // as member elements.  Later we found some improvement in treating them
     // as local variables.
     BitInputState state = input.getState();
-    byte[] buffer = state.buffer;
+    byte[] source = state.source;  // the bit-input source
+    int sIndex = state.sIndex; // source index, next byte to be read
     int scratch = state.scratch;
-    int nBit = state.nBitsInScratch;
-    int nBytesProcessed = state.nBytesProcessed;
+    int nBitsInScratch = state.nBitsInScratch;
 
+    int reserveByteCount = source.length-2;
     while (true) {
-
       int symbol = 0;
 
       // bit = input.getByte() -------------------------
-      if (nBit < 8) {
+      if (nBitsInScratch < 8) {
         // This is the only case where the loop might try to claim more bits
         // than stored in the bit source.  Because we are grabbing at least 8 bits to
         // support the quick-entry index, we might be requesting more than
-        // the number of bits left in the buffer. Normal read operations would
-        // not request extra bits. But, here we need to test.  If the logic
+        // the number of bits left in the source. Normal Huffman code navigation
+        // takes one bit at a time and would not request more bits than are in the
+        // source.  But here we need to test for a source array overrun.  If the logic
         // requests more than the available bits, it is okay to allow them
         // to go to zero.
-        if (nBytesProcessed < buffer.length) {
-          scratch |= ((buffer[nBytesProcessed++] & 0xff) << nBit);
+        //    Also, for those cases where we get into this conditional block, we
+        // will be performing 2 conditional checks: one for nBitsInScratch<8
+        // and one for the size of the source array.  To reduce conditional checks,
+        // we try to reduce the number of times we get into this block by taking
+        // more than just 8 bits.
+        if (sIndex < reserveByteCount) {
+          int temp = (source[sIndex]&0xff) | ((source[sIndex+1]&0xff)<<8) | ((source[sIndex+2]&0xff)<<16);
+          scratch |= (temp << nBitsInScratch);
+          nBitsInScratch += 24;
+          sIndex+=3;
+        } else if (sIndex < source.length) {
+          // there are at least one and maybe 2 bytes left in the source array.
+          scratch |= ((source[sIndex++] & 0xff) << nBitsInScratch);
+          nBitsInScratch += 8;
+        } else {
+          // we've overrun the source array.  just let the extra bits
+          // be treated as zero.
+          nBitsInScratch += 8;
         }
-        nBit += 8;
       }
 
       int test = scratch & 0xff;
@@ -531,7 +547,7 @@ public class CanonicalHuffman {
       if (testLen <= 8) {
         symbol = qSymbol[test];
         scratch >>= testLen;
-        nBit -= testLen;
+        nBitsInScratch -= testLen;
       } else {
         // the quick-entry tables navigated the first 8 bits of the code,
         // but the code is longer than 8 bits. no jump ahead and then
@@ -539,16 +555,16 @@ public class CanonicalHuffman {
         int codeVal = qBits[test];
         int length = 8;
         scratch >>= 8;
-        nBit -= 8;
+        nBitsInScratch -= 8;
         while (true) {
           // bit = input.getBit() -------------------------
-          if (nBit == 0) {
-            scratch = buffer[nBytesProcessed++]&0xff;
-            nBit = 8;
+          if (nBitsInScratch == 0) {
+            scratch = source[sIndex++] & 0xff;
+            nBitsInScratch = 8;
           }
           bit = scratch & 1;
           scratch >>= 1;
-          nBit--;
+          nBitsInScratch--;
 
           codeVal = (codeVal << 1) | bit;
           length++;
@@ -575,32 +591,32 @@ public class CanonicalHuffman {
           case I_ESCAPE_2BITS:
             // bits = input.getBits(2) -------------------------------------
             // in 75% of the cases, there will be enough bits to meet requirement
-            if (nBit < 2) {
-              scratch = ((buffer[nBytesProcessed++]&0xff) << nBit) | scratch;
-              nBit += 8;
+            if (nBitsInScratch < 2) {
+              scratch = ((source[sIndex++] & 0xff) << nBitsInScratch) | scratch;
+              nBitsInScratch += 8;
             }
             bits = scratch & 0x03;
             scratch >>= 2;
-            nBit -= 2;
+            nBitsInScratch -= 2;
             // ------------------------------------------------
             prior = (prior << 2) | bits;
             text[iSymbol - 1] = prior;
             break;
           case I_ESCAPE_1BYTE:
             // bits = input.getByte() -----------------------
-            if (nBit == 0) {
+            if (nBitsInScratch == 0) {
               // note that the value of nBitsInScratch will remain as nBitsInScratch = 0;
               // scratch is already invalid, and it will remain so.
-              bits = buffer[nBytesProcessed++]&0xff;
+              bits = source[sIndex++] & 0xff;
             } else {
-              if (nBit < 8) {
-                scratch = ((buffer[nBytesProcessed++]&0xff) << nBit) | scratch;
-                nBit += 8;
+              if (nBitsInScratch < 8) {
+                scratch = ((source[sIndex++] & 0xff) << nBitsInScratch) | scratch;
+                nBitsInScratch += 8;
               }
 
               bits = scratch & 0xff;
               scratch >>= 8;
-              nBit -= 8;
+              nBitsInScratch -= 8;
             }
             // -------------------------------------------------
             prior = (prior << 8) | bits;
@@ -619,7 +635,7 @@ public class CanonicalHuffman {
       }
     }
 
-    input.setState(nBytesProcessed, scratch, nBit);
+    input.setState(sIndex, scratch, nBitsInScratch);
 
     return true;
   }
