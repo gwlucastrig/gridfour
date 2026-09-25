@@ -172,8 +172,9 @@ class CanonHuffTreeDecoder {
         int jStep = 1 << n;
         for (int j = xmit; j < 256; j += jStep) {
           qLen[j] = len;
-          qBits[j] = (q >> len - 8) & 0xff;
           qSymbol[j] = symbol;
+          // qBits will be used only when len>8
+          qBits[j] = len>8 ? (q >> (len - 8)) & 0xff : 0;
         }
       }
     }

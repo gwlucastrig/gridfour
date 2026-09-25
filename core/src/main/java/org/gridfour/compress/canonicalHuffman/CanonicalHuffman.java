@@ -550,7 +550,7 @@ public class CanonicalHuffman {
         nBitsInScratch -= testLen;
       } else {
         // the quick-entry tables navigated the first 8 bits of the code,
-        // but the code is longer than 8 bits. no jump ahead and then
+        // but the code is longer than 8 bits. Now jump ahead and then
         // access the source coding one bit at a time using Connell's algorithm.
         int codeVal = qBits[test];
         int length = 8;
