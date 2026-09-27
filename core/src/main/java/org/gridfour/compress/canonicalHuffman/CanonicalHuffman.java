@@ -199,7 +199,7 @@ public class CanonicalHuffman {
 
     // write the text
     for (int iSymbol = 0; iSymbol < nSymbolsInText; iSymbol++) {
-      int symbol = text[iSymbol];
+      int symbol = text[offset+iSymbol];
       if (-128 <= symbol && symbol <= 127) {
         // the symbol is in the single-byte range
         // because we expect that these will be the substantial majority
@@ -253,7 +253,7 @@ public class CanonicalHuffman {
           output.appendBits(8, symbol & 0xff);
         } else if (symbol == GridfourConstants.INT4_NULL_CODE) {
           textTree.writeOneSymbol(output, I_NULL_DATA_CODE);
-        } else if (-8333608 <= symbol && symbol <= 8388607) {
+        } else if (-8388608 <= symbol && symbol <= 8388607) {
           int target = (symbol >> 16) + 128;
           textTree.writeOneSymbol(output, target);
           textTree.writeOneSymbol(output, I_ESCAPE_1BYTE);
