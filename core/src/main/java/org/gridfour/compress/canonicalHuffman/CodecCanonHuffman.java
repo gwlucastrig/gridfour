@@ -185,7 +185,7 @@ public class CodecCanonHuffman implements ICompressionEncoder, ICompressionDecod
     // So the text contains one value per cell. So nSymbolsInText serves
     // as a limit, though the Huffman decoder may terminate sooner when it
     // encounters an end-of-text symbol.
-    int nSymbolsInText = nRows * nColumns;
+    int nSymbolsInText = nRows * nColumns - 1;
     int[] residuals = new int[nRows * nColumns];
     decoder.decode(inputStore, nSymbolsInText, residuals);
 

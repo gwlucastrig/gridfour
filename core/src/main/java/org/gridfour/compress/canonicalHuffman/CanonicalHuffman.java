@@ -490,6 +490,7 @@ public class CanonicalHuffman {
     int prior = 0;
     int bit;
     int bits;
+    int symbol;
 
     // This loop terminates on an end of text.  We take this approach
     // because the last symbol in the encoding could be an escape cpde
@@ -507,10 +508,8 @@ public class CanonicalHuffman {
     int scratch = state.scratch;
     int nBitsInScratch = state.nBitsInScratch;
 
-    int reserveByteCount = source.length-2;
-    while (true) {
-      int symbol = 0;
-
+    int reserveByteCount = source.length - 2;
+    while(iSymbol<nSymbolsInText){
       // bit = input.getByte() -------------------------
       if (nBitsInScratch < 8) {
         // This is the only case where the loop might try to claim more bits
@@ -527,10 +526,10 @@ public class CanonicalHuffman {
         // we try to reduce the number of times we get into this block by taking
         // more than just 8 bits.
         if (sIndex < reserveByteCount) {
-          int temp = (source[sIndex]&0xff) | ((source[sIndex+1]&0xff)<<8) | ((source[sIndex+2]&0xff)<<16);
+          int temp = (source[sIndex] & 0xff) | ((source[sIndex + 1] & 0xff) << 8) | ((source[sIndex + 2] & 0xff) << 16);
           scratch |= (temp << nBitsInScratch);
           nBitsInScratch += 24;
-          sIndex+=3;
+          sIndex += 3;
         } else if (sIndex < source.length) {
           // there are at least one and maybe 2 bytes left in the source array.
           scratch |= ((source[sIndex++] & 0xff) << nBitsInScratch);
@@ -576,13 +575,7 @@ public class CanonicalHuffman {
         }
       }
 
-      if (symbol == I_END_OF_TEXT) {
-        break;
-      }
       if (symbol < N_SYMBOLS_STANDARD) {
-        if (iSymbol == nSymbolsInText) {
-          break;
-        }
         symbol -= 128;
         text[iSymbol++] = symbol;
         prior = symbol;
@@ -627,17 +620,101 @@ public class CanonicalHuffman {
             text[iSymbol++] = GridfourConstants.INT4_NULL_CODE;
             break;
           case I_END_OF_TEXT:
-            iSymbol = nSymbolsInText;
-            break;
+            //iSymbol = nSymbolsInText;
+            input.setState(sIndex, scratch, nBitsInScratch);
+            return true;
           default:
             break;
         }
       }
     }
 
-    input.setState(sIndex, scratch, nBitsInScratch);
+    // There is a complication in the Gridfour format in that the escape symbols
+    // modify the previous value.  So we don't really know that the input
+    // is fully processed unless we reach an end-of-text or exhaust the input
+    // bit stream. If the next symbol in the bit stream is an escape symbol,
+    // we need to read it and process it. Also, if we get here, there might also
+    // be an end-of-text in the bit stream. The end-of-text needs to be consumed
+    // because there are cases where multiple, distinct integer sequences may be
+    // concatenated into the bit stream (as in the case of the LSOP format).
+    //    This design choice is based on keeping the above loop as efficient
+    // as possible. But it has the consequence that the following code repeats
+    // some of the logic that was given above.  Since it is only reading a small
+    // number of symbols, less emphasis is given to efficiency
+    //    In the loop below, we use the local variables (scratch, nBit, etc.) to
+    // serve as a way of "peeking" at the content of the bit stream without
+    // modifying it. Then we record the state variables only when they are
+    // actually processed.  If the logic encounters one of the "ordinary", non-escape,
+    // symbols, it will break the loop but will not "consume" that symbol.
+    while (true) {
+      input.setState(sIndex, scratch, nBitsInScratch);
+      int codeVal = 0;
+      int length = 0;
+      symbol = 0;
+      while (true) {
+        // int bit = GvrsBitInputGetBit(input); -------------------------------
+        if (nBitsInScratch == 0) {
+          if (sIndex == source.length) {
+            // all bits in the input stream have been consumed.
+            // no further processing is required
+            return true; //  iSymbol;
+          }
+          scratch = source[sIndex++]&0xff;
+          nBitsInScratch = 8;
+        }
+        bit = scratch & 0x01;
+        scratch >>= 1;
+        nBitsInScratch--;
+        // end of GetBit() ----------------------------------------------------
+        codeVal = (codeVal << 1) | bit;
+        length++;
+        if (codeVal <= maxCode[length]) {
+          int offset = codeVal - firstCode[length];
+          symbol = connellSymbol[firstSymbolIndex[length] + offset];
+          break;
+        }
+      }
 
-    return true;
+      switch (symbol) {
+        case I_ESCAPE_2BITS:
+          // bits = GvrsBitInputGetBits(input, 2);  ------------------------------
+          if (nBitsInScratch < 2) {
+            scratch |= ((source[sIndex++]&0xff) << nBitsInScratch);
+            nBitsInScratch += 8;
+          }
+          bits = scratch & 0x03;
+          scratch >>= 2;
+          nBitsInScratch -= 2;
+          // end of GetBits(2) --------------------------------------------
+          prior = (prior << 2) | bits;
+          text[iSymbol - 1] = prior;
+          break;
+        case I_ESCAPE_1BYTE:
+          // bits = GvrsBitInputGetByte(input);  ---------------------------------
+          if (nBitsInScratch < 8) {
+            scratch |= ((source[sIndex++]&0xff) << nBitsInScratch);
+            nBitsInScratch += 8;
+          }
+          bits = scratch & 0xff;
+          scratch >>= 8;
+          nBitsInScratch -= 8;
+          // end of GetByte -------------------------------------------------
+          prior = (prior << 8) | bits;
+          text[iSymbol - 1] = prior;
+          break;
+        case I_END_OF_TEXT:
+          // loop reached the end of text.  We will need to record the
+          // state variables, but processing is otherwise complete.
+          input.setState(sIndex, scratch, nBitsInScratch);
+          return true;
+        default:
+          // any remaining symbols would be part of a different encoding that
+          // would be concatenated to this one...  just end the loop without
+          // recording the state variables.
+          return true;
+      }
+    }
+
   }
 
   /**
